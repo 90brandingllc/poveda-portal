@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read and write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Appointments rules
+    match /appointments/{appointmentId} {
+      // Users can create appointments
+      allow create: if request.auth != null && 
+                   request.auth.uid == resource.data.userId;
+      
+      // Users can read their own appointments
+      allow read: if request.auth != null && 
+                 (request.auth.uid == resource.data.userId || 
+                  getUserRole(request.auth.uid) == 'admin');
+      
+      // Only admins can update appointment status
+      allow update: if request.auth != null && 
+                   getUserRole(request.auth.uid) == 'admin';
+      
+      // Only admins can delete appointments
+      allow delete: if request.auth != null && 
+                   getUserRole(request.auth.uid) == 'admin';
+    }
+    
+    // Support tickets rules
+    match /tickets/{ticketId} {
+      // Users can create and read their own tickets
+      allow create, read: if request.auth != null && 
+                         request.auth.uid == resource.data.userId;
+      
+      // Admins can read and update all tickets
+      allow read, update: if request.auth != null && 
+                         getUserRole(request.auth.uid) == 'admin';
+    }
+    
+    // Estimates rules
+    match /estimates/{estimateId} {
+      // Users can create and read their own estimates
+      allow create, read: if request.auth != null && 
+                         request.auth.uid == resource.data.userId;
+      
+      // Admins can read and update all estimates
+      allow read, update: if request.auth != null && 
+                         getUserRole(request.auth.uid) == 'admin';
+    }
+    
+    // Helper function to get user role
+    function getUserRole(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.role;
+    }
+  }
+}
