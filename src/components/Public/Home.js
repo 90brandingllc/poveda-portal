@@ -14,7 +14,6 @@ import {
   Avatar
 } from '@mui/material';
 import {
-  DirectionsCar,
   Star,
   Schedule,
   LocationOn,
@@ -23,6 +22,10 @@ import {
   CalendarToday
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import AnimatedSection from '../Animations/AnimatedSection';
+import AnimatedCard from '../Animations/AnimatedCard';
+import AnimatedButton from '../Animations/AnimatedButton';
 
 const Home = () => {
   const services = [
@@ -95,107 +98,155 @@ const Home = () => {
         <Container maxWidth="lg">
           <Grid container spacing={4} alignItems="center" sx={{ minHeight: '70vh' }}>
             <Grid item xs={12} md={6}>
-              <Stack spacing={3}>
-                <Chip 
-                  label="🚗 Mobile Car Detailing" 
-                  sx={{ 
-                    alignSelf: 'flex-start',
-                    bgcolor: 'rgba(255,255,255,0.2)',
-                    color: 'white',
-                    fontWeight: 600
-                  }} 
-                />
-                <Typography 
-                  variant="h2" 
-                  sx={{ 
-                    fontWeight: 700,
-                    fontSize: { xs: '2.5rem', md: '3.5rem' },
-                    lineHeight: 1.2
-                  }}
-                >
-                  Premium Auto Care
-                  <br />
-                  <Typography 
-                    component="span" 
-                    variant="h2" 
-                    sx={{ 
-                      color: '#FFD700',
-                      fontWeight: 700,
-                      fontSize: { xs: '2.5rem', md: '3.5rem' }
-                    }}
+              <AnimatedSection direction="left" delay={0.2}>
+                <Stack spacing={3}>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
                   >
-                    Delivered
-                  </Typography>
-                </Typography>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    opacity: 0.9,
-                    fontWeight: 300,
-                    maxWidth: '500px'
-                  }}
-                >
-                  Professional mobile detailing services that bring showroom quality results to your location.
-                </Typography>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3 }}>
-                  <Button
-                    component={Link}
-                    to="/book-appointment"
-                    variant="contained"
-                    size="large"
-                    startIcon={<CalendarToday />}
-                    sx={{
-                      bgcolor: '#FFD700',
-                      color: '#000',
-                      fontWeight: 600,
-                      px: 4,
-                      py: 1.5,
-                      '&:hover': { bgcolor: '#FFC107' }
-                    }}
+                    <Chip 
+                      label="🚗 Mobile Car Detailing" 
+                      sx={{ 
+                        alignSelf: 'flex-start',
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        color: 'white',
+                        fontWeight: 600
+                      }} 
+                    />
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.7 }}
                   >
-                    Book Now
-                  </Button>
-                  <Button
-                    component={Link}
-                    to="/estimate"
-                    variant="outlined"
-                    size="large"
-                    startIcon={<Phone />}
-                    sx={{
-                      color: 'white',
-                      borderColor: 'white',
-                      fontWeight: 600,
-                      px: 4,
-                      py: 1.5,
-                      '&:hover': { 
-                        borderColor: '#FFD700',
-                        bgcolor: 'rgba(255,215,0,0.1)'
-                      }
-                    }}
+                    <Typography 
+                      variant="h2" 
+                      sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '2.5rem', md: '3.5rem' },
+                        lineHeight: 1.2
+                      }}
+                    >
+                      Premium Auto Care
+                      <br />
+                      <motion.span
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8, delay: 1.2 }}
+                        style={{
+                          color: '#FFD700',
+                          fontWeight: 700,
+                          fontSize: 'inherit',
+                          display: 'inline-block'
+                        }}
+                      >
+                        Delivered
+                      </motion.span>
+                    </Typography>
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 1.4 }}
                   >
-                    Get Estimate
-                  </Button>
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        opacity: 0.9,
+                        fontWeight: 300,
+                        maxWidth: '500px'
+                      }}
+                    >
+                      Professional mobile detailing services that bring showroom quality results to your location.
+                    </Typography>
+                  </motion.div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 1.6 }}
+                  >
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3 }}>
+                      <AnimatedButton variant="glow">
+                        <Button
+                          component={Link}
+                          to="/book-appointment"
+                          variant="contained"
+                          size="large"
+                          startIcon={<CalendarToday />}
+                          sx={{
+                            bgcolor: '#FFD700',
+                            color: '#000',
+                            fontWeight: 600,
+                            px: 4,
+                            py: 1.5,
+                            '&:hover': { bgcolor: '#FFC107' }
+                          }}
+                        >
+                          Book Now
+                        </Button>
+                      </AnimatedButton>
+                      
+                      <AnimatedButton variant="float">
+                        <Button
+                          component={Link}
+                          to="/estimate"
+                          variant="outlined"
+                          size="large"
+                          startIcon={<Phone />}
+                          sx={{
+                            color: 'white',
+                            borderColor: 'white',
+                            fontWeight: 600,
+                            px: 4,
+                            py: 1.5,
+                            '&:hover': { 
+                              borderColor: '#FFD700',
+                              bgcolor: 'rgba(255,215,0,0.1)'
+                            }
+                          }}
+                        >
+                          Get Estimate
+                        </Button>
+                      </AnimatedButton>
+                    </Stack>
+                  </motion.div>
                 </Stack>
-              </Stack>
+              </AnimatedSection>
             </Grid>
+            
             <Grid item xs={12} md={6}>
-              <Box
-                sx={{
-                  position: 'relative',
-                  textAlign: 'center'
-                }}
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=600&h=400&fit=crop"
-                  alt="Premium Car Detailing"
-                  style={{
-                    width: '100%',
-                    maxWidth: '500px',
-                    borderRadius: '20px',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+              <AnimatedSection direction="right" delay={0.4}>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    textAlign: 'center'
                   }}
-                />
-              </Box>
+                >
+                  <motion.img
+                    src="https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=600&h=400&fit=crop"
+                    alt="Premium Car Detailing"
+                    style={{
+                      width: '100%',
+                      maxWidth: '500px',
+                      borderRadius: '20px',
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+                    }}
+                    initial={{ opacity: 0, scale: 0.8, rotateY: 20 }}
+                    animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                    transition={{ duration: 1, delay: 0.8 }}
+                    whileHover={{ 
+                      scale: 1.05, 
+                      rotateY: -5,
+                      transition: { duration: 0.3 }
+                    }}
+                    className="animate-float"
+                  />
+                </Box>
+              </AnimatedSection>
             </Grid>
           </Grid>
         </Container>

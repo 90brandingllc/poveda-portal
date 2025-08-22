@@ -117,13 +117,13 @@ const Footer = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Phone sx={{ color: '#1976d2' }} />
                 <Typography variant="body2" sx={{ color: '#cccccc' }}>
-                  (555) 123-4567
+                  {process.env.REACT_APP_SUPPORT_PHONE || '(555) 123-4567'}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Email sx={{ color: '#1976d2' }} />
                 <Typography variant="body2" sx={{ color: '#cccccc' }}>
-                  info@povedaautocare.com
+                  {process.env.REACT_APP_SUPPORT_EMAIL || 'info@povedaautocare.com'}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
