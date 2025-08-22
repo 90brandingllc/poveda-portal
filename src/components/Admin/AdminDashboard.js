@@ -25,12 +25,11 @@ import {
   AttachMoney,
   TrendingUp,
   Visibility,
-  Edit,
   CheckCircle,
   Cancel
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { Link } from 'react-router-dom';
 
@@ -220,11 +219,18 @@ const AdminDashboard = () => {
                 link: '/admin/estimates'
               },
               {
-                title: 'Analytics',
-                description: 'View business insights',
+                title: 'Manage Coupons',
+                description: 'Create and manage discount coupons',
                 icon: <TrendingUp />,
                 color: '#9c27b0',
-                link: '/admin/analytics'
+                link: '/admin/coupons'
+              },
+              {
+                title: 'Manage Users',
+                description: 'Create admin accounts and manage users',
+                icon: <People />,
+                color: '#ff5722',
+                link: '/admin/users'
               }
             ].map((action, index) => (
               <Grid item xs={12} key={index}>

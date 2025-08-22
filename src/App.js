@@ -6,6 +6,7 @@ import { CircularProgress, Box } from '@mui/material';
 // Auth Components
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import SetupAdmin from './components/Auth/SetupAdmin';
 
 // Client Components
 import ClientDashboard from './components/Client/ClientDashboard';
@@ -20,6 +21,8 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 import ManageAppointments from './components/Admin/ManageAppointments';
 import ManageTickets from './components/Admin/ManageTickets';
 import ManageEstimates from './components/Admin/ManageEstimates';
+import ManageCoupons from './components/Admin/ManageCoupons';
+import ManageUsers from './components/Admin/ManageUsers';
 
 // Public Components
 import Home from './components/Public/Home';
@@ -58,6 +61,10 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   const { currentUser, userRole } = useAuth();
+  
+  // Debug logging
+  console.log('App.js - Current User:', currentUser?.email);
+  console.log('App.js - User Role:', userRole);
 
   // Show loading spinner while checking auth state
   if (currentUser === undefined) {
@@ -96,6 +103,14 @@ function App() {
           element={
             <PublicRoute>
               <Register />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/setup-admin" 
+          element={
+            <PublicRoute>
+              <SetupAdmin />
             </PublicRoute>
           } 
         />
@@ -174,6 +189,22 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <ManageEstimates />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/coupons" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ManageCoupons />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/users" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ManageUsers />
             </ProtectedRoute>
           } 
         />

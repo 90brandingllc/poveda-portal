@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -7,37 +7,48 @@ import {
   Typography,
   Box,
   Alert,
-  Divider,
-  Link,
-  InputAdornment,
-  IconButton,
-  Stack
+  InputAdornment
 } from '@mui/material';
 import {
   Email,
   Lock,
   Person,
-  Visibility,
-  VisibilityOff,
-  Google
+  Security
 } from '@mui/icons-material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { db } from '../../firebase/config';
+import { collection, getDocs } from 'firebase/firestore';
 
-const Register = () => {
+const SetupAdmin = () => {
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [canSetup, setCanSetup] = useState(false);
 
-  const { signup, signInWithGoogle } = useAuth();
+  const { signup } = useAuth();
   const navigate = useNavigate();
+
+  // Check if there are any existing admins
+  useEffect(() => {
+    const checkExistingAdmins = async () => {
+      try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const hasAdmins = usersSnapshot.docs.some(doc => doc.data().role === 'admin');
+        setCanSetup(!hasAdmins);
+      } catch (error) {
+        console.error('Error checking existing admins:', error);
+        setCanSetup(true); // Allow setup if we can't check
+      }
+    };
+
+    checkExistingAdmins();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -50,7 +61,11 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    // Validation
+    if (!canSetup) {
+      setError('Admin setup is not allowed. Admin accounts already exist.');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -66,21 +81,8 @@ const Register = () => {
     try {
       await signup(formData.email, formData.password, {
         displayName: formData.displayName,
-        role: 'client' // All new registrations are clients by default
+        role: 'admin'
       });
-      navigate('/dashboard');
-    } catch (error) {
-      setError(getErrorMessage(error.code));
-    }
-    setLoading(false);
-  };
-
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setLoading(true);
-
-    try {
-      await signInWithGoogle();
       navigate('/dashboard');
     } catch (error) {
       setError(getErrorMessage(error.code));
@@ -94,14 +96,46 @@ const Register = () => {
         return 'An account with this email address already exists.';
       case 'auth/invalid-email':
         return 'Invalid email address.';
-      case 'auth/operation-not-allowed':
-        return 'Email/password accounts are not enabled.';
       case 'auth/weak-password':
         return 'Password is too weak.';
       default:
-        return 'Registration failed. Please try again.';
+        return 'Setup failed. Please try again.';
     }
   };
+
+  if (!canSetup) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 8 }}>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 4,
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+          }}
+        >
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Security sx={{ fontSize: 64, color: '#d32f2f', mb: 2 }} />
+            <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#d32f2f' }}>
+              Admin Setup Not Allowed
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Admin accounts already exist in the system. Please contact an existing administrator for access.
+            </Typography>
+          </Box>
+          
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => navigate('/login')}
+            sx={{ mt: 2 }}
+          >
+            Go to Login
+          </Button>
+        </Paper>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm" sx={{ py: 8 }}>
@@ -115,16 +149,12 @@ const Register = () => {
       >
         {/* Logo and Header */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <img 
-            src="/logo.svg" 
-            alt="POVEDA PREMIUM AUTO CARE" 
-            style={{ height: 60, marginBottom: 16 }} 
-          />
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
-            Create Account
+          <Security sx={{ fontSize: 64, color: '#d32f2f', mb: 2 }} />
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#d32f2f' }}>
+            Setup First Admin
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Join POVEDA for premium car care services
+            Create the first administrator account for POVEDA PREMIUM AUTO CARE
           </Typography>
         </Box>
 
@@ -135,7 +165,7 @@ const Register = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <Stack spacing={3}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <TextField
               fullWidth
               name="displayName"
@@ -171,13 +201,11 @@ const Register = () => {
               }}
             />
 
-
-
             <TextField
               fullWidth
               name="password"
               label="Password"
-              type={showPassword ? 'text' : 'password'}
+              type="password"
               value={formData.password}
               onChange={handleChange}
               required
@@ -189,16 +217,6 @@ const Register = () => {
                     <Lock color="action" />
                   </InputAdornment>
                 ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
               }}
             />
 
@@ -206,7 +224,7 @@ const Register = () => {
               fullWidth
               name="confirmPassword"
               label="Confirm Password"
-              type={showConfirmPassword ? 'text' : 'password'}
+              type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
               required
@@ -215,16 +233,6 @@ const Register = () => {
                 startAdornment: (
                   <InputAdornment position="start">
                     <Lock color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      edge="end"
-                    >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
                   </InputAdornment>
                 ),
               }}
@@ -240,65 +248,21 @@ const Register = () => {
                 py: 1.5,
                 fontWeight: 600,
                 textTransform: 'none',
-                fontSize: '1.1rem'
+                fontSize: '1.1rem',
+                bgcolor: '#d32f2f',
+                '&:hover': {
+                  bgcolor: '#b71c1c'
+                }
               }}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Creating Admin Account...' : 'Create Admin Account'}
             </Button>
-          </Stack>
+          </Box>
         </form>
-
-        <Divider sx={{ my: 3 }}>
-          <Typography variant="body2" color="text.secondary">
-            OR
-          </Typography>
-        </Divider>
-
-        <Button
-          fullWidth
-          variant="outlined"
-          size="large"
-          startIcon={<Google />}
-          onClick={handleGoogleSignIn}
-          disabled={loading}
-          sx={{
-            py: 1.5,
-            fontWeight: 600,
-            textTransform: 'none',
-            fontSize: '1.1rem',
-            borderColor: '#db4437',
-            color: '#db4437',
-            '&:hover': {
-              borderColor: '#db4437',
-              backgroundColor: 'rgba(219, 68, 55, 0.04)'
-            }
-          }}
-        >
-          Continue with Google
-        </Button>
 
         <Box sx={{ textAlign: 'center', mt: 3 }}>
           <Typography variant="body2" color="text.secondary">
-            Already have an account?{' '}
-            <Link
-              component={RouterLink}
-              to="/login"
-              sx={{ fontWeight: 600, textDecoration: 'none' }}
-            >
-              Sign in here
-            </Link>
-          </Typography>
-        </Box>
-
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 400, display: 'block' }}>
-            By creating an account, you agree to our Terms of Service and Privacy Policy
-          </Typography>
-        </Box>
-        
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 400, display: 'block' }}>
-            Need admin access? Contact the system administrator or use the setup route: /setup-admin
+            This will create the first administrator account with full system access.
           </Typography>
         </Box>
       </Paper>
@@ -306,4 +270,5 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default SetupAdmin;
+

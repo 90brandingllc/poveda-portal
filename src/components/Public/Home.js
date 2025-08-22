@@ -24,7 +24,7 @@ import {
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AnimatedSection from '../Animations/AnimatedSection';
-import AnimatedCard from '../Animations/AnimatedCard';
+
 import AnimatedButton from '../Animations/AnimatedButton';
 
 const Home = () => {

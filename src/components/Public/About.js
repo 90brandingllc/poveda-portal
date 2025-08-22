@@ -6,7 +6,6 @@ import {
   Box,
   Card,
   CardContent,
-  Avatar,
   Paper
 } from '@mui/material';
 import {

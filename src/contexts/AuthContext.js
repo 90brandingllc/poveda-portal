@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }) => {
       const { role = 'client' } = additionalData;
       
       try {
+        console.log('AuthContext - Creating new user profile with role:', role);
         await setDoc(userRef, {
           displayName: displayName || email.split('@')[0],
           email,
@@ -45,11 +46,14 @@ export const AuthProvider = ({ children }) => {
           ...additionalData
         });
         setUserRole(role);
+        console.log('AuthContext - User profile created successfully');
       } catch (error) {
         console.error('Error creating user profile:', error);
       }
     } else {
-      setUserRole(userDoc.data().role);
+      const existingRole = userDoc.data().role;
+      console.log('AuthContext - User profile exists, role:', existingRole);
+      setUserRole(existingRole);
     }
     
     return userRef;
@@ -78,6 +82,11 @@ export const AuthProvider = ({ children }) => {
   const signin = async (email, password) => {
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
+      // Load user role after successful login
+      const role = await getUserRole(user.uid);
+      console.log('AuthContext - Login successful for:', user.email);
+      console.log('AuthContext - User role loaded:', role);
+      setUserRole(role);
       return user;
     } catch (error) {
       throw error;
@@ -89,6 +98,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const { user } = await signInWithPopup(auth, googleProvider);
       await createUserProfile(user);
+      // Load user role after successful login
+      const role = await getUserRole(user.uid);
+      setUserRole(role);
       return user;
     } catch (error) {
       throw error;
@@ -110,7 +122,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const userRef = doc(db, 'users', uid);
       const userDoc = await getDoc(userRef);
-      return userDoc.exists() ? userDoc.data().role : 'client';
+      const role = userDoc.exists() ? userDoc.data().role : 'client';
+      console.log('AuthContext - getUserRole for UID:', uid, 'Role:', role);
+      return role;
     } catch (error) {
       console.error('Error getting user role:', error);
       return 'client';

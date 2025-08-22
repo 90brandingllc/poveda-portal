@@ -8,10 +8,6 @@ import {
   CardContent,
   Button,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Box,
   Chip,
   Alert,
@@ -27,10 +23,6 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import {
-  DirectionsCar,
-  LocationOn,
-  Schedule,
-  Payment,
   CheckCircle
 } from '@mui/icons-material';
 import dayjs from 'dayjs';

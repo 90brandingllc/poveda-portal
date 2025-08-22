@@ -90,6 +90,12 @@ const Navbar = () => {
             color: 'inherit' 
           }}
         >
+          {/* Debug info - remove this later */}
+          {currentUser && (
+            <Typography variant="caption" sx={{ mr: 2, color: '#666' }}>
+              Role: {userRole || 'loading...'}
+            </Typography>
+          )}
           <img 
             src="/logo.svg" 
             alt="POVEDA PREMIUM AUTO CARE" 
