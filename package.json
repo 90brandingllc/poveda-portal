@@ -1,6 +1,6 @@
 {
   "name": "poveda-premium-auto-care",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A React-based car detailing service client portal for POVEDA PREMIUM AUTO CARE",
   "private": true,
   "dependencies": {
