@@ -47,7 +47,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigate('/login');
       handleClose();
     } catch (error) {
       console.error('Logout error:', error);
@@ -67,27 +67,23 @@ const Navbar = () => {
           { label: 'Book Service', path: '/book-appointment', icon: <DirectionsCar /> },
           { label: 'My Appointments', path: '/appointments', icon: <AccountCircle /> },
           { label: 'Contact Us', path: '/contact', icon: <AccountCircle /> },
-          { label: 'Get Estimate', path: '/estimate', icon: <AccountCircle /> },
-          { label: 'Coupons', path: '/coupons', icon: <AccountCircle /> }
+          { label: 'Get Estimate', path: '/estimate', icon: <AccountCircle /> }
         ]
-    : [
-        { label: 'Home', path: '/' },
-        { label: 'Services', path: '/services' },
-        { label: 'About', path: '/about' }
-      ];
+    : [];
 
   return (
     <AppBar position="sticky" elevation={2} sx={{ backgroundColor: 'white', color: 'text.primary' }}>
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         {/* Logo and Brand */}
         <Box 
-          component={Link} 
-          to="/" 
+          component={currentUser ? Link : 'div'} 
+          to={currentUser ? "/dashboard" : undefined}
           sx={{ 
             display: 'flex', 
             alignItems: 'center', 
             textDecoration: 'none', 
-            color: 'inherit' 
+            color: 'inherit',
+            cursor: currentUser ? 'pointer' : 'default'
           }}
         >
           {/* Debug info - remove this later */}

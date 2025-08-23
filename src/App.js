@@ -14,24 +14,20 @@ import BookAppointment from './components/Client/BookAppointment';
 import AppointmentsList from './components/Client/AppointmentsList';
 import ContactUs from './components/Client/ContactUs';
 import GetEstimate from './components/Client/GetEstimate';
-import Coupons from './components/Client/Coupons';
 
 // Admin Components
 import AdminDashboard from './components/Admin/AdminDashboard';
 import ManageAppointments from './components/Admin/ManageAppointments';
 import ManageTickets from './components/Admin/ManageTickets';
 import ManageEstimates from './components/Admin/ManageEstimates';
-import ManageCoupons from './components/Admin/ManageCoupons';
 import ManageUsers from './components/Admin/ManageUsers';
 
 // Public Components
-import Home from './components/Public/Home';
 import Services from './components/Public/Services';
 import About from './components/Public/About';
 
 // Layout Components
 import Navbar from './components/Layout/Navbar';
-import Footer from './components/Layout/Footer';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -80,12 +76,13 @@ function App() {
     );
   }
 
+  const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register' || window.location.pathname === '/setup-admin';
+
   return (
     <div className="App">
-      <Navbar />
+      {!isAuthPage && <Navbar />}
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Home />} />
         <Route path="/services" element={<Services />} />
         <Route path="/about" element={<About />} />
         
@@ -158,14 +155,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        <Route 
-          path="/coupons" 
-          element={
-            <ProtectedRoute allowedRoles={['client']}>
-              <Coupons />
-            </ProtectedRoute>
-          } 
-        />
+
         
         {/* Admin Routes */}
         <Route 
@@ -192,14 +182,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        <Route 
-          path="/admin/coupons" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ManageCoupons />
-            </ProtectedRoute>
-          } 
-        />
+
         <Route 
           path="/admin/users" 
           element={
@@ -209,10 +192,11 @@ function App() {
           } 
         />
         
+        {/* Default route to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
         {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-      <Footer />
     </div>
   );
 }

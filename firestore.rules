@@ -10,14 +10,22 @@ service cloud.firestore {
     match /appointments/{appointmentId} {
       // Users can create appointments
       allow create: if request.auth != null && 
-                   request.auth.uid == resource.data.userId;
+                   request.auth.uid == request.resource.data.userId;
       
-      // Users can read their own appointments
+      // Users can read their own appointments, admins can read all
       allow read: if request.auth != null && 
-                 (request.auth.uid == resource.data.userId || 
-                  getUserRole(request.auth.uid) == 'admin');
+                 request.auth.uid == resource.data.userId;
       
-      // Only admins can update appointment status
+      // Separate rule for admin access
+      allow read: if request.auth != null && 
+                 getUserRole(request.auth.uid) == 'admin';
+      
+      // Users can update their own pending appointments (for rescheduling)
+      allow update: if request.auth != null && 
+                   request.auth.uid == resource.data.userId &&
+                   resource.data.status == 'pending';
+      
+      // Admins can update any appointment
       allow update: if request.auth != null && 
                    getUserRole(request.auth.uid) == 'admin';
       
@@ -28,9 +36,13 @@ service cloud.firestore {
     
     // Support tickets rules
     match /tickets/{ticketId} {
-      // Users can create and read their own tickets
-      allow create, read: if request.auth != null && 
-                         request.auth.uid == resource.data.userId;
+      // Users can create their own tickets
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId;
+      
+      // Users can read their own tickets
+      allow read: if request.auth != null && 
+                 request.auth.uid == resource.data.userId;
       
       // Admins can read and update all tickets
       allow read, update: if request.auth != null && 
@@ -39,9 +51,13 @@ service cloud.firestore {
     
     // Estimates rules
     match /estimates/{estimateId} {
-      // Users can create and read their own estimates
-      allow create, read: if request.auth != null && 
-                         request.auth.uid == resource.data.userId;
+      // Users can create their own estimates
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId;
+      
+      // Users can read their own estimates
+      allow read: if request.auth != null && 
+                 request.auth.uid == resource.data.userId;
       
       // Admins can read and update all estimates
       allow read, update: if request.auth != null && 

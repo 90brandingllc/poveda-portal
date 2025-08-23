@@ -19,7 +19,7 @@ import {
   DirectionsCar,
   ContactSupport,
   RequestQuote,
-  LocalOffer,
+
   Add,
   CheckCircle,
   Schedule,
@@ -38,44 +38,133 @@ const ClientDashboard = () => {
   const [stats, setStats] = useState({
     totalAppointments: 0,
     pendingAppointments: 0,
+    approvedAppointments: 0,
     completedAppointments: 0,
     totalSpent: 0
   });
 
   useEffect(() => {
     if (currentUser) {
-      // Real-time listener for user's appointments
+      console.log('ClientDashboard - Setting up appointments listener for user:', currentUser.uid);
+      
+      // Real-time listener for user's appointments (remove orderBy to avoid index issues)
       const appointmentsQuery = query(
         collection(db, 'appointments'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc'),
-        limit(5)
+        where('userId', '==', currentUser.uid)
       );
 
       const unsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
+        console.log('ClientDashboard - Received', snapshot.size, 'appointments');
+        
         const appointmentData = [];
         let totalSpent = 0;
         let pending = 0;
         let completed = 0;
+        let approved = 0;
 
         snapshot.forEach((doc) => {
           const data = { id: doc.id, ...doc.data() };
           appointmentData.push(data);
           
+          console.log('ClientDashboard - Processing appointment:', data.service, data.status, data.finalPrice || data.estimatedPrice);
+          
+          // Count by status
           if (data.status === 'pending') pending++;
+          if (data.status === 'approved' || data.status === 'confirmed') approved++;
+          if (data.status === 'completed') completed++;
+          
+          // Calculate total spent - simpler approach
+          const appointmentCost = data.finalPrice || data.estimatedPrice || data.price || 0;
+          const depositPaid = data.depositAmount || 0;
+          
+          console.log(`ClientDashboard - Processing ${data.service}:`, {
+            id: data.id,
+            status: data.status,
+            paymentStatus: data.paymentStatus,
+            appointmentCost: appointmentCost,
+            depositPaid: depositPaid,
+            finalPrice: data.finalPrice,
+            estimatedPrice: data.estimatedPrice
+          });
+          
+          // Add to total spent based on what was actually paid
+          let amountToAdd = 0;
+          
           if (data.status === 'completed') {
-            completed++;
-            totalSpent += data.price || 0;
+            // For completed services, count the full amount
+            amountToAdd = appointmentCost;
+          } else if (data.paymentStatus === 'deposit_paid' && depositPaid > 0) {
+            // For services with deposit paid, count the deposit
+            amountToAdd = depositPaid;
+          } else if (data.depositAmount > 0) {
+            // Fallback: if there's a deposit amount, count it
+            amountToAdd = depositPaid;
           }
+          
+          totalSpent += amountToAdd;
+          
+          console.log(`ClientDashboard - Added $${amountToAdd} to total. New total: $${totalSpent}`);
         });
 
-        setAppointments(appointmentData);
+        // Sort by creation date (newest first) on client side
+        appointmentData.sort((a, b) => {
+          const aDate = a.createdAt?.toDate?.() || new Date(0);
+          const bDate = b.createdAt?.toDate?.() || new Date(0);
+          return bDate - aDate;
+        });
+
+        // Take only the first 5 for recent appointments display
+        const recentAppointments = appointmentData.slice(0, 5);
+
+        console.log('=== ClientDashboard - FINAL STATS ===');
+        console.log('Total appointments found:', appointmentData.length);
+        console.log('Pending appointments:', pending);
+        console.log('Approved/Confirmed appointments:', approved);
+        console.log('Completed appointments:', completed);
+        console.log('Total spent calculated:', `$${totalSpent.toFixed(2)}`);
+        
+        console.log('=== APPOINTMENT DETAILS ===');
+        appointmentData.forEach((apt, index) => {
+          console.log(`Appointment ${index + 1}:`, {
+            service: apt.service,
+            status: apt.status,
+            paymentStatus: apt.paymentStatus,
+            depositAmount: apt.depositAmount,
+            finalPrice: apt.finalPrice,
+            estimatedPrice: apt.estimatedPrice,
+            id: apt.id
+          });
+        });
+        
+        // Manual verification - let's calculate step by step
+        console.log('=== MANUAL VERIFICATION ===');
+        let manualTotal = 0;
+        appointmentData.forEach((apt, index) => {
+          if (apt.status === 'completed') {
+            const amount = apt.finalPrice || apt.estimatedPrice || apt.price || 0;
+            manualTotal += amount;
+            console.log(`✅ Appointment ${index + 1} (${apt.service}) - COMPLETED: +$${amount} (total: $${manualTotal})`);
+          } else if (apt.depositAmount > 0) {
+            manualTotal += apt.depositAmount;
+            console.log(`💳 Appointment ${index + 1} (${apt.service}) - DEPOSIT: +$${apt.depositAmount} (total: $${manualTotal})`);
+          } else {
+            console.log(`⏳ Appointment ${index + 1} (${apt.service}) - NO PAYMENT: +$0 (total: $${manualTotal})`);
+          }
+        });
+        console.log(`Manual calculation result: $${manualTotal}`);
+        console.log(`Auto calculation result: $${totalSpent}`);
+        console.log('=== END VERIFICATION ===');
+
+        setAppointments(recentAppointments);
         setStats({
-          totalAppointments: snapshot.size,
+          totalAppointments: appointmentData.length,
           pendingAppointments: pending,
+          approvedAppointments: approved,
           completedAppointments: completed,
           totalSpent
         });
+      }, (error) => {
+        console.error('ClientDashboard - Error fetching appointments:', error);
       });
 
       return () => unsubscribe();
@@ -111,18 +200,13 @@ const ClientDashboard = () => {
       color: '#9c27b0',
       link: '/estimate'
     },
-    {
-      title: 'View Coupons',
-      description: 'Available discounts',
-      icon: <LocalOffer />,
-      color: '#d32f2f',
-      link: '/coupons'
-    }
+
   ];
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return '#ed6c02';
+      case 'confirmed':
       case 'approved': return '#2e7d32';
       case 'completed': return '#1976d2';
       case 'rejected': return '#d32f2f';
@@ -133,6 +217,7 @@ const ClientDashboard = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending': return <Schedule />;
+      case 'confirmed':
       case 'approved': return <CheckCircle />;
       case 'completed': return <Star />;
       case 'rejected': return <Cancel />;
@@ -198,8 +283,8 @@ const ClientDashboard = () => {
         {[
           { title: 'Total Appointments', value: stats.totalAppointments, icon: <CalendarToday />, color: '#1976d2' },
           { title: 'Pending', value: stats.pendingAppointments, icon: <Schedule />, color: '#ed6c02' },
-          { title: 'Completed', value: stats.completedAppointments, icon: <CheckCircle />, color: '#2e7d32' },
-          { title: 'Total Spent', value: `$${stats.totalSpent}`, icon: <Star />, color: '#9c27b0' }
+          { title: 'Approved', value: stats.approvedAppointments, icon: <CheckCircle />, color: '#2e7d32' },
+          { title: 'Money Spent', value: `$${stats.totalSpent.toFixed(2)}`, icon: <Star />, color: '#9c27b0' }
         ].map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Card className="stats-card" sx={{ height: '100%' }}>
@@ -289,7 +374,10 @@ const ClientDashboard = () => {
                               {appointment.service || 'Car Detailing'}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {appointment.date ? new Date(appointment.date.seconds * 1000).toLocaleDateString() : 'Date TBD'}
+                              {appointment.date ? 
+                                (appointment.date.toDate ? appointment.date.toDate().toLocaleDateString() : 
+                                 appointment.date.seconds ? new Date(appointment.date.seconds * 1000).toLocaleDateString() : 
+                                 'Date TBD') : 'Date TBD'}
                             </Typography>
                           </Box>
                         </Box>

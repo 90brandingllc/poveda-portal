@@ -23,7 +23,7 @@ import {
   People,
   Assignment,
   AttachMoney,
-  TrendingUp,
+
   Visibility,
   CheckCircle,
   Cancel
@@ -218,13 +218,7 @@ const AdminDashboard = () => {
                 color: '#ed6c02',
                 link: '/admin/estimates'
               },
-              {
-                title: 'Manage Coupons',
-                description: 'Create and manage discount coupons',
-                icon: <TrendingUp />,
-                color: '#9c27b0',
-                link: '/admin/coupons'
-              },
+
               {
                 title: 'Manage Users',
                 description: 'Create admin accounts and manage users',

@@ -101,7 +101,7 @@ const Login = () => {
           <img 
             src="/logo.svg" 
             alt="POVEDA PREMIUM AUTO CARE" 
-            style={{ height: 60, marginBottom: 16 }} 
+            style={{ height: 150, marginBottom: 24 }} 
           />
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
             Welcome Back
@@ -175,7 +175,11 @@ const Login = () => {
                 py: 1.5,
                 fontWeight: 600,
                 textTransform: 'none',
-                fontSize: '1.1rem'
+                fontSize: '1.1rem',
+                background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #0d47a1 0%, #01579b 100%)'
+                }
               }}
             >
               {loading ? 'Signing In...' : 'Sign In'}

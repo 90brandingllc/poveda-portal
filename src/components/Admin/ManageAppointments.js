@@ -251,17 +251,23 @@ const ManageAppointments = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {appointment.preferredDate?.toDate?.()?.toLocaleDateString() || 
+                        {appointment.date?.toDate?.()?.toLocaleDateString() || 
+                         appointment.preferredDate?.toDate?.()?.toLocaleDateString() || 
                          appointment.selectedDate || 'Not specified'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {appointment.preferredTime || appointment.selectedTime || 'Not specified'}
+                        {appointment.time || appointment.preferredTime || appointment.selectedTime || 'Not specified'}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
                         ${appointment.finalPrice || appointment.estimatedPrice || 'TBD'}
                       </Typography>
+                      {appointment.paymentStatus === 'deposit_paid' && (
+                        <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.75rem' }}>
+                          Deposit: ${appointment.depositAmount}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Chip 
@@ -369,7 +375,9 @@ const ManageAppointments = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <LocationOn sx={{ mr: 1, color: '#666' }} />
                     <Typography variant="body2">
-                      {selectedAppointment.serviceLocation || 'Location to be confirmed'}
+                      {selectedAppointment.address ? 
+                        `${selectedAppointment.address.street}, ${selectedAppointment.address.city}, ${selectedAppointment.address.state} ${selectedAppointment.address.zipCode}` : 
+                        selectedAppointment.serviceLocation || 'Location to be confirmed'}
                     </Typography>
                   </Box>
                 </Grid>
@@ -384,11 +392,24 @@ const ManageAppointments = () => {
                       <strong>Service:</strong> {selectedAppointment.service || selectedAppointment.serviceType}
                     </Typography>
                     <Typography variant="body1">
-                      <strong>Package:</strong> {selectedAppointment.package || 'Standard'}
+                      <strong>Package:</strong> {selectedAppointment.package || selectedAppointment.category || 'Standard'}
                     </Typography>
                     <Typography variant="body1">
-                      <strong>Price:</strong> ${selectedAppointment.finalPrice || selectedAppointment.estimatedPrice}
+                      <strong>Total Price:</strong> ${selectedAppointment.finalPrice || selectedAppointment.estimatedPrice}
                     </Typography>
+                    {selectedAppointment.depositAmount && (
+                      <>
+                        <Typography variant="body1">
+                          <strong>Deposit Paid:</strong> ${selectedAppointment.depositAmount}
+                        </Typography>
+                        <Typography variant="body1">
+                          <strong>Remaining Balance:</strong> ${selectedAppointment.remainingBalance || 0}
+                        </Typography>
+                        <Typography variant="body2" color="success.main">
+                          <strong>Payment Status:</strong> {selectedAppointment.paymentStatus || 'Pending'}
+                        </Typography>
+                      </>
+                    )}
                   </Box>
                   
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -413,14 +434,16 @@ const ManageAppointments = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <Schedule sx={{ mr: 1, color: '#666' }} />
                     <Typography variant="body2">
-                      {selectedAppointment.preferredDate?.toDate?.()?.toLocaleDateString() || selectedAppointment.selectedDate} at {selectedAppointment.preferredTime || selectedAppointment.selectedTime}
+                      {selectedAppointment.date?.toDate?.()?.toLocaleDateString() || 
+                       selectedAppointment.preferredDate?.toDate?.()?.toLocaleDateString() || 
+                       selectedAppointment.selectedDate} at {selectedAppointment.time || selectedAppointment.preferredTime || selectedAppointment.selectedTime}
                     </Typography>
                   </Box>
                   
-                  {selectedAppointment.specialRequests && (
+                  {(selectedAppointment.notes || selectedAppointment.specialRequests) && (
                     <Box sx={{ mt: 2 }}>
                       <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        Special Requests:
+                        Notes:
                       </Typography>
                       <Typography variant="body2" sx={{ 
                         p: 2, 
@@ -428,7 +451,7 @@ const ManageAppointments = () => {
                         borderRadius: 1,
                         fontStyle: 'italic'
                       }}>
-                        {selectedAppointment.specialRequests}
+                        {selectedAppointment.notes || selectedAppointment.specialRequests}
                       </Typography>
                     </Box>
                   )}
