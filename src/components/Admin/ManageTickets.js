@@ -37,7 +37,8 @@ import {
   Phone,
   Person,
   Info,
-  BugReport
+  BugReport,
+  ArrowBack
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase/config';
@@ -51,8 +52,10 @@ import {
   serverTimestamp,
   arrayUnion
 } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 
 const ManageTickets = () => {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -222,9 +225,24 @@ const ManageTickets = () => {
         transition={{ duration: 0.6 }}
       >
         {/* Header */}
-        <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
-          🎫 Manage Support Tickets
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+          <IconButton 
+            onClick={() => navigate('/admin/dashboard')}
+            sx={{ 
+              mr: 2,
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              }
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', mb: 0 }}>
+            🎫 Manage Support Tickets
+          </Typography>
+        </Box>
 
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>

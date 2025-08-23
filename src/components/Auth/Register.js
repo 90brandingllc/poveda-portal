@@ -11,7 +11,13 @@ import {
   Link,
   InputAdornment,
   IconButton,
-  Stack
+  Stack,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Chip
 } from '@mui/material';
 import {
   Email,
@@ -19,7 +25,9 @@ import {
   Person,
   Visibility,
   VisibilityOff,
-  Google
+  Google,
+  AdminPanelSettings,
+  PersonOutline
 } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -66,7 +74,7 @@ const Register = () => {
     try {
       await signup(formData.email, formData.password, {
         displayName: formData.displayName,
-        role: 'client' // All new registrations are clients by default
+        role: 'client' // All regular registrations are clients
       });
       navigate('/dashboard');
     } catch (error) {
@@ -300,11 +308,7 @@ const Register = () => {
           </Typography>
         </Box>
         
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 400, display: 'block' }}>
-            Need admin access? Contact the system administrator or use the setup route: /setup-admin
-          </Typography>
-        </Box>
+
       </Paper>
     </Container>
   );

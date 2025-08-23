@@ -11,14 +11,17 @@ import {
   Link,
   InputAdornment,
   IconButton,
-  Stack
+  Stack,
+  Chip
 } from '@mui/material';
 import {
   Email,
   Lock,
   Visibility,
   VisibilityOff,
-  Google
+  Google,
+  PersonOutline,
+  AdminPanelSettings
 } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -106,9 +109,11 @@ const Login = () => {
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
             Welcome Back
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
             Sign in to your POVEDA account
           </Typography>
+          
+
         </Box>
 
         {error && (

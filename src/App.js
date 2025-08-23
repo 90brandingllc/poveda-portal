@@ -8,6 +8,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import SetupAdmin from './components/Auth/SetupAdmin';
 
+
 // Client Components
 import ClientDashboard from './components/Client/ClientDashboard';
 import BookAppointment from './components/Client/BookAppointment';
@@ -15,12 +16,8 @@ import AppointmentsList from './components/Client/AppointmentsList';
 import ContactUs from './components/Client/ContactUs';
 import GetEstimate from './components/Client/GetEstimate';
 
-// Admin Components
-import AdminDashboard from './components/Admin/AdminDashboard';
-import ManageAppointments from './components/Admin/ManageAppointments';
-import ManageTickets from './components/Admin/ManageTickets';
-import ManageEstimates from './components/Admin/ManageEstimates';
-import ManageUsers from './components/Admin/ManageUsers';
+// Admin Portal
+import AdminRouter from './components/AdminPortal/AdminRouter';
 
 // Public Components
 import Services from './components/Public/Services';
@@ -76,7 +73,10 @@ function App() {
     );
   }
 
-  const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register' || window.location.pathname === '/setup-admin';
+  const isAuthPage = window.location.pathname === '/login' || 
+                      window.location.pathname === '/register' || 
+                      window.location.pathname === '/setup-admin' ||
+                      window.location.pathname.startsWith('/admin');
 
   return (
     <div className="App">
@@ -111,13 +111,14 @@ function App() {
             </PublicRoute>
           } 
         />
+
         
-        {/* Dashboard Route - Redirects based on role */}
+        {/* Dashboard Route - Client dashboard only */}
         <Route 
           path="/dashboard" 
           element={
-            <ProtectedRoute>
-              {userRole === 'admin' ? <AdminDashboard /> : <ClientDashboard />}
+            <ProtectedRoute allowedRoles={['client']}>
+              <ClientDashboard />
             </ProtectedRoute>
           } 
         />
@@ -157,40 +158,8 @@ function App() {
         />
 
         
-        {/* Admin Routes */}
-        <Route 
-          path="/admin/appointments" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ManageAppointments />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/tickets" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ManageTickets />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/estimates" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ManageEstimates />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/admin/users" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ManageUsers />
-            </ProtectedRoute>
-          } 
-        />
+        {/* Admin Portal - Separate routing system */}
+        <Route path="/admin/*" element={<AdminRouter />} />
         
         {/* Default route to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />

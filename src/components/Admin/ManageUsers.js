@@ -36,7 +36,8 @@ import {
   PersonAdd,
   Email,
   Person,
-  Security
+  Security,
+  ArrowBack
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase/config';
@@ -52,8 +53,10 @@ import {
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../../firebase/config';
+import { useNavigate } from 'react-router-dom';
 
 const ManageUsers = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -229,9 +232,24 @@ const ManageUsers = () => {
       >
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
-            👥 Manage Users
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton 
+              onClick={() => navigate('/admin/dashboard')}
+              sx={{ 
+                mr: 2,
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                }
+              }}
+            >
+              <ArrowBack />
+            </IconButton>
+            <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+              👥 Manage Users
+            </Typography>
+          </Box>
           <Button
             variant="contained"
             startIcon={<PersonAdd />}

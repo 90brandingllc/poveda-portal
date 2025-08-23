@@ -33,7 +33,8 @@ import {
   Phone,
   Email,
   LocationOn,
-  DirectionsCar
+  DirectionsCar,
+  ArrowBack
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase/config';
@@ -46,8 +47,10 @@ import {
   orderBy,
   serverTimestamp 
 } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 
 const ManageAppointments = () => {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -140,9 +143,24 @@ const ManageAppointments = () => {
         transition={{ duration: 0.6 }}
       >
         {/* Header */}
-        <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
-          📅 Manage Appointments
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+          <IconButton 
+            onClick={() => navigate('/admin/dashboard')}
+            sx={{ 
+              mr: 2,
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              }
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', mb: 0 }}>
+            📅 Manage Appointments
+          </Typography>
+        </Box>
 
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
