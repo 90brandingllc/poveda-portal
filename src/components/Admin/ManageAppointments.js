@@ -47,16 +47,26 @@ import {
   orderBy,
   serverTimestamp 
 } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const ManageAppointments = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [appointments, setAppointments] = useState([]);
   const [, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [tabValue, setTabValue] = useState(0);
+
+  // Check URL parameters to set initial tab
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view');
+    if (view === 'today') {
+      setTabValue(1); // Set to Today tab
+    }
+  }, [location]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -112,19 +122,41 @@ const ManageAppointments = () => {
   };
 
   const getFilteredAppointments = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     switch (tabValue) {
       case 0: return appointments; // All
-      case 1: return appointments.filter(apt => apt.status === 'pending');
-      case 2: return appointments.filter(apt => apt.status === 'approved');
-      case 3: return appointments.filter(apt => apt.status === 'completed');
-      case 4: return appointments.filter(apt => apt.status === 'rejected');
+      case 1: 
+        // Today's appointments
+        return appointments.filter(apt => {
+          const aptDate = apt.date?.toDate ? apt.date.toDate() : new Date(apt.date);
+          return aptDate >= today && aptDate < tomorrow;
+        });
+      case 2: return appointments.filter(apt => apt.status === 'pending');
+      case 3: return appointments.filter(apt => apt.status === 'approved');
+      case 4: return appointments.filter(apt => apt.status === 'completed');
+      case 5: return appointments.filter(apt => apt.status === 'rejected');
       default: return appointments;
     }
   };
 
   const getTabCounts = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todaysAppointments = appointments.filter(apt => {
+      const aptDate = apt.date?.toDate ? apt.date.toDate() : new Date(apt.date);
+      return aptDate >= today && aptDate < tomorrow;
+    });
+
     return {
       all: appointments.length,
+      today: todaysAppointments.length,
       pending: appointments.filter(apt => apt.status === 'pending').length,
       approved: appointments.filter(apt => apt.status === 'approved').length,
       completed: appointments.filter(apt => apt.status === 'completed').length,
@@ -222,6 +254,7 @@ const ManageAppointments = () => {
             variant="fullWidth"
           >
             <Tab label={`All (${counts.all})`} />
+            <Tab label={`Today (${counts.today})`} />
             <Tab label={`Pending (${counts.pending})`} />
             <Tab label={`Approved (${counts.approved})`} />
             <Tab label={`Completed (${counts.completed})`} />
@@ -345,7 +378,9 @@ const ManageAppointments = () => {
                         No appointments found
                       </Typography>
                       <Typography variant="body2" sx={{ color: '#999' }}>
-                        {tabValue === 0 ? 'No appointments have been created yet.' : 'No appointments match the selected filter.'}
+                        {tabValue === 0 ? 'No appointments have been created yet.' : 
+                         tabValue === 1 ? 'No appointments scheduled for today.' : 
+                         'No appointments match the selected filter.'}
                       </Typography>
                     </TableCell>
                   </TableRow>

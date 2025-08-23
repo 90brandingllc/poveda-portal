@@ -13,6 +13,7 @@ import ManageAppointments from '../Admin/ManageAppointments';
 import ManageTickets from '../Admin/ManageTickets';
 import ManageEstimates from '../Admin/ManageEstimates';
 import ManageUsers from '../Admin/ManageUsers';
+import ManageSlots from '../Admin/ManageSlots';
 
 // Protected Route Component for Admin Portal
 const AdminProtectedRoute = ({ children }) => {
@@ -118,6 +119,14 @@ const AdminRouter = () => {
         element={
           <AdminProtectedRoute>
             <ManageUsers />
+          </AdminProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/slots" 
+        element={
+          <AdminProtectedRoute>
+            <ManageSlots />
           </AdminProtectedRoute>
         } 
       />

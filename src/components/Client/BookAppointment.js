@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -9,7 +9,6 @@ import {
   Button,
   TextField,
   Box,
-
   Alert,
   Stepper,
   Step,
@@ -17,17 +16,21 @@ import {
   FormControlLabel,
   Checkbox,
   Divider,
-  Stack
+  Stack,
+  Chip,
+  CircularProgress
 } from '@mui/material';
-import { DatePicker, DesktopTimePicker } from '@mui/x-date-pickers';
+import { DatePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import {
-  CheckCircle
+  CheckCircle,
+  Schedule,
+  Block
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import DepositPayment from '../Payment/DepositPayment';
@@ -41,12 +44,15 @@ const BookAppointment = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [paymentResult, setPaymentResult] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   const [formData, setFormData] = useState({
     serviceCategory: '',
     servicePackage: '',
     date: null,
-    time: null,
+    timeSlot: null,
     address: {
       street: '',
       city: '',
@@ -59,6 +65,127 @@ const BookAppointment = () => {
   });
 
   const steps = ['Select Service', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
+
+  // Generate time slots for business hours (9 AM - 5 PM, Monday to Friday)
+  const generateTimeSlots = (selectedDate) => {
+    if (!selectedDate) return [];
+    
+    const slots = [];
+    const date = dayjs(selectedDate);
+    
+    // Check if it's a weekend
+    if (date.day() === 0 || date.day() === 6) {
+      return []; // No slots on weekends
+    }
+    
+    // Generate 1-hour slots from 9 AM to 5 PM
+    for (let hour = 9; hour < 17; hour++) {
+      const slotTime = date.hour(hour).minute(0).second(0);
+      
+      // Don't show past time slots for today
+      if (date.isSame(dayjs(), 'day') && slotTime.isBefore(dayjs())) {
+        continue;
+      }
+      
+      slots.push({
+        time: slotTime,
+        label: slotTime.format('h:mm A'),
+        available: true // Will be updated when checking against booked appointments
+      });
+    }
+    
+    return slots;
+  };
+
+  // Check slot availability against existing appointments and admin-blocked slots
+  const checkSlotAvailability = async (selectedDate) => {
+    if (!selectedDate) return;
+    
+    setLoadingSlots(true);
+    try {
+      const dayStart = dayjs(selectedDate).startOf('day').toDate();
+      const dayEnd = dayjs(selectedDate).endOf('day').toDate();
+      
+      // Query appointments for the selected date
+      const appointmentsQuery = query(
+        collection(db, 'appointments'),
+        where('date', '>=', dayStart),
+        where('date', '<=', dayEnd)
+      );
+      
+      // Query admin-blocked slots for the selected date (using same Date object approach as admin)
+      const blockedSlotsQuery = query(
+        collection(db, 'blockedSlots'),
+        where('date', '>=', dayStart),
+        where('date', '<=', dayEnd)
+      );
+      
+      const [appointmentsSnapshot, blockedSlotsSnapshot] = await Promise.all([
+        getDocs(appointmentsQuery),
+        getDocs(blockedSlotsQuery)
+      ]);
+      
+      const bookedSlots = [];
+      const blockedSlots = [];
+      
+      // Get booked slots from appointments
+      appointmentsSnapshot.forEach((doc) => {
+        const appointment = doc.data();
+        if (appointment.timeSlot) {
+          bookedSlots.push(appointment.timeSlot);
+        }
+      });
+      
+      // Get admin-blocked slots
+      blockedSlotsSnapshot.forEach((doc) => {
+        const blockedSlot = doc.data();
+        if (blockedSlot.timeSlot) {
+          blockedSlots.push(blockedSlot.timeSlot);
+        }
+      });
+      
+      console.log('Booked slots:', bookedSlots);
+      console.log('Blocked slots:', blockedSlots);
+      
+      // Generate slots and mark availability
+      const slots = generateTimeSlots(selectedDate);
+      const availableSlots = slots.map(slot => ({
+        ...slot,
+        available: slot.available && 
+                  !bookedSlots.includes(slot.label) && 
+                  !blockedSlots.includes(slot.label)
+      }));
+      
+      setAvailableSlots(availableSlots);
+    } catch (error) {
+      console.error('Error checking slot availability:', error);
+      setError('Failed to load available time slots. Please try again.');
+    }
+    setLoadingSlots(false);
+  };
+
+  // Effect to check availability when date changes
+  useEffect(() => {
+    if (formData.date) {
+      checkSlotAvailability(formData.date);
+      setSelectedSlot(null);
+      setFormData(prev => ({ ...prev, timeSlot: null }));
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [formData.date]);
+
+  // Handle slot selection
+  const handleSlotSelect = (slot) => {
+    if (!slot.available) return;
+    
+    setSelectedSlot(slot);
+    setFormData(prev => ({ 
+      ...prev, 
+      timeSlot: slot.label,
+      time: slot.time // Keep for backward compatibility
+    }));
+  };
 
 
 
@@ -148,8 +275,8 @@ const BookAppointment = () => {
       return;
     }
 
-    if (!formData.time) {
-      setError('Please select a time for your appointment.');
+    if (!formData.timeSlot) {
+      setError('Please select a time slot for your appointment.');
       return;
     }
 
@@ -172,7 +299,8 @@ const BookAppointment = () => {
         service: formData.servicePackage,
         category: formData.serviceCategory,
         date: formData.date.toDate(),
-        time: formData.time.format('HH:mm'),
+        timeSlot: formData.timeSlot,
+        time: formData.time ? formData.time.format('HH:mm') : formData.timeSlot,
         address: formData.address,
         notes: formData.notes || '',
         emailReminders: formData.emailReminders,
@@ -246,6 +374,7 @@ const BookAppointment = () => {
         return (
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Grid container spacing={3}>
+              {/* Date Selection */}
               <Grid item xs={12} md={6}>
                 <DatePicker
                   label="Select Date"
@@ -253,24 +382,79 @@ const BookAppointment = () => {
                   onChange={(newValue) => setFormData({ ...formData, date: newValue })}
                   minDate={dayjs()}
                   maxDate={dayjs().add(30, 'day')}
+                  shouldDisableDate={(date) => {
+                    // Disable weekends
+                    return date.day() === 0 || date.day() === 6;
+                  }}
                   renderInput={(params) => (
                     <TextField {...params} fullWidth required />
                   )}
                 />
               </Grid>
+
+              {/* Business Hours Info */}
               <Grid item xs={12} md={6}>
-                <DesktopTimePicker
-                  label="Select Time"
-                  value={formData.time}
-                  onChange={(newValue) => setFormData({ ...formData, time: newValue })}
-                  renderInput={(params) => (
-                    <TextField {...params} fullWidth required />
-                  )}
-                />
+                <Paper sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
+                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Schedule sx={{ mr: 1, color: 'primary.main' }} />
+                    Business Hours
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Monday - Friday: 9:00 AM - 5:00 PM<br />
+                    Saturday - Sunday: Closed<br />
+                    1-hour appointment slots available
+                  </Typography>
+                </Paper>
               </Grid>
-              
+
+              {/* Time Slot Selection */}
+              {formData.date && (
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                    Available Time Slots for {dayjs(formData.date).format('dddd, MMMM D, YYYY')}
+                  </Typography>
+                  
+                  {loadingSlots ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress />
+                      <Typography sx={{ ml: 2 }}>Loading available slots...</Typography>
+                    </Box>
+                  ) : availableSlots.length === 0 ? (
+                    <Alert severity="warning">
+                      No available slots for this date. Please select a different date.
+                    </Alert>
+                  ) : (
+                    <Grid container spacing={2}>
+                      {availableSlots.map((slot, index) => (
+                        <Grid item xs={6} sm={4} md={3} key={index}>
+                          <Chip
+                            label={slot.label}
+                            onClick={() => handleSlotSelect(slot)}
+                            color={selectedSlot?.label === slot.label ? 'primary' : 'default'}
+                            variant={selectedSlot?.label === slot.label ? 'filled' : 'outlined'}
+                            disabled={!slot.available}
+                            icon={slot.available ? <Schedule /> : <Block />}
+                            sx={{
+                              width: '100%',
+                              height: 48,
+                              fontSize: '0.875rem',
+                              cursor: slot.available ? 'pointer' : 'not-allowed',
+                              opacity: slot.available ? 1 : 0.5,
+                              '&:hover': {
+                                backgroundColor: slot.available ? 'primary.light' : 'inherit'
+                              }
+                            }}
+                          />
+                        </Grid>
+                      ))}
+                    </Grid>
+                  )}
+                </Grid>
+              )}
+
+              {/* Service Info */}
               <Grid item xs={12}>
-                <Alert severity="info">
+                <Alert severity="info" sx={{ mt: 3 }}>
                   📍 We provide mobile service! Our team will come to your specified location at the scheduled time.
                 </Alert>
               </Grid>
@@ -383,7 +567,7 @@ const BookAppointment = () => {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body1">Time:</Typography>
                       <Typography variant="body1">
-                        {formData.time?.format('h:mm A')}
+                        {formData.timeSlot || 'Not selected'}
                       </Typography>
                     </Box>
                     
@@ -584,7 +768,7 @@ const BookAppointment = () => {
               onClick={handleNext}
               disabled={
                 (activeStep === 0 && !formData.servicePackage) ||
-                (activeStep === 1 && (!formData.date || !formData.time)) ||
+                (activeStep === 1 && (!formData.date || !formData.timeSlot)) ||
                 (activeStep === 2 && (!formData.address.street || !formData.address.city))
               }
               sx={{

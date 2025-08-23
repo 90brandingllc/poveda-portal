@@ -197,14 +197,14 @@ const AdminDashboard = () => {
           action: 'View Appointments'
         });
       }
-      if (todaysCount > 0) {
-        newNotifications.push({
-          id: 'todays-appointments',
-          type: 'info',
-          message: `${todaysCount} appointments scheduled for today`,
-          action: 'View Schedule'
-        });
-      }
+      // if (todaysCount > 0) {
+      //   newNotifications.push({
+      //     id: 'todays-appointments',
+      //     type: 'info',
+      //     message: `${todaysCount} appointments scheduled for today`,
+      //     action: 'View Schedule'
+      //   });
+      // }
 
       // Debug logging for revenue calculation
       console.log('📊 Revenue Calculation Debug:', {
@@ -512,14 +512,14 @@ const AdminDashboard = () => {
                 description: `${stats.todaysAppointments} appointments today`,
                 icon: <CalendarToday />,
                 color: '#1976d2',
-                link: '/admin/appointments'
+                link: '/admin/appointments?view=today'
               },
               {
-                title: 'Revenue Analytics',
-                description: 'View detailed reports',
+                title: 'Manage Time Slots',
+                description: 'Block/unblock appointment slots',
                 icon: <Assessment />,
                 color: '#9c27b0',
-                link: '/admin/analytics'
+                link: '/admin/slots'
               }
             ].map((action, index) => (
               <Card 
