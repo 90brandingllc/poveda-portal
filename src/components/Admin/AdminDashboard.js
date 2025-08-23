@@ -482,14 +482,14 @@ const AdminDashboard = () => {
         ))}
       </Grid>
 
-      <Grid container spacing={4}>
-        {/* Quick Actions */}
-        <Grid item xs={12} lg={4}>
+      <Box sx={{ display: 'flex', gap: 4 }}>
+        {/* Left Sidebar - Quick Actions */}
+        <Box sx={{ width: 280, flexShrink: 0 }}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center' }}>
             <Dashboard sx={{ mr: 1 }} />
             Quick Actions
           </Typography>
-          <Grid container spacing={2}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {[
               {
                 title: 'Pending Approvals',
@@ -522,50 +522,53 @@ const AdminDashboard = () => {
                 link: '/admin/analytics'
               }
             ].map((action, index) => (
-              <Grid item xs={12} key={index}>
-                <Card 
-                  component={Link}
-                  to={action.link}
-                  sx={{
-                    textDecoration: 'none',
-                    transition: 'all 0.3s ease',
-                    border: action.badge > 0 ? `2px solid ${action.color}` : 'none',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                    }
-                  }}
-                >
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar sx={{ bgcolor: action.color, mr: 2 }}>
-                          {action.icon}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                            {action.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {action.description}
-                          </Typography>
-                        </Box>
+              <Card 
+                key={index}
+                component={Link}
+                to={action.link}
+                sx={{
+                  textDecoration: 'none',
+                  transition: 'all 0.3s ease',
+                  border: action.badge > 0 ? `2px solid ${action.color}` : 'none',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar sx={{ bgcolor: action.color, mr: 2 }}>
+                        {action.icon}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {action.title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {action.description}
+                        </Typography>
                       </Box>
-                      {action.badge > 0 && (
-                        <Badge badgeContent={action.badge} color="error">
-                          <Notifications sx={{ color: action.color }} />
-                        </Badge>
-                      )}
                     </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+                    {action.badge > 0 && (
+                      <Badge badgeContent={action.badge} color="error">
+                        <Notifications sx={{ color: action.color }} />
+                      </Badge>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
             ))}
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
-        {/* Recent Appointments */}
-        <Grid item xs={12} md={6} lg={4}>
+        {/* Main Content Area */}
+        <Box sx={{ flex: 1 }}>
+          <Grid container spacing={4}>
+
+            {/* Recent Appointments */}
+            <Grid item xs={12} lg={4}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center' }}>
             <Assignment sx={{ mr: 1 }} />
             Recent Appointments
@@ -632,8 +635,8 @@ const AdminDashboard = () => {
           </Card>
         </Grid>
 
-        {/* Recent Support Tickets */}
-        <Grid item xs={12} md={6} lg={4}>
+            {/* Recent Support Tickets */}
+            <Grid item xs={12} lg={4}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center' }}>
             <SupportAgent sx={{ mr: 1 }} />
             Recent Support Tickets
@@ -705,8 +708,8 @@ const AdminDashboard = () => {
           </Card>
         </Grid>
 
-        {/* Recent Estimates */}
-        <Grid item xs={12} md={6} lg={4}>
+            {/* Recent Estimates */}
+            <Grid item xs={12} lg={4}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center' }}>
             <RequestQuote sx={{ mr: 1 }} />
             Recent Estimates
@@ -776,8 +779,10 @@ const AdminDashboard = () => {
               </Button>
             </Box>
           </Card>
-        </Grid>
-      </Grid>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
     </Container>
   );
 };

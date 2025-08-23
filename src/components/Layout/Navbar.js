@@ -67,7 +67,8 @@ const Navbar = () => {
           { label: 'Book Service', path: '/book-appointment', icon: <DirectionsCar /> },
           { label: 'My Appointments', path: '/appointments', icon: <AccountCircle /> },
           { label: 'Contact Us', path: '/contact', icon: <AccountCircle /> },
-          { label: 'Get Estimate', path: '/estimate', icon: <AccountCircle /> }
+          { label: 'Get Estimate', path: '/get-estimate', icon: <AccountCircle /> },
+          { label: 'My Estimates', path: '/my-estimates', icon: <AccountCircle /> }
         ]
     : [];
 

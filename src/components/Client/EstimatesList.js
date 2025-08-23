@@ -54,6 +54,8 @@ const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 const EstimatesList = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  
+
   const [estimates, setEstimates] = useState([]);
   const [selectedEstimate, setSelectedEstimate] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -73,16 +75,26 @@ const EstimatesList = () => {
     if (currentUser) {
       const estimatesQuery = query(
         collection(db, 'estimates'),
-        where('userId', '==', currentUser.uid),
-        orderBy('lastUpdated', 'desc')
+        where('userId', '==', currentUser.uid)
       );
 
       const unsubscribe = onSnapshot(estimatesQuery, (snapshot) => {
         const estimateData = [];
         snapshot.forEach((doc) => {
-          estimateData.push({ id: doc.id, ...doc.data() });
+          const data = { id: doc.id, ...doc.data() };
+          estimateData.push(data);
         });
+        
+        // Sort by lastUpdated (most recent first) - client-side sorting
+        estimateData.sort((a, b) => {
+          const aTime = a.lastUpdated?.seconds ? a.lastUpdated.seconds * 1000 : new Date(a.lastUpdated).getTime();
+          const bTime = b.lastUpdated?.seconds ? b.lastUpdated.seconds * 1000 : new Date(b.lastUpdated).getTime();
+          return bTime - aTime;
+        });
+        
         setEstimates(estimateData);
+      }, (error) => {
+        console.error('❌ EstimatesList: Error fetching estimates:', error);
       });
 
       return () => unsubscribe();
