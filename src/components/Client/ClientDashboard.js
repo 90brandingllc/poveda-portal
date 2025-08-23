@@ -198,8 +198,15 @@ const ClientDashboard = () => {
       description: 'Request custom pricing',
       icon: <RequestQuote />,
       color: '#9c27b0',
-      link: '/estimate'
+      link: '/get-estimate'
     },
+    {
+      title: 'My Estimates',
+      description: 'View estimate requests',
+      icon: <Star />,
+      color: '#ff9800',
+      link: '/my-estimates'
+    }
 
   ];
 

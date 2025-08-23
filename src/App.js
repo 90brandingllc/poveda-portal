@@ -15,6 +15,7 @@ import BookAppointment from './components/Client/BookAppointment';
 import AppointmentsList from './components/Client/AppointmentsList';
 import ContactUs from './components/Client/ContactUs';
 import GetEstimate from './components/Client/GetEstimate';
+import EstimatesList from './components/Client/EstimatesList';
 
 // Admin Portal
 import AdminRouter from './components/AdminPortal/AdminRouter';
@@ -148,13 +149,29 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        <Route 
+                <Route 
           path="/estimate" 
           element={
             <ProtectedRoute allowedRoles={['client']}>
               <GetEstimate />
             </ProtectedRoute>
-          } 
+          }
+        />
+        <Route 
+          path="/get-estimate" 
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <GetEstimate />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/my-estimates" 
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <EstimatesList />
+            </ProtectedRoute>
+          }
         />
 
         

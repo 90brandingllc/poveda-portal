@@ -9,80 +9,127 @@ import {
   Button,
   Box,
   Paper,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Chip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Stepper,
-  Step,
-  StepLabel,
+  Alert,
+  IconButton,
+  Tooltip,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Tabs,
+  Tab,
+  CircularProgress
 } from '@mui/material';
 import {
   RequestQuote,
   CheckCircle,
   Star,
-  Send
+  Send,
+  AutoFixHigh,
+  Refresh,
+  History,
+  Chat,
+  Add
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useNavigate } from 'react-router-dom';
 
+// OpenAI Integration
+const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
+
 const GetEstimate = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [estimates, setEstimates] = useState([]);
   const [selectedEstimate, setSelectedEstimate] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [tabValue, setTabValue] = useState(0);
+  const [improvingText, setImprovingText] = useState(false);
 
   const [formData, setFormData] = useState({
-    vehicleType: '',
-    vehicleYear: '',
-    vehicleMake: '',
-    vehicleModel: '',
-    services: [],
-    specialRequests: '',
+    businessType: '',
+    serviceCategory: '',
+    projectTitle: '',
+    description: '',
+    timeline: '',
+    budget: '',
     contactPreference: 'email',
     phone: '',
     urgency: 'standard',
-    address: {
-      street: '',
-      city: '',
-      state: '',
-      zipCode: ''
-    },
-    additionalNotes: ''
+    location: '',
+    additionalRequirements: ''
   });
 
-  const steps = ['Vehicle Info', 'Services Needed', 'Contact & Location', 'Submit Request'];
-
-  const vehicleTypes = ['Sedan', 'SUV', 'Truck', 'Coupe', 'Convertible', 'Van', 'Motorcycle', 'RV', 'Other'];
-  
-  const serviceOptions = [
-    { id: 'exterior_wash', name: 'Exterior Hand Wash', basePrice: 50 },
-    { id: 'interior_clean', name: 'Interior Deep Clean', basePrice: 80 },
-    { id: 'paint_correction', name: 'Paint Correction', basePrice: 200 },
-    { id: 'ceramic_coating', name: 'Ceramic Coating', basePrice: 400 },
-    { id: 'headlight_restoration', name: 'Headlight Restoration', basePrice: 60 },
-    { id: 'engine_bay', name: 'Engine Bay Cleaning', basePrice: 40 },
-    { id: 'leather_treatment', name: 'Leather Conditioning', basePrice: 70 },
-    { id: 'odor_removal', name: 'Odor Elimination', basePrice: 90 },
-    { id: 'scratch_removal', name: 'Scratch Removal', basePrice: 150 },
-    { id: 'wax_sealant', name: 'Wax & Sealant', basePrice: 80 }
-  ];
+  // Business types and their service categories
+  const businessTypes = {
+    automotive: {
+      name: 'Automotive & Detailing',
+      icon: '🚗',
+      categories: [
+        'Exterior Detailing',
+        'Interior Cleaning',
+        'Paint Correction',
+        'Ceramic Coating',
+        'Full Detail Package',
+        'Maintenance Services',
+        'Custom Request'
+      ]
+    },
+    construction: {
+      name: 'Construction & Renovation',
+      icon: '🏗️',
+      categories: [
+        'Home Renovation',
+        'Kitchen Remodeling',
+        'Bathroom Remodeling',
+        'Roofing',
+        'Flooring',
+        'Electrical Work',
+        'Plumbing',
+        'Painting',
+        'Custom Build'
+      ]
+    },
+    beauty: {
+      name: 'Beauty & Wellness',
+      icon: '💅',
+      categories: [
+        'Hair Services',
+        'Nail Services',
+        'Spa Treatments',
+        'Facial Services',
+        'Massage Therapy',
+        'Wellness Packages',
+        'Event Styling',
+        'Custom Service'
+      ]
+    },
+    general: {
+      name: 'General Services',
+      icon: '🔧',
+      categories: [
+        'Consulting',
+        'Design Services',
+        'Maintenance',
+        'Repair Services',
+        'Installation',
+        'Custom Project'
+      ]
+    }
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -106,72 +153,62 @@ const GetEstimate = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData({
-        ...formData,
-        [parent]: {
-          ...formData[parent],
-          [child]: value
-        }
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
-  };
-
-  const handleServiceToggle = (serviceId) => {
-    const updatedServices = formData.services.includes(serviceId)
-      ? formData.services.filter(id => id !== serviceId)
-      : [...formData.services, serviceId];
-    
     setFormData({
       ...formData,
-      services: updatedServices
+      [name]: value
     });
   };
 
-  const calculateEstimate = () => {
-    let total = 0;
-    formData.services.forEach(serviceId => {
-      const service = serviceOptions.find(s => s.id === serviceId);
-      if (service) {
-        total += service.basePrice;
-      }
-    });
-
-    // Vehicle type multiplier
-    const multipliers = {
-      'Sedan': 1.0,
-      'SUV': 1.3,
-      'Truck': 1.4,
-      'Van': 1.3,
-      'RV': 1.8,
-      'Other': 1.2
-    };
-    
-    total *= (multipliers[formData.vehicleType] || 1.0);
-
-    // Urgency multiplier
-    if (formData.urgency === 'urgent') {
-      total *= 1.25;
+  const improveTextWithAI = async (text, fieldName) => {
+    if (!text.trim() || !OPENAI_API_KEY) {
+      alert('Please enter some text first, or OpenAI API key is not configured.');
+      return text;
     }
 
-    return Math.round(total);
-  };
+    setImprovingText(true);
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a professional writing assistant. Improve the user\'s text to be clear, professional, and grammatically correct while maintaining their original meaning. Fix any spelling errors, improve grammar, and enhance clarity. Keep the tone professional but friendly.'
+            },
+            {
+              role: 'user',
+              content: `Please improve this ${fieldName}: "${text}"`
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.3
+        })
+      });
 
-  const handleNext = () => {
-    setActiveStep((prevStep) => prevStep + 1);
-  };
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
 
-  const handleBack = () => {
-    if (activeStep === 0) {
-      navigate('/dashboard');
-    } else {
-      setActiveStep((prevStep) => prevStep - 1);
+      const data = await response.json();
+      const improvedText = data.choices[0]?.message?.content?.trim() || text;
+      
+      setFormData({
+        ...formData,
+        [fieldName]: improvedText
+      });
+
+      return improvedText;
+    } catch (error) {
+      console.error('Error improving text:', error);
+      alert('Failed to improve text. Please try again.');
+      return text;
+    } finally {
+      setImprovingText(false);
     }
   };
 
@@ -183,46 +220,48 @@ const GetEstimate = () => {
         userId: currentUser.uid,
         userEmail: currentUser.email,
         userName: currentUser.displayName || currentUser.email,
-        vehicleInfo: {
-          type: formData.vehicleType,
-          year: formData.vehicleYear,
-          make: formData.vehicleMake,
-          model: formData.vehicleModel
-        },
-        services: formData.services,
-        serviceDetails: formData.services.map(serviceId => {
-          const service = serviceOptions.find(s => s.id === serviceId);
-          return service ? { id: serviceId, name: service.name, basePrice: service.basePrice } : null;
-        }).filter(Boolean),
-        specialRequests: formData.specialRequests,
+        businessType: formData.businessType,
+        serviceCategory: formData.serviceCategory,
+        projectTitle: formData.projectTitle,
+        description: formData.description,
+        timeline: formData.timeline,
+        budget: formData.budget,
         contactPreference: formData.contactPreference,
         phone: formData.phone,
         urgency: formData.urgency,
-        address: formData.address,
-        additionalNotes: formData.additionalNotes,
-        estimatedPrice: calculateEstimate(),
+        location: formData.location,
+        additionalRequirements: formData.additionalRequirements,
         status: 'pending',
+        messages: [{
+          id: Date.now(),
+          sender: 'client',
+          senderName: currentUser.displayName || currentUser.email,
+          message: `New estimate request: ${formData.projectTitle}`,
+          timestamp: new Date(),
+          isSystemMessage: true
+        }],
+        lastUpdated: new Date(),
         createdAt: serverTimestamp()
       };
 
       await addDoc(collection(db, 'estimates'), estimateData);
       setSuccess(true);
-      setActiveStep(0);
       setFormData({
-        vehicleType: '',
-        vehicleYear: '',
-        vehicleMake: '',
-        vehicleModel: '',
-        services: [],
-        specialRequests: '',
+        businessType: '',
+        serviceCategory: '',
+        projectTitle: '',
+        description: '',
+        timeline: '',
+        budget: '',
         contactPreference: 'email',
         phone: '',
         urgency: 'standard',
-        address: { street: '', city: '', state: '', zipCode: '' },
-        additionalNotes: ''
+        location: '',
+        additionalRequirements: ''
       });
     } catch (error) {
       console.error('Error creating estimate:', error);
+      alert('Failed to submit estimate request. Please try again.');
     }
     setLoading(false);
   };
@@ -230,268 +269,12 @@ const GetEstimate = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return '#ed6c02';
-      case 'reviewed': return '#1976d2';
+      case 'in-progress': return '#1976d2';
       case 'quoted': return '#2e7d32';
+      case 'approved': return '#4caf50';
       case 'declined': return '#d32f2f';
+      case 'completed': return '#9c27b0';
       default: return '#757575';
-    }
-  };
-
-  const renderStepContent = (step) => {
-    switch (step) {
-      case 0:
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Vehicle Type</InputLabel>
-                <Select
-                  name="vehicleType"
-                  value={formData.vehicleType}
-                  onChange={handleChange}
-                  required
-                >
-                  {vehicleTypes.map(type => (
-                    <MenuItem key={type} value={type}>{type}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                name="vehicleYear"
-                label="Year"
-                value={formData.vehicleYear}
-                onChange={handleChange}
-                placeholder="e.g., 2020"
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                name="vehicleMake"
-                label="Make"
-                value={formData.vehicleMake}
-                onChange={handleChange}
-                placeholder="e.g., Toyota"
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                name="vehicleModel"
-                label="Model"
-                value={formData.vehicleModel}
-                onChange={handleChange}
-                placeholder="e.g., Camry"
-                required
-              />
-            </Grid>
-          </Grid>
-        );
-
-      case 1:
-        return (
-          <Box>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-              Select Services Needed:
-            </Typography>
-            <Grid container spacing={2}>
-              {serviceOptions.map(service => (
-                <Grid item xs={12} sm={6} md={4} key={service.id}>
-                  <Card 
-                    sx={{ 
-                      cursor: 'pointer',
-                      border: formData.services.includes(service.id) ? '2px solid #1976d2' : '1px solid #e0e0e0',
-                      '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-                    }}
-                    onClick={() => handleServiceToggle(service.id)}
-                  >
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                          {service.name}
-                        </Typography>
-                        {formData.services.includes(service.id) && (
-                          <CheckCircle sx={{ color: '#1976d2' }} />
-                        )}
-                      </Box>
-                      <Typography variant="h6" color="primary" sx={{ mt: 1 }}>
-                        From ${service.basePrice}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Special Requests"
-              placeholder="Any specific requirements or areas of concern..."
-              value={formData.specialRequests}
-              onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
-              sx={{ mt: 3 }}
-            />
-          </Box>
-        );
-
-      case 2:
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Contact Preference</InputLabel>
-                <Select
-                  name="contactPreference"
-                  value={formData.contactPreference}
-                  onChange={handleChange}
-                >
-                  <MenuItem value="email">Email</MenuItem>
-                  <MenuItem value="phone">Phone</MenuItem>
-                  <MenuItem value="both">Both</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                name="phone"
-                label="Phone Number"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="(555) 123-4567"
-                required={formData.contactPreference !== 'email'}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Urgency</InputLabel>
-                <Select
-                  name="urgency"
-                  value={formData.urgency}
-                  onChange={handleChange}
-                >
-                  <MenuItem value="standard">Standard (3-5 days)</MenuItem>
-                  <MenuItem value="urgent">Urgent (+25% fee)</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Service Location:
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                name="address.street"
-                label="Street Address"
-                value={formData.address.street}
-                onChange={handleChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                name="address.city"
-                label="City"
-                value={formData.address.city}
-                onChange={handleChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                name="address.state"
-                label="State"
-                value={formData.address.state}
-                onChange={handleChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                name="address.zipCode"
-                label="Zip Code"
-                value={formData.address.zipCode}
-                onChange={handleChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                name="additionalNotes"
-                label="Additional Notes"
-                placeholder="Any other information that would help us provide an accurate estimate..."
-                value={formData.additionalNotes}
-                onChange={handleChange}
-              />
-            </Grid>
-          </Grid>
-        );
-
-      case 3:
-        return (
-          <Box>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-              Estimate Request Summary
-            </Typography>
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle2" color="text.secondary">Vehicle</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      {formData.vehicleYear} {formData.vehicleMake} {formData.vehicleModel}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {formData.vehicleType}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle2" color="text.secondary">Services Selected</Typography>
-                    {formData.services.map(serviceId => {
-                      const service = serviceOptions.find(s => s.id === serviceId);
-                      return service ? (
-                        <Typography key={serviceId} variant="body2">
-                          • {service.name}
-                        </Typography>
-                      ) : null;
-                    })}
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle2" color="text.secondary">Contact</Typography>
-                    <Typography variant="body2">{formData.contactPreference}</Typography>
-                    {formData.phone && <Typography variant="body2">{formData.phone}</Typography>}
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle2" color="text.secondary">Estimated Price Range</Typography>
-                    <Typography variant="h5" color="primary" sx={{ fontWeight: 700 }}>
-                      ${calculateEstimate()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      *Final price may vary based on vehicle condition
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Box>
-        );
-
-      default:
-        return 'Unknown step';
     }
   };
 
@@ -507,15 +290,26 @@ const GetEstimate = () => {
             We'll review your request and get back to you within 24 hours.
           </Typography>
           <Typography variant="body1" sx={{ mb: 4 }}>
-            Our team will contact you via your preferred method with a detailed quote and available appointment times.
+            Our team will contact you via your preferred method with questions, clarifications, and a detailed quote.
           </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => setSuccess(false)}
-          >
-            Request Another Estimate
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => setSuccess(false)}
+              startIcon={<Add />}
+            >
+              Request Another Estimate
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => setTabValue(1)}
+              startIcon={<History />}
+            >
+              View My Estimates
+            </Button>
+          </Box>
         </Paper>
       </Container>
     );
@@ -527,192 +321,492 @@ const GetEstimate = () => {
         Get Custom Estimate
       </Typography>
 
-      <Grid container spacing={4}>
-        {/* Estimate Request Form */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 4 }}>
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
+          <Tab label="New Request" icon={<RequestQuote />} />
+          <Tab label="My Estimates" icon={<History />} />
+        </Tabs>
+      </Box>
 
-            {renderStepContent(activeStep)}
+      {tabValue === 0 && (
+        <Grid container spacing={4}>
+          {/* Request Form */}
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 4 }}>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+                Tell us what you need
+              </Typography>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-              <Button
-                onClick={handleBack}
-                variant="outlined"
-              >
-                {activeStep === 0 ? 'Back to Dashboard' : 'Back'}
-              </Button>
-              
-              {activeStep === steps.length - 1 ? (
+              <Grid container spacing={3}>
+                {/* Business Type Selection */}
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>What type of service do you need?</InputLabel>
+                    <Select
+                      name="businessType"
+                      value={formData.businessType}
+                      onChange={handleChange}
+                      required
+                    >
+                      {Object.entries(businessTypes).map(([key, type]) => (
+                        <MenuItem key={key} value={key}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span style={{ fontSize: '1.2em' }}>{type.icon}</span>
+                            {type.name}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Service Category */}
+                {formData.businessType && (
+                  <Grid item xs={12}>
+                    <FormControl fullWidth>
+                      <InputLabel>Service Category</InputLabel>
+                      <Select
+                        name="serviceCategory"
+                        value={formData.serviceCategory}
+                        onChange={handleChange}
+                        required
+                      >
+                        {businessTypes[formData.businessType]?.categories.map(category => (
+                          <MenuItem key={category} value={category}>
+                            {category}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                )}
+
+                {/* Project Title */}
+                <Grid item xs={12}>
+                  <Box sx={{ position: 'relative' }}>
+                    <TextField
+                      fullWidth
+                      name="projectTitle"
+                      label="Project Title"
+                      value={formData.projectTitle}
+                      onChange={handleChange}
+                      placeholder="Brief title for your project..."
+                      required
+                    />
+                    <Tooltip title="Improve with AI">
+                      <IconButton
+                        onClick={() => improveTextWithAI(formData.projectTitle, 'projectTitle')}
+                        disabled={improvingText || !formData.projectTitle.trim()}
+                        sx={{ position: 'absolute', right: 8, top: 8 }}
+                      >
+                        {improvingText ? <CircularProgress size={20} /> : <AutoFixHigh />}
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Grid>
+
+                {/* Description */}
+                <Grid item xs={12}>
+                  <Box sx={{ position: 'relative' }}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      name="description"
+                      label="Project Description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      placeholder="Describe what you want done. Include any specific requirements, materials, colors, styles, or other important details..."
+                      required
+                    />
+                    <Tooltip title="Improve with AI">
+                      <IconButton
+                        onClick={() => improveTextWithAI(formData.description, 'description')}
+                        disabled={improvingText || !formData.description.trim()}
+                        sx={{ position: 'absolute', right: 8, top: 8 }}
+                      >
+                        {improvingText ? <CircularProgress size={20} /> : <AutoFixHigh />}
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Grid>
+
+                {/* Timeline & Budget */}
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    name="timeline"
+                    label="Preferred Timeline"
+                    value={formData.timeline}
+                    onChange={handleChange}
+                    placeholder="e.g., Within 2 weeks, ASAP, Flexible"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    name="budget"
+                    label="Budget Range (Optional)"
+                    value={formData.budget}
+                    onChange={handleChange}
+                    placeholder="e.g., $500-1000, Under $500, Flexible"
+                  />
+                </Grid>
+
+                {/* Contact Info */}
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Contact Preference</InputLabel>
+                    <Select
+                      name="contactPreference"
+                      value={formData.contactPreference}
+                      onChange={handleChange}
+                    >
+                      <MenuItem value="email">Email</MenuItem>
+                      <MenuItem value="phone">Phone</MenuItem>
+                      <MenuItem value="text">Text Message</MenuItem>
+                      <MenuItem value="any">Any Method</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    name="phone"
+                    label="Phone Number"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="(555) 123-4567"
+                    required={formData.contactPreference !== 'email'}
+                  />
+                </Grid>
+
+                {/* Location */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    name="location"
+                    label="Location/Address"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="City, State or Full Address"
+                    required
+                  />
+                </Grid>
+
+                {/* Urgency */}
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Urgency Level</InputLabel>
+                    <Select
+                      name="urgency"
+                      value={formData.urgency}
+                      onChange={handleChange}
+                    >
+                      <MenuItem value="standard">Standard</MenuItem>
+                      <MenuItem value="urgent">Urgent</MenuItem>
+                      <MenuItem value="flexible">Flexible</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Additional Requirements */}
+                <Grid item xs={12}>
+                  <Box sx={{ position: 'relative' }}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      name="additionalRequirements"
+                      label="Additional Requirements (Optional)"
+                      value={formData.additionalRequirements}
+                      onChange={handleChange}
+                      placeholder="Any special requirements, materials to avoid, accessibility needs, etc..."
+                    />
+                    <Tooltip title="Improve with AI">
+                      <IconButton
+                        onClick={() => improveTextWithAI(formData.additionalRequirements, 'additionalRequirements')}
+                        disabled={improvingText || !formData.additionalRequirements.trim()}
+                        sx={{ position: 'absolute', right: 8, top: 8 }}
+                      >
+                        {improvingText ? <CircularProgress size={20} /> : <AutoFixHigh />}
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Grid>
+
+                {/* AI Helper Info */}
+                <Grid item xs={12}>
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                      💡 <strong>AI Text Improvement:</strong> Click the ✨ button next to any text field to automatically improve your writing. 
+                      Perfect for fixing grammar, spelling, or making your request clearer!
+                    </Typography>
+                  </Alert>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate('/dashboard')}
+                >
+                  Back to Dashboard
+                </Button>
                 <Button
                   variant="contained"
                   onClick={handleSubmit}
-                  disabled={loading}
+                  disabled={loading || !formData.businessType || !formData.projectTitle || !formData.description}
                   size="large"
-                  startIcon={<Send />}
+                  startIcon={loading ? <CircularProgress size={20} /> : <Send />}
+                  sx={{ flex: 1 }}
                 >
-                  {loading ? 'Submitting...' : 'Submit Request'}
+                  {loading ? 'Submitting...' : 'Submit Estimate Request'}
                 </Button>
-              ) : (
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Info Sidebar */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                  <Star sx={{ mr: 1, color: '#FFD700' }} />
+                  How It Works
+                </Typography>
+                <List dense>
+                  <ListItem>
+                    <ListItemText 
+                      primary="1. Tell us what you need"
+                      secondary="Describe your project in detail"
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText 
+                      primary="2. We review & respond"
+                      secondary="Get questions and clarifications within 24 hours"
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText 
+                      primary="3. Receive your quote"
+                      secondary="Detailed pricing and timeline"
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText 
+                      primary="4. Book your service"
+                      secondary="Schedule when it works for you"
+                    />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                  💡 Tips for Better Estimates
+                </Typography>
+                <List dense>
+                  <ListItem>
+                    <ListItemText 
+                      primary="Be specific"
+                      secondary="More details = more accurate pricing"
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText 
+                      primary="Include photos"
+                      secondary="Mention if you can provide images"
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText 
+                      primary="Set realistic timelines"
+                      secondary="Rush jobs may cost more"
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText 
+                      primary="Use AI improvement"
+                      secondary="Click ✨ to enhance your text"
+                    />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
+      {tabValue === 1 && (
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+              Your Estimate Requests
+            </Typography>
+            {estimates.length === 0 ? (
+              <Paper sx={{ p: 6, textAlign: 'center' }}>
+                <RequestQuote sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No estimates requested yet
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                  Click "New Request" tab to get started!
+                </Typography>
                 <Button
                   variant="contained"
-                  onClick={handleNext}
-                  disabled={
-                    (activeStep === 0 && (!formData.vehicleType || !formData.vehicleYear || !formData.vehicleMake)) ||
-                    (activeStep === 1 && formData.services.length === 0) ||
-                    (activeStep === 2 && (!formData.address.street || !formData.address.city))
-                  }
+                  onClick={() => setTabValue(0)}
+                  startIcon={<Add />}
                 >
-                  Next
+                  Create First Estimate
                 </Button>
-              )}
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* Estimate History & Info */}
-        <Grid item xs={12} md={4}>
-          {/* Why Choose Us */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                <Star sx={{ mr: 1, color: '#FFD700' }} />
-                Why Get an Estimate?
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon>
-                    <CheckCircle sx={{ color: '#2e7d32', fontSize: 20 }} />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Accurate Pricing"
-                    secondary="Customized based on your vehicle and needs"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <CheckCircle sx={{ color: '#2e7d32', fontSize: 20 }} />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="No Surprises"
-                    secondary="Transparent pricing with no hidden fees"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <CheckCircle sx={{ color: '#2e7d32', fontSize: 20 }} />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Expert Consultation"
-                    secondary="Personalized service recommendations"
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
-
-          {/* Previous Estimates */}
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Your Estimate Requests
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-
-              {estimates.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <RequestQuote sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
-                    No estimates requested yet
-                  </Typography>
-                </Box>
-              ) : (
-                <List>
-                  {estimates.slice(0, 3).map((estimate) => (
-                    <ListItem 
-                      key={estimate.id}
-                      button
+              </Paper>
+            ) : (
+              <Grid container spacing={3}>
+                {estimates.map((estimate) => (
+                  <Grid item xs={12} md={6} lg={4} key={estimate.id}>
+                    <Card 
+                      sx={{ 
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                          transform: 'translateY(-2px)'
+                        }
+                      }}
                       onClick={() => {
                         setSelectedEstimate(estimate);
                         setDialogOpen(true);
                       }}
                     >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {estimate.vehicleInfo?.year} {estimate.vehicleInfo?.make}
-                            </Typography>
-                            <Chip 
-                              label={estimate.status} 
-                              size="small"
-                              sx={{
-                                bgcolor: getStatusColor(estimate.status),
-                                color: 'white',
-                                textTransform: 'capitalize'
-                              }}
-                            />
-                          </Box>
-                        }
-                        secondary={
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
+                            {estimate.projectTitle}
+                          </Typography>
+                          <Chip 
+                            label={estimate.status} 
+                            size="small"
+                            sx={{
+                              bgcolor: getStatusColor(estimate.status),
+                              color: 'white',
+                              textTransform: 'capitalize',
+                              ml: 1
+                            }}
+                          />
+                        </Box>
+                        
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          {businessTypes[estimate.businessType]?.icon} {estimate.serviceCategory}
+                        </Typography>
+                        
+                        <Typography variant="body2" sx={{ mb: 2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                          {estimate.description}
+                        </Typography>
+                        
+                        <Divider sx={{ my: 2 }} />
+                        
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Typography variant="caption" color="text.secondary">
                             {estimate.createdAt ? new Date(estimate.createdAt.seconds * 1000).toLocaleDateString() : 'Recently'}
-                            {estimate.estimatedPrice && ` • $${estimate.estimatedPrice}`}
                           </Typography>
-                        }
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-            </CardContent>
-          </Card>
+                          <Button
+                            size="small"
+                            startIcon={<Chat />}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            {estimate.messages?.length > 1 ? `${estimate.messages.length - 1} messages` : 'View Details'}
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Grid>
         </Grid>
-      </Grid>
+      )}
 
       {/* Estimate Details Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Estimate Request Details</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">{selectedEstimate?.projectTitle}</Typography>
+            <Chip 
+              label={selectedEstimate?.status} 
+              sx={{
+                bgcolor: getStatusColor(selectedEstimate?.status),
+                color: 'white',
+                textTransform: 'capitalize'
+              }}
+            />
+          </Box>
+        </DialogTitle>
         <DialogContent>
           {selectedEstimate && (
-            <Grid container spacing={2}>
+            <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">Vehicle</Typography>
+                <Typography variant="subtitle2" color="text.secondary">Service Type</Typography>
                 <Typography variant="body1">
-                  {selectedEstimate.vehicleInfo?.year} {selectedEstimate.vehicleInfo?.make} {selectedEstimate.vehicleInfo?.model}
+                  {businessTypes[selectedEstimate.businessType]?.icon} {businessTypes[selectedEstimate.businessType]?.name}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">Status</Typography>
-                <Chip 
-                  label={selectedEstimate.status} 
-                  sx={{
-                    bgcolor: getStatusColor(selectedEstimate.status),
-                    color: 'white',
-                    textTransform: 'capitalize'
-                  }}
-                />
+                <Typography variant="subtitle2" color="text.secondary">Category</Typography>
+                <Typography variant="body1">{selectedEstimate.serviceCategory}</Typography>
               </Grid>
               <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary">Services Requested</Typography>
-                {selectedEstimate.serviceDetails?.map((service, index) => (
-                  <Typography key={index} variant="body2">
-                    • {service.name}
-                  </Typography>
-                ))}
+                <Typography variant="subtitle2" color="text.secondary">Description</Typography>
+                <Typography variant="body1" sx={{ mb: 2 }}>{selectedEstimate.description}</Typography>
               </Grid>
-              {selectedEstimate.estimatedPrice && (
+              {selectedEstimate.timeline && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">Timeline</Typography>
+                  <Typography variant="body1">{selectedEstimate.timeline}</Typography>
+                </Grid>
+              )}
+              {selectedEstimate.budget && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">Budget</Typography>
+                  <Typography variant="body1">{selectedEstimate.budget}</Typography>
+                </Grid>
+              )}
+              {selectedEstimate.location && (
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary">Estimated Price</Typography>
-                  <Typography variant="h6" color="primary">
-                    ${selectedEstimate.estimatedPrice}
-                  </Typography>
+                  <Typography variant="subtitle2" color="text.secondary">Location</Typography>
+                  <Typography variant="body1">{selectedEstimate.location}</Typography>
+                </Grid>
+              )}
+              {selectedEstimate.additionalRequirements && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="text.secondary">Additional Requirements</Typography>
+                  <Typography variant="body1">{selectedEstimate.additionalRequirements}</Typography>
+                </Grid>
+              )}
+              
+              {/* Messages/Communication Thread */}
+              {selectedEstimate.messages && selectedEstimate.messages.length > 1 && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>Communication</Typography>
+                  <Paper variant="outlined" sx={{ maxHeight: 300, overflow: 'auto', p: 2 }}>
+                    {selectedEstimate.messages.slice(1).map((message, index) => (
+                      <Box key={index} sx={{ mb: 2, pb: 2, borderBottom: index < selectedEstimate.messages.length - 2 ? '1px solid #eee' : 'none' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {message.senderName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(message.timestamp).toLocaleString()}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2">{message.message}</Typography>
+                      </Box>
+                    ))}
+                  </Paper>
                 </Grid>
               )}
             </Grid>
