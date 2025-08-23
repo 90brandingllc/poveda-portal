@@ -20,7 +20,10 @@ import {
   Star,
   Schedule,
   LocationOn,
-  DirectionsCar
+  DirectionsCar,
+  Payment,
+  Info,
+  CreditCard
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 
@@ -246,6 +249,58 @@ const Services = () => {
         </Grid>
       </Container>
 
+      {/* Payment Information Banner */}
+      <Box sx={{ bgcolor: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)', py: 4 }}>
+        <Container maxWidth="lg">
+          <Paper sx={{ p: 4, bgcolor: 'rgba(255,255,255,0.95)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <Info sx={{ mr: 2, color: '#1976d2', fontSize: 32 }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                Easy Payment Process
+              </Typography>
+            </Box>
+            <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 3 }}>
+              We've made booking and payment simple and secure
+            </Typography>
+            <Grid container spacing={4} justifyContent="center">
+              <Grid item xs={12} md={4}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <CreditCard sx={{ fontSize: 40, color: '#4caf50', mb: 1 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                    Step 1: Book & Pay Deposit
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Pay <strong>50% deposit</strong> securely online when booking your appointment
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <DirectionsCar sx={{ fontSize: 40, color: '#1976d2', mb: 1 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                    Step 2: Service Delivered
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Our team arrives at your location and completes the professional service
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Payment sx={{ fontSize: 40, color: '#ff9800', mb: 1 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                    Step 3: Final Payment
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Pay the <strong>remaining 50%</strong> directly to our technician upon completion
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Container>
+      </Box>
+
       {/* Service Packages */}
       <Box sx={{ bgcolor: '#f8f9fa', py: 8 }}>
         <Container maxWidth="lg">
@@ -290,6 +345,29 @@ const Services = () => {
                     <Typography variant="h3" color="primary" gutterBottom sx={{ fontWeight: 700 }}>
                       {pkg.price}
                     </Typography>
+                    
+                    {/* Payment Info */}
+                    <Box sx={{ bgcolor: '#e3f2fd', p: 2, borderRadius: 1, mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Payment sx={{ mr: 1, color: '#1976d2', fontSize: 20 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                          Payment Structure
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                        <CreditCard sx={{ mr: 1, color: '#4caf50', fontSize: 16 }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                          <strong>50% deposit</strong> - Paid online when booking
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Payment sx={{ mr: 1, color: '#ff9800', fontSize: 16 }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                          <strong>50% remaining</strong> - Paid after service completion
+                        </Typography>
+                      </Box>
+                    </Box>
+
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <Schedule sx={{ mr: 1, color: 'text.secondary' }} />
                       <Typography variant="body2" color="text.secondary">

@@ -404,22 +404,59 @@ const BookAppointment = () => {
                       </Typography>
                     </Box>
                     
-                    <Box sx={{ 
-                      bgcolor: 'success.light', 
-                      color: 'success.contrastText', 
-                      p: 2, 
-                      borderRadius: 1,
-                      mt: 2
-                    }}>
-                      <Typography variant="body2" gutterBottom>
-                        💳 Required Deposit (50%):
+                    {/* Payment Structure Information */}
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', mb: 2 }}>
+                        💳 Payment Structure
                       </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                        ${formatCurrency(calculateDepositAmount(formData.estimatedPrice))}
-                      </Typography>
-                      <Typography variant="body2" sx={{ opacity: 0.8, mt: 1 }}>
-                        Remaining ${(formData.estimatedPrice - parseFloat(formatCurrency(calculateDepositAmount(formData.estimatedPrice)))).toFixed(2)} due on completion
-                      </Typography>
+                      
+                      {/* Online Deposit */}
+                      <Box sx={{ 
+                        bgcolor: '#e3f2fd', 
+                        p: 2, 
+                        borderRadius: 1,
+                        border: '1px solid #bbdefb',
+                        mb: 2
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                            Step 1: Online Deposit (50%)
+                          </Typography>
+                        </Box>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                          ${formatCurrency(calculateDepositAmount(formData.estimatedPrice))}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Secure payment processed through Stripe
+                        </Typography>
+                      </Box>
+
+                      {/* Remaining Payment */}
+                      <Box sx={{ 
+                        bgcolor: '#fff3e0', 
+                        p: 2, 
+                        borderRadius: 1,
+                        border: '1px solid #ffcc02'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#f57c00' }}>
+                            Step 2: Final Payment (50%)
+                          </Typography>
+                        </Box>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
+                          ${(formData.estimatedPrice - parseFloat(formatCurrency(calculateDepositAmount(formData.estimatedPrice)))).toFixed(2)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Pay directly to our technician upon service completion
+                        </Typography>
+                      </Box>
+
+                      {/* Info Alert */}
+                      <Alert severity="info" sx={{ mt: 2 }}>
+                        <Typography variant="body2">
+                          <strong>Why split payments?</strong> The deposit secures your booking, while the final payment ensures you're 100% satisfied before completing the transaction.
+                        </Typography>
+                      </Alert>
                     </Box>
                     
                     {paymentResult && (

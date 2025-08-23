@@ -48,7 +48,8 @@ import {
   doc, 
   query, 
   orderBy,
-  serverTimestamp 
+  serverTimestamp,
+  arrayUnion
 } from 'firebase/firestore';
 
 const ManageTickets = () => {
@@ -63,12 +64,13 @@ const ManageTickets = () => {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
-      query(collection(db, 'supportTickets'), orderBy('createdAt', 'desc')),
+      query(collection(db, 'tickets'), orderBy('lastUpdated', 'desc')),
       (snapshot) => {
         const ticketsData = [];
         snapshot.forEach((doc) => {
           ticketsData.push({ id: doc.id, ...doc.data() });
         });
+        console.log('Admin - Loaded tickets:', ticketsData);
         setTickets(ticketsData);
         setLoading(false);
       }
@@ -79,9 +81,9 @@ const ManageTickets = () => {
 
   const handleStatusChange = async (ticketId, newStatus) => {
     try {
-      await updateDoc(doc(db, 'supportTickets', ticketId), {
+      await updateDoc(doc(db, 'tickets', ticketId), {
         status: newStatus,
-        updatedAt: serverTimestamp()
+        lastUpdated: serverTimestamp()
       });
       
       setSnackbar({
@@ -103,12 +105,18 @@ const ManageTickets = () => {
     if (!replyMessage.trim() || !selectedTicket) return;
 
     try {
-      // Add admin response to ticket
-      await updateDoc(doc(db, 'supportTickets', selectedTicket.id), {
-        adminResponse: replyMessage,
-        status: 'resolved',
-        resolvedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+      const ticketRef = doc(db, 'tickets', selectedTicket.id);
+      
+      // Add admin response to the messages array
+      await updateDoc(ticketRef, {
+        messages: arrayUnion({
+          sender: 'admin',
+          senderName: 'Support Team',
+          message: replyMessage.trim(),
+          timestamp: new Date()
+        }),
+        status: 'in-progress', // Set to in-progress when admin replies
+        lastUpdated: serverTimestamp()
       });
 
       setSnackbar({
@@ -119,6 +127,21 @@ const ManageTickets = () => {
 
       setReplyDialogOpen(false);
       setReplyMessage('');
+      
+      // Update selected ticket locally to show the new message
+      setSelectedTicket(prev => ({
+        ...prev,
+        messages: [
+          ...(prev.messages || []),
+          {
+            sender: 'admin',
+            senderName: 'Support Team',
+            message: replyMessage.trim(),
+            timestamp: new Date()
+          }
+        ]
+      }));
+
     } catch (error) {
       console.error('Error sending reply:', error);
       setSnackbar({
@@ -309,11 +332,14 @@ const ManageTickets = () => {
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ 
                         display: '-webkit-box',
-                        WebkitLineClamp: 2,
+                        WebkitLineClamp: 1,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden'
                       }}>
                         {ticket.message}
+                      </Typography>
+                      <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 0.5 }}>
+                        💬 {ticket.messages?.length || 1} message{(ticket.messages?.length || 1) !== 1 ? 's' : ''}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -350,10 +376,10 @@ const ManageTickets = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {ticket.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
+                        {ticket.lastUpdated?.toDate?.()?.toLocaleDateString() || ticket.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {ticket.createdAt?.toDate?.()?.toLocaleTimeString() || ''}
+                        Last: {ticket.lastUpdated?.toDate?.()?.toLocaleTimeString() || ticket.createdAt?.toDate?.()?.toLocaleTimeString() || ''}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -494,49 +520,110 @@ const ManageTickets = () => {
                 <Grid item xs={12}>
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="h6" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
-                    Customer Message
+                    Conversation Thread
                   </Typography>
-                  <Typography variant="body2" sx={{ 
-                    p: 2, 
-                    bgcolor: '#f5f5f5', 
-                    borderRadius: 1,
-                    whiteSpace: 'pre-wrap'
-                  }}>
-                    {selectedTicket.message}
-                  </Typography>
+                  
+                  <Box sx={{ maxHeight: 400, overflowY: 'auto', mb: 2 }}>
+                    {selectedTicket.messages && selectedTicket.messages.map((msg, index) => (
+                      <Box 
+                        key={index} 
+                        sx={{ 
+                          mb: 2, 
+                          p: 2, 
+                          bgcolor: msg.sender === 'user' ? '#e3f2fd' : '#fff3e0', 
+                          borderRadius: 2,
+                          border: msg.sender === 'user' ? '1px solid #bbdefb' : '1px solid #ffcc02',
+                          ml: msg.sender === 'admin' ? 2 : 0,
+                          mr: msg.sender === 'admin' ? 0 : 2
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: msg.sender === 'user' ? '#1976d2' : '#f57c00' }}>
+                          {msg.sender === 'user' ? '👤 Customer' : '🛠️ Support Team'}
+                          {msg.senderName && ` (${msg.senderName})`}
+                        </Typography>
+                        <Typography variant="body1" sx={{ mt: 1, lineHeight: 1.6 }}>
+                          {msg.message}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                          {msg.timestamp ? 
+                            (msg.timestamp.seconds ? 
+                              new Date(msg.timestamp.seconds * 1000).toLocaleString() : 
+                              msg.timestamp.toLocaleString()) 
+                            : 'Just now'}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
 
-                  {selectedTicket.adminResponse && (
-                    <Box sx={{ mt: 3 }}>
-                      <Typography variant="h6" gutterBottom sx={{ color: '#2e7d32', fontWeight: 'bold' }}>
-                        Admin Response
+                  {/* Quick Reply Section */}
+                  {selectedTicket.status !== 'closed' && (
+                    <Box sx={{ mt: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 1 }}>
+                      <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                        Quick Reply
                       </Typography>
-                      <Typography variant="body2" sx={{ 
-                        p: 2, 
-                        bgcolor: '#e8f5e8', 
-                        borderRadius: 1,
-                        whiteSpace: 'pre-wrap'
-                      }}>
-                        {selectedTicket.adminResponse}
-                      </Typography>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={2}
+                        placeholder="Type a quick reply..."
+                        variant="outlined"
+                        size="small"
+                        sx={{ mb: 1 }}
+                        value={replyMessage}
+                        onChange={(e) => setReplyMessage(e.target.value)}
+                      />
+                      <Button
+                        onClick={handleSendReply}
+                        disabled={!replyMessage.trim()}
+                        variant="contained"
+                        size="small"
+                        startIcon={<Reply />}
+                      >
+                        Send Reply
+                      </Button>
                     </Box>
                   )}
                 </Grid>
               </Grid>
             )}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
-            {selectedTicket?.status !== 'resolved' && selectedTicket?.status !== 'closed' && (
-              <Button 
-                onClick={() => {
-                  setDetailsDialogOpen(false);
-                  handleReply(selectedTicket);
-                }}
-                variant="contained"
-              >
-                Reply
-              </Button>
-            )}
+          <DialogActions sx={{ justifyContent: 'space-between', p: 2 }}>
+            <Box>
+              {selectedTicket?.status === 'open' && (
+                <Button 
+                  onClick={() => handleStatusChange(selectedTicket.id, 'in-progress')}
+                  variant="outlined"
+                  size="small"
+                  sx={{ mr: 1 }}
+                >
+                  Mark In Progress
+                </Button>
+              )}
+              {selectedTicket?.status !== 'resolved' && selectedTicket?.status !== 'closed' && (
+                <Button 
+                  onClick={() => handleStatusChange(selectedTicket.id, 'resolved')}
+                  variant="outlined"
+                  color="success"
+                  size="small"
+                  sx={{ mr: 1 }}
+                >
+                  Mark Resolved
+                </Button>
+              )}
+              {selectedTicket?.status === 'resolved' && (
+                <Button 
+                  onClick={() => handleStatusChange(selectedTicket.id, 'closed')}
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                >
+                  Close Ticket
+                </Button>
+              )}
+            </Box>
+            <Button onClick={() => setDetailsDialogOpen(false)} variant="contained">
+              Close
+            </Button>
           </DialogActions>
         </Dialog>
 

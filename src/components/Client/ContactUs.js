@@ -34,7 +34,7 @@ import {
   Pending
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 
 const ContactUs = () => {
@@ -49,21 +49,38 @@ const ContactUs = () => {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [replyLoading, setReplyLoading] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
+      console.log('ContactUs - Setting up tickets listener for user:', currentUser.uid);
+      
+      // Temporarily remove orderBy to avoid index issues
       const ticketsQuery = query(
         collection(db, 'tickets'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', currentUser.uid)
       );
 
       const unsubscribe = onSnapshot(ticketsQuery, (snapshot) => {
+        console.log('ContactUs - Tickets snapshot received, size:', snapshot.size);
         const ticketData = [];
         snapshot.forEach((doc) => {
+          console.log('ContactUs - Ticket data:', { id: doc.id, ...doc.data() });
           ticketData.push({ id: doc.id, ...doc.data() });
         });
+        
+        // Sort client-side by createdAt
+        ticketData.sort((a, b) => {
+          const aTime = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+          return bTime - aTime;
+        });
+        
+        console.log('ContactUs - Setting tickets:', ticketData);
         setTickets(ticketData);
+      }, (error) => {
+        console.error('ContactUs - Error in tickets listener:', error);
       });
 
       return () => unsubscribe();
@@ -94,10 +111,12 @@ const ContactUs = () => {
         messages: [
           {
             sender: 'user',
+            senderName: currentUser.displayName || currentUser.email,
             message: formData.message,
-            timestamp: serverTimestamp()
+            timestamp: new Date()
           }
-        ]
+        ],
+        lastUpdated: serverTimestamp()
       };
 
       await addDoc(collection(db, 'tickets'), ticketData);
@@ -115,6 +134,47 @@ const ContactUs = () => {
   const handleTicketClick = (ticket) => {
     setSelectedTicket(ticket);
     setDialogOpen(true);
+    setReplyMessage('');
+  };
+
+  const handleReplySubmit = async () => {
+    if (!replyMessage.trim() || !selectedTicket) return;
+
+    setReplyLoading(true);
+    try {
+      const ticketRef = doc(db, 'tickets', selectedTicket.id);
+      
+      await updateDoc(ticketRef, {
+        messages: arrayUnion({
+          sender: 'user',
+          senderName: currentUser.displayName || currentUser.email,
+          message: replyMessage.trim(),
+          timestamp: new Date()
+        }),
+        lastUpdated: serverTimestamp(),
+        status: selectedTicket.status === 'resolved' ? 'open' : selectedTicket.status // Reopen if was resolved
+      });
+
+      setReplyMessage('');
+      
+      // Update the selected ticket locally to show the new message immediately
+      setSelectedTicket(prev => ({
+        ...prev,
+        messages: [
+          ...(prev.messages || []),
+          {
+            sender: 'user',
+            senderName: currentUser.displayName || currentUser.email,
+            message: replyMessage.trim(),
+            timestamp: new Date()
+          }
+        ]
+      }));
+
+    } catch (error) {
+      console.error('Error sending reply:', error);
+    }
+    setReplyLoading(false);
   };
 
   const getStatusColor = (status) => {
@@ -450,19 +510,71 @@ const ContactUs = () => {
                 Conversation:
               </Typography>
               
-              {selectedTicket.messages && selectedTicket.messages.map((msg, index) => (
-                <Box key={index} sx={{ mb: 2, p: 2, bgcolor: msg.sender === 'user' ? '#e3f2fd' : '#f5f5f5', borderRadius: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: msg.sender === 'user' ? '#1976d2' : '#666' }}>
-                    {msg.sender === 'user' ? 'You' : 'Support Team'}
+              <Box sx={{ maxHeight: 400, overflowY: 'auto', mb: 2 }}>
+                {selectedTicket.messages && selectedTicket.messages.map((msg, index) => (
+                  <Box 
+                    key={index} 
+                    sx={{ 
+                      mb: 2, 
+                      p: 2, 
+                      bgcolor: msg.sender === 'user' ? '#e3f2fd' : '#fff3e0', 
+                      borderRadius: 2,
+                      border: msg.sender === 'user' ? '1px solid #bbdefb' : '1px solid #ffcc02',
+                      ml: msg.sender === 'user' ? 2 : 0,
+                      mr: msg.sender === 'user' ? 0 : 2
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: msg.sender === 'user' ? '#1976d2' : '#f57c00' }}>
+                      {msg.sender === 'user' ? '👤 You' : '🛠️ Support Team'}
+                      {msg.senderName && ` (${msg.senderName})`}
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 1, lineHeight: 1.6 }}>
+                      {msg.message}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      {msg.timestamp ? 
+                        (msg.timestamp.seconds ? 
+                          new Date(msg.timestamp.seconds * 1000).toLocaleString() : 
+                          msg.timestamp.toLocaleString()) 
+                        : 'Just now'}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              {/* Reply Section */}
+              {selectedTicket.status !== 'closed' && (
+                <Box sx={{ mt: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                    Add Reply
                   </Typography>
-                  <Typography variant="body1" sx={{ mt: 1 }}>
-                    {msg.message}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleString() : 'Just now'}
-                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    value={replyMessage}
+                    onChange={(e) => setReplyMessage(e.target.value)}
+                    placeholder="Type your reply here..."
+                    variant="outlined"
+                    sx={{ mb: 2 }}
+                  />
+                  <Button
+                    onClick={handleReplySubmit}
+                    disabled={!replyMessage.trim() || replyLoading}
+                    variant="contained"
+                    startIcon={<Send />}
+                    size="small"
+                  >
+                    {replyLoading ? 'Sending...' : 'Send Reply'}
+                  </Button>
                 </Box>
-              ))}
+              )}
+
+              {selectedTicket.status === 'closed' && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  This ticket has been closed. Please create a new ticket if you need further assistance.
+                </Alert>
+              )}
             </Box>
           )}
         </DialogContent>
