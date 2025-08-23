@@ -63,14 +63,7 @@ const GetEstimate = () => {
     businessType: '',
     serviceCategory: '',
     projectTitle: '',
-    description: '',
-    timeline: '',
-    budget: '',
-    contactPreference: 'email',
-    phone: '',
-    urgency: 'standard',
-    location: '',
-    additionalRequirements: ''
+    description: ''
   });
 
   // Business types and their service categories
@@ -224,13 +217,6 @@ const GetEstimate = () => {
         serviceCategory: formData.serviceCategory,
         projectTitle: formData.projectTitle,
         description: formData.description,
-        timeline: formData.timeline,
-        budget: formData.budget,
-        contactPreference: formData.contactPreference,
-        phone: formData.phone,
-        urgency: formData.urgency,
-        location: formData.location,
-        additionalRequirements: formData.additionalRequirements,
         status: 'pending',
         messages: [{
           id: Date.now(),
@@ -250,14 +236,7 @@ const GetEstimate = () => {
         businessType: '',
         serviceCategory: '',
         projectTitle: '',
-        description: '',
-        timeline: '',
-        budget: '',
-        contactPreference: 'email',
-        phone: '',
-        urgency: 'standard',
-        location: '',
-        additionalRequirements: ''
+        description: ''
       });
     } catch (error) {
       console.error('Error creating estimate:', error);
@@ -429,108 +408,7 @@ const GetEstimate = () => {
                   </Box>
                 </Grid>
 
-                {/* Timeline & Budget */}
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    name="timeline"
-                    label="Preferred Timeline"
-                    value={formData.timeline}
-                    onChange={handleChange}
-                    placeholder="e.g., Within 2 weeks, ASAP, Flexible"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    name="budget"
-                    label="Budget Range (Optional)"
-                    value={formData.budget}
-                    onChange={handleChange}
-                    placeholder="e.g., $500-1000, Under $500, Flexible"
-                  />
-                </Grid>
 
-                {/* Contact Info */}
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Contact Preference</InputLabel>
-                    <Select
-                      name="contactPreference"
-                      value={formData.contactPreference}
-                      onChange={handleChange}
-                    >
-                      <MenuItem value="email">Email</MenuItem>
-                      <MenuItem value="phone">Phone</MenuItem>
-                      <MenuItem value="text">Text Message</MenuItem>
-                      <MenuItem value="any">Any Method</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    name="phone"
-                    label="Phone Number"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="(555) 123-4567"
-                    required={formData.contactPreference !== 'email'}
-                  />
-                </Grid>
-
-                {/* Location */}
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    name="location"
-                    label="Location/Address"
-                    value={formData.location}
-                    onChange={handleChange}
-                    placeholder="City, State or Full Address"
-                    required
-                  />
-                </Grid>
-
-                {/* Urgency */}
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Urgency Level</InputLabel>
-                    <Select
-                      name="urgency"
-                      value={formData.urgency}
-                      onChange={handleChange}
-                    >
-                      <MenuItem value="standard">Standard</MenuItem>
-                      <MenuItem value="urgent">Urgent</MenuItem>
-                      <MenuItem value="flexible">Flexible</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                {/* Additional Requirements */}
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    name="additionalRequirements"
-                    label="Additional Requirements (Optional)"
-                    value={formData.additionalRequirements}
-                    onChange={handleChange}
-                    placeholder="Any special requirements, materials to avoid, accessibility needs, etc..."
-                  />
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                    <Button
-                      size="small"
-                      onClick={() => improveTextWithAI(formData.additionalRequirements, 'additionalRequirements')}
-                      disabled={improvingText || !formData.additionalRequirements.trim()}
-                      startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
-                    >
-                      {improvingText ? 'Improving...' : 'Improve with AI'}
-                    </Button>
-                  </Box>
-                </Grid>
 
                 {/* AI Helper Info */}
                 <Grid item xs={12}>

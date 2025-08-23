@@ -439,13 +439,13 @@ const ManageEstimates = () => {
                         </Typography>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          {estimate.budget || 'Not specified'}
+                          Not quoted yet
                         </Typography>
                       )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {estimate.timeline || 'Flexible'}
+                        On request
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -553,30 +553,6 @@ const ManageEstimates = () => {
                       <Typography variant="subtitle2" color="text.secondary">Description</Typography>
                       <Typography variant="body1">{selectedEstimate.description}</Typography>
                     </Grid>
-                    {selectedEstimate.timeline && (
-                      <Grid item xs={12}>
-                        <Typography variant="subtitle2" color="text.secondary">Timeline</Typography>
-                        <Typography variant="body1">{selectedEstimate.timeline}</Typography>
-                      </Grid>
-                    )}
-                    {selectedEstimate.budget && (
-                      <Grid item xs={12}>
-                        <Typography variant="subtitle2" color="text.secondary">Client Budget</Typography>
-                        <Typography variant="body1">{selectedEstimate.budget}</Typography>
-                      </Grid>
-                    )}
-                    {selectedEstimate.location && (
-                      <Grid item xs={12}>
-                        <Typography variant="subtitle2" color="text.secondary">Location</Typography>
-                        <Typography variant="body1">{selectedEstimate.location}</Typography>
-                      </Grid>
-                    )}
-                    {selectedEstimate.additionalRequirements && (
-                      <Grid item xs={12}>
-                        <Typography variant="subtitle2" color="text.secondary">Additional Requirements</Typography>
-                        <Typography variant="body1">{selectedEstimate.additionalRequirements}</Typography>
-                      </Grid>
-                    )}
                   </Grid>
                 </Paper>
               </Grid>
@@ -595,20 +571,6 @@ const ManageEstimates = () => {
                     <Grid item xs={12}>
                       <Typography variant="subtitle2" color="text.secondary">Email</Typography>
                       <Typography variant="body1">{selectedEstimate.userEmail}</Typography>
-                    </Grid>
-                    {selectedEstimate.phone && (
-                      <Grid item xs={12}>
-                        <Typography variant="subtitle2" color="text.secondary">Phone</Typography>
-                        <Typography variant="body1">{selectedEstimate.phone}</Typography>
-                      </Grid>
-                    )}
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="text.secondary">Contact Preference</Typography>
-                      <Typography variant="body1">{selectedEstimate.contactPreference}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="text.secondary">Urgency</Typography>
-                      <Typography variant="body1">{selectedEstimate.urgency}</Typography>
                     </Grid>
                     {selectedEstimate.quotedPrice && (
                       <Grid item xs={12}>

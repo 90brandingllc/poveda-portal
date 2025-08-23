@@ -292,17 +292,7 @@ const EstimatesList = () => {
                     {estimate.description}
                   </Typography>
                   
-                  {estimate.timeline && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      ⏰ {estimate.timeline}
-                    </Typography>
-                  )}
-                  
-                  {estimate.budget && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      💰 {estimate.budget}
-                    </Typography>
-                  )}
+
                   
                   <Divider sx={{ my: 2 }} />
                   
@@ -380,30 +370,6 @@ const EstimatesList = () => {
                     <Typography variant="subtitle2" color="text.secondary">Description</Typography>
                     <Typography variant="body1">{selectedEstimate.description}</Typography>
                   </Grid>
-                  {selectedEstimate.timeline && (
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="subtitle2" color="text.secondary">Timeline</Typography>
-                      <Typography variant="body1">{selectedEstimate.timeline}</Typography>
-                    </Grid>
-                  )}
-                  {selectedEstimate.budget && (
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="subtitle2" color="text.secondary">Budget</Typography>
-                      <Typography variant="body1">{selectedEstimate.budget}</Typography>
-                    </Grid>
-                  )}
-                  {selectedEstimate.location && (
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="text.secondary">Location</Typography>
-                      <Typography variant="body1">{selectedEstimate.location}</Typography>
-                    </Grid>
-                  )}
-                  {selectedEstimate.additionalRequirements && (
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="text.secondary">Additional Requirements</Typography>
-                      <Typography variant="body1">{selectedEstimate.additionalRequirements}</Typography>
-                    </Grid>
-                  )}
                 </Grid>
               </Paper>
 
