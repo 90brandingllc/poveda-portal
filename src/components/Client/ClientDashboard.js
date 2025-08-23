@@ -46,7 +46,7 @@ const ClientDashboard = () => {
 
   useEffect(() => {
     if (currentUser) {
-      console.log('ClientDashboard - Setting up appointments listener for user:', currentUser.uid);
+
       
       // Real-time listener for user's appointments (remove orderBy to avoid index issues)
       const appointmentsQuery = query(
@@ -171,9 +171,7 @@ const ClientDashboard = () => {
       // Real-time listener for user's estimates
       const estimatesQuery = query(
         collection(db, 'estimates'),
-        where('userId', '==', currentUser.uid),
-        orderBy('lastUpdated', 'desc'),
-        limit(5)
+        where('userId', '==', currentUser.uid)
       );
 
       const unsubscribeEstimates = onSnapshot(estimatesQuery, (snapshot) => {
@@ -181,7 +179,18 @@ const ClientDashboard = () => {
         snapshot.forEach((doc) => {
           estimateData.push({ id: doc.id, ...doc.data() });
         });
-        setEstimates(estimateData);
+        
+        // Sort by lastUpdated (most recent first) - client-side sorting
+        estimateData.sort((a, b) => {
+          const aTime = a.lastUpdated?.seconds ? a.lastUpdated.seconds * 1000 : new Date(a.lastUpdated).getTime();
+          const bTime = b.lastUpdated?.seconds ? b.lastUpdated.seconds * 1000 : new Date(b.lastUpdated).getTime();
+          return bTime - aTime;
+        });
+        
+        // Limit to 5 most recent
+        setEstimates(estimateData.slice(0, 5));
+      }, (error) => {
+        console.error('ClientDashboard - Error fetching estimates:', error);
       });
 
       return () => {
