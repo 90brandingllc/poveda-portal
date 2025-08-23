@@ -466,7 +466,7 @@ const EstimatesList = () => {
                   <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
                     Send a Message
                   </Typography>
-                  <Box sx={{ position: 'relative', mb: 2 }}>
+                  <Box sx={{ mb: 2 }}>
                     <TextField
                       fullWidth
                       multiline
@@ -476,15 +476,16 @@ const EstimatesList = () => {
                       onChange={(e) => setReplyMessage(e.target.value)}
                       variant="outlined"
                     />
-                    <Tooltip title="Improve with AI">
-                      <IconButton
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                      <Button
+                        size="small"
                         onClick={() => improveTextWithAI(replyMessage)}
                         disabled={improvingText || !replyMessage.trim()}
-                        sx={{ position: 'absolute', right: 8, top: 8 }}
+                        startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
                       >
-                        {improvingText ? <CircularProgress size={20} /> : <AutoFixHigh />}
-                      </IconButton>
-                    </Tooltip>
+                        {improvingText ? 'Improving...' : 'Improve with AI'}
+                      </Button>
+                    </Box>
                   </Box>
                   <Button
                     variant="contained"

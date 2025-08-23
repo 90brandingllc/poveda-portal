@@ -45,7 +45,8 @@ import {
   PersonAdd,
   SupportAgent,
   Analytics,
-  Assessment
+  Assessment,
+  RequestQuote
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
@@ -70,6 +71,7 @@ const AdminDashboard = () => {
   });
   const [recentAppointments, setRecentAppointments] = useState([]);
   const [recentTickets, setRecentTickets] = useState([]);
+  const [recentEstimates, setRecentEstimates] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -86,6 +88,12 @@ const AdminDashboard = () => {
 
     const ticketsQuery = query(
       collection(db, 'tickets'),
+      orderBy('lastUpdated', 'desc'),
+      limit(5)
+    );
+
+    const estimatesQuery = query(
+      collection(db, 'estimates'),
       orderBy('lastUpdated', 'desc'),
       limit(5)
     );
@@ -247,9 +255,20 @@ const AdminDashboard = () => {
       setLoading(false);
     });
 
+    // Estimates listener
+    const unsubscribeEstimates = onSnapshot(estimatesQuery, (snapshot) => {
+      const estimates = [];
+      snapshot.forEach((doc) => {
+        const data = { id: doc.id, ...doc.data() };
+        estimates.push(data);
+      });
+      setRecentEstimates(estimates);
+    });
+
     return () => {
       unsubscribeAppointments();
       unsubscribeTickets();
+      unsubscribeEstimates();
     };
   }, []);
 
@@ -259,6 +278,9 @@ const AdminDashboard = () => {
       case 'approved': return '#2e7d32';
       case 'completed': return '#1976d2';
       case 'rejected': return '#d32f2f';
+      case 'in-progress': return '#1976d2';
+      case 'quoted': return '#2e7d32';
+      case 'declined': return '#d32f2f';
       default: return '#757575';
     }
   };
@@ -543,7 +565,7 @@ const AdminDashboard = () => {
         </Grid>
 
         {/* Recent Appointments */}
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12} md={6} lg={4}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center' }}>
             <Assignment sx={{ mr: 1 }} />
             Recent Appointments
@@ -611,7 +633,7 @@ const AdminDashboard = () => {
         </Grid>
 
         {/* Recent Support Tickets */}
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12} md={6} lg={4}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center' }}>
             <SupportAgent sx={{ mr: 1 }} />
             Recent Support Tickets
@@ -678,6 +700,79 @@ const AdminDashboard = () => {
                 startIcon={<SupportAgent />}
               >
                 View All Tickets
+              </Button>
+            </Box>
+          </Card>
+        </Grid>
+
+        {/* Recent Estimates */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center' }}>
+            <RequestQuote sx={{ mr: 1 }} />
+            Recent Estimates
+          </Typography>
+          <Card sx={{ height: 400, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+              <List>
+                {recentEstimates.length > 0 ? recentEstimates.map((estimate) => (
+                  <ListItem key={estimate.id} divider>
+                    <ListItemIcon>
+                      <Avatar sx={{ 
+                        bgcolor: getStatusColor(estimate.status),
+                        width: 32, 
+                        height: 32 
+                      }}>
+                        {estimate.status === 'pending' ? <Schedule /> : 
+                         estimate.status === 'quoted' ? <AttachMoney /> : 
+                         estimate.status === 'in-progress' ? <Assignment /> : <RequestQuote />}
+                      </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {estimate.userName || 'Unknown Customer'}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {estimate.projectTitle} - {estimate.serviceCategory}
+                          </Typography>
+                          <Chip 
+                            label={estimate.status || 'pending'} 
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              bgcolor: getStatusColor(estimate.status),
+                              color: 'white',
+                              textTransform: 'capitalize',
+                              fontSize: '0.7rem'
+                            }}
+                          />
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                )) : (
+                  <ListItem>
+                    <ListItemText 
+                      primary="No recent estimates"
+                      secondary="Customer estimate requests will appear here"
+                    />
+                  </ListItem>
+                )}
+              </List>
+            </Box>
+            <Divider />
+            <Box sx={{ p: 2 }}>
+              <Button
+                component={Link}
+                to="/admin/estimates"
+                variant="outlined"
+                fullWidth
+                startIcon={<RequestQuote />}
+              >
+                View All Estimates
               </Button>
             </Box>
           </Card>

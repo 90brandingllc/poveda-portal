@@ -35,6 +35,7 @@ import { db } from '../../firebase/config';
 const ClientDashboard = () => {
   const { currentUser } = useAuth();
   const [appointments, setAppointments] = useState([]);
+  const [estimates, setEstimates] = useState([]);
   const [stats, setStats] = useState({
     totalAppointments: 0,
     pendingAppointments: 0,
@@ -167,7 +168,26 @@ const ClientDashboard = () => {
         console.error('ClientDashboard - Error fetching appointments:', error);
       });
 
-      return () => unsubscribe();
+      // Real-time listener for user's estimates
+      const estimatesQuery = query(
+        collection(db, 'estimates'),
+        where('userId', '==', currentUser.uid),
+        orderBy('lastUpdated', 'desc'),
+        limit(5)
+      );
+
+      const unsubscribeEstimates = onSnapshot(estimatesQuery, (snapshot) => {
+        const estimateData = [];
+        snapshot.forEach((doc) => {
+          estimateData.push({ id: doc.id, ...doc.data() });
+        });
+        setEstimates(estimateData);
+      });
+
+      return () => {
+        unsubscribe();
+        unsubscribeEstimates();
+      };
     }
   }, [currentUser]);
 
@@ -217,6 +237,9 @@ const ClientDashboard = () => {
       case 'approved': return '#2e7d32';
       case 'completed': return '#1976d2';
       case 'rejected': return '#d32f2f';
+      case 'in-progress': return '#1976d2';
+      case 'quoted': return '#2e7d32';
+      case 'declined': return '#d32f2f';
       default: return '#757575';
     }
   };
@@ -228,6 +251,9 @@ const ClientDashboard = () => {
       case 'approved': return <CheckCircle />;
       case 'completed': return <Star />;
       case 'rejected': return <Cancel />;
+      case 'in-progress': return <ContactSupport />;
+      case 'quoted': return <RequestQuote />;
+      case 'declined': return <Cancel />;
       default: return <Schedule />;
     }
   };
@@ -358,7 +384,7 @@ const ClientDashboard = () => {
         </Grid>
 
         {/* Recent Appointments */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
             Recent Appointments
           </Typography>
@@ -427,6 +453,83 @@ const ClientDashboard = () => {
                     size="small"
                   >
                     Book Now
+                  </Button>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Recent Estimates */}
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+            Recent Estimates
+          </Typography>
+          <Card>
+            <CardContent>
+              {estimates.length > 0 ? (
+                <Stack spacing={2}>
+                  {estimates.map((estimate, index) => (
+                    <Box key={estimate.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <IconButton 
+                            size="small" 
+                            sx={{ color: getStatusColor(estimate.status), mr: 1 }}
+                          >
+                            {getStatusIcon(estimate.status)}
+                          </IconButton>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {estimate.projectTitle || 'Project Estimate'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {estimate.serviceCategory} • {estimate.lastUpdated ? 
+                                (estimate.lastUpdated.toDate ? estimate.lastUpdated.toDate().toLocaleDateString() : 
+                                 estimate.lastUpdated.seconds ? new Date(estimate.lastUpdated.seconds * 1000).toLocaleDateString() : 
+                                 'Recently') : 'Recently'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Chip 
+                          label={estimate.status || 'pending'} 
+                          size="small"
+                          sx={{
+                            bgcolor: getStatusColor(estimate.status),
+                            color: 'white',
+                            textTransform: 'capitalize'
+                          }}
+                        />
+                      </Box>
+                      {index < estimates.length - 1 && <Divider sx={{ mt: 2 }} />}
+                    </Box>
+                  ))}
+                  <Button
+                    component={Link}
+                    to="/my-estimates"
+                    variant="outlined"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                  >
+                    View All Estimates
+                  </Button>
+                </Stack>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <RequestQuote sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="body1" color="text.secondary" gutterBottom>
+                    No estimates yet
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Request a custom quote to get started
+                  </Typography>
+                  <Button
+                    component={Link}
+                    to="/get-estimate"
+                    variant="contained"
+                    size="small"
+                  >
+                    Get Estimate
                   </Button>
                 </Box>
               )}

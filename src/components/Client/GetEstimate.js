@@ -383,51 +383,49 @@ const GetEstimate = () => {
 
                 {/* Project Title */}
                 <Grid item xs={12}>
-                  <Box sx={{ position: 'relative' }}>
-                    <TextField
-                      fullWidth
-                      name="projectTitle"
-                      label="Project Title"
-                      value={formData.projectTitle}
-                      onChange={handleChange}
-                      placeholder="Brief title for your project..."
-                      required
-                    />
-                    <Tooltip title="Improve with AI">
-                      <IconButton
-                        onClick={() => improveTextWithAI(formData.projectTitle, 'projectTitle')}
-                        disabled={improvingText || !formData.projectTitle.trim()}
-                        sx={{ position: 'absolute', right: 8, top: 8 }}
-                      >
-                        {improvingText ? <CircularProgress size={20} /> : <AutoFixHigh />}
-                      </IconButton>
-                    </Tooltip>
+                  <TextField
+                    fullWidth
+                    name="projectTitle"
+                    label="Project Title"
+                    value={formData.projectTitle}
+                    onChange={handleChange}
+                    placeholder="Brief title for your project..."
+                    required
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={() => improveTextWithAI(formData.projectTitle, 'projectTitle')}
+                      disabled={improvingText || !formData.projectTitle.trim()}
+                      startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
+                    >
+                      {improvingText ? 'Improving...' : 'Improve with AI'}
+                    </Button>
                   </Box>
                 </Grid>
 
                 {/* Description */}
                 <Grid item xs={12}>
-                  <Box sx={{ position: 'relative' }}>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      name="description"
-                      label="Project Description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      placeholder="Describe what you want done. Include any specific requirements, materials, colors, styles, or other important details..."
-                      required
-                    />
-                    <Tooltip title="Improve with AI">
-                      <IconButton
-                        onClick={() => improveTextWithAI(formData.description, 'description')}
-                        disabled={improvingText || !formData.description.trim()}
-                        sx={{ position: 'absolute', right: 8, top: 8 }}
-                      >
-                        {improvingText ? <CircularProgress size={20} /> : <AutoFixHigh />}
-                      </IconButton>
-                    </Tooltip>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    name="description"
+                    label="Project Description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Describe what you want done. Include any specific requirements, materials, colors, styles, or other important details..."
+                    required
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={() => improveTextWithAI(formData.description, 'description')}
+                      disabled={improvingText || !formData.description.trim()}
+                      startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
+                    >
+                      {improvingText ? 'Improving...' : 'Improve with AI'}
+                    </Button>
                   </Box>
                 </Grid>
 
@@ -512,26 +510,25 @@ const GetEstimate = () => {
 
                 {/* Additional Requirements */}
                 <Grid item xs={12}>
-                  <Box sx={{ position: 'relative' }}>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={3}
-                      name="additionalRequirements"
-                      label="Additional Requirements (Optional)"
-                      value={formData.additionalRequirements}
-                      onChange={handleChange}
-                      placeholder="Any special requirements, materials to avoid, accessibility needs, etc..."
-                    />
-                    <Tooltip title="Improve with AI">
-                      <IconButton
-                        onClick={() => improveTextWithAI(formData.additionalRequirements, 'additionalRequirements')}
-                        disabled={improvingText || !formData.additionalRequirements.trim()}
-                        sx={{ position: 'absolute', right: 8, top: 8 }}
-                      >
-                        {improvingText ? <CircularProgress size={20} /> : <AutoFixHigh />}
-                      </IconButton>
-                    </Tooltip>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    name="additionalRequirements"
+                    label="Additional Requirements (Optional)"
+                    value={formData.additionalRequirements}
+                    onChange={handleChange}
+                    placeholder="Any special requirements, materials to avoid, accessibility needs, etc..."
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={() => improveTextWithAI(formData.additionalRequirements, 'additionalRequirements')}
+                      disabled={improvingText || !formData.additionalRequirements.trim()}
+                      startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
+                    >
+                      {improvingText ? 'Improving...' : 'Improve with AI'}
+                    </Button>
                   </Box>
                 </Grid>
 

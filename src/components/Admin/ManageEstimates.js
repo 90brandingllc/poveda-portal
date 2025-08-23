@@ -706,7 +706,7 @@ const ManageEstimates = () => {
                       </Grid>
                     </Grid>
 
-                    <Box sx={{ position: 'relative', mb: 2 }}>
+                    <Box sx={{ mb: 2 }}>
                       <TextField
                         fullWidth
                         multiline
@@ -716,14 +716,16 @@ const ManageEstimates = () => {
                         onChange={(e) => setReplyMessage(e.target.value)}
                         variant="outlined"
                       />
-                      <IconButton
-                        onClick={() => improveTextWithAI(replyMessage)}
-                        disabled={improvingText || !replyMessage.trim()}
-                        sx={{ position: 'absolute', right: 8, top: 8 }}
-                        title="Improve with AI"
-                      >
-                        {improvingText ? <CircularProgress size={20} /> : <AutoFixHigh />}
-                      </IconButton>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                        <Button
+                          size="small"
+                          onClick={() => improveTextWithAI(replyMessage)}
+                          disabled={improvingText || !replyMessage.trim()}
+                          startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
+                        >
+                          {improvingText ? 'Improving...' : 'Improve with AI'}
+                        </Button>
+                      </Box>
                     </Box>
                     
                     <Box sx={{ display: 'flex', gap: 2 }}>
