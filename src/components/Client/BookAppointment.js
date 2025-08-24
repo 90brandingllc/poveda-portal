@@ -243,52 +243,33 @@ const BookAppointment = () => {
     setActiveStep((prevStep) => prevStep + 1);
   };
 
-  const handlePaymentSuccess = (paymentResult) => {
+  const handlePaymentSuccess = async (paymentResult) => {
     setPaymentResult(paymentResult);
     setError('');
-    // Payment successful, now we can proceed with booking
-  };
-
-  const handlePaymentError = (error) => {
-    setError('Payment failed. Please try again.');
-    console.error('Payment error:', error);
-  };
-
-  const handleBack = () => {
-    if (activeStep === 0) {
-      navigate('/dashboard');
-    } else {
-      setActiveStep((prevStep) => prevStep - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    // Check if payment was completed
-    if (!paymentResult) {
-      setError('Please complete the payment to confirm your booking.');
-      return;
-    }
-
-    // Validate required fields
-    if (!formData.date) {
-      setError('Please select a date for your appointment.');
-      return;
-    }
-
-    if (!formData.timeSlot) {
-      setError('Please select a time slot for your appointment.');
-      return;
-    }
-
-    if (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()) {
-      setError('Please provide a complete service address (street, city, state, and zip code).');
-      return;
-    }
-
+    
+    // Automatically book appointment after successful payment
     setLoading(true);
-    setError('');
-
+    
     try {
+      // Validate required fields before booking
+      if (!formData.date) {
+        setError('Please select a date for your appointment.');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.timeSlot) {
+        setError('Please select a time slot for your appointment.');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()) {
+        setError('Please provide a complete service address (street, city, state, and zip code).');
+        setLoading(false);
+        return;
+      }
+
       const depositAmount = parseFloat(formatCurrency(calculateDepositAmount(formData.estimatedPrice)));
       const remainingBalance = formData.estimatedPrice - depositAmount;
 
@@ -314,20 +295,38 @@ const BookAppointment = () => {
         createdAt: serverTimestamp()
       };
 
-      console.log('BookAppointment - Submitting appointment data:', appointmentData);
-      console.log('BookAppointment - Current user:', currentUser);
+      console.log('Auto-booking appointment after payment:', appointmentData);
       const docRef = await addDoc(collection(db, 'appointments'), appointmentData);
-      console.log('BookAppointment - Document written with ID:', docRef.id);
+      console.log('Appointment booked with ID:', docRef.id);
+      
       setSuccess(true);
       setTimeout(() => {
         navigate('/appointments');
       }, 3000);
+      
     } catch (error) {
       setError(`Failed to book appointment: ${error.message}`);
-      console.error('Booking error:', error);
+      console.error('Auto-booking error:', error);
     }
+    
     setLoading(false);
   };
+
+  const handlePaymentError = (error) => {
+    setError('Payment failed. Please try again.');
+    console.error('Payment error:', error);
+  };
+
+  const handleBack = () => {
+    if (activeStep === 0) {
+      navigate('/dashboard');
+    } else {
+      setActiveStep((prevStep) => prevStep - 1);
+    }
+  };
+
+  // Note: handleSubmit is no longer used since booking happens automatically after payment
+  // Keeping it for potential future use or fallback scenarios
 
   const renderStepContent = (step) => {
     switch (step) {
@@ -669,10 +668,10 @@ const BookAppointment = () => {
                       Payment Completed! 
                   </Typography>
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                      Your deposit has been processed successfully. Click "Confirm Booking" to finalize your appointment.
+                      Your deposit has been processed successfully and your appointment is being booked automatically.
                     </Typography>
-                    <Alert severity="info">
-                      You're all set! Your booking will be confirmed once you click the final button below.
+                    <Alert severity="success">
+                      ✅ Appointment booking in progress... You'll be redirected shortly!
                     </Alert>
                 </CardContent>
               </Card>
@@ -744,24 +743,32 @@ const BookAppointment = () => {
           </Button>
           
           {activeStep === steps.length - 1 ? (
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={loading || !paymentResult}
-              size="large"
-              sx={{
-                background: paymentResult 
-                  ? 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)'
-                  : 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
-                '&:hover': {
-                  background: paymentResult
-                    ? 'linear-gradient(135deg, #388e3c 0%, #2e7d32 100%)'
-                    : 'linear-gradient(135deg, #0d47a1 0%, #01579b 100%)'
-                }
-              }}
-            >
-              {loading ? 'Booking...' : paymentResult ? '✅ Confirm Booking' : '💳 Complete Payment First'}
-            </Button>
+            paymentResult ? (
+              <Button
+                variant="contained"
+                disabled={true}
+                size="large"
+                sx={{
+                  background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
+                  opacity: 0.8
+                }}
+              >
+                {loading ? '🔄 Booking Appointment...' : '✅ Appointment Booked!'}
+              </Button>
+            ) : (
+              <Button
+                variant="outlined"
+                disabled={true}
+                size="large"
+                sx={{
+                  borderColor: '#1565c0',
+                  color: '#1565c0',
+                  opacity: 0.6
+                }}
+              >
+                💳 Complete Payment to Book
+              </Button>
+            )
           ) : (
             <Button
               variant="contained"
@@ -769,7 +776,7 @@ const BookAppointment = () => {
               disabled={
                 (activeStep === 0 && !formData.servicePackage) ||
                 (activeStep === 1 && (!formData.date || !formData.timeSlot)) ||
-                (activeStep === 2 && (!formData.address.street || !formData.address.city))
+                (activeStep === 2 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
               }
               sx={{
                 background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',

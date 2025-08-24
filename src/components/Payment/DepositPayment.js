@@ -184,7 +184,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
             ) : (
               <>
                 <Payment sx={{ mr: 1 }} />
-                Pay Deposit ${depositDisplay}
+                Pay Deposit ${depositDisplay} & Book Appointment
               </>
             )}
           </Button>
