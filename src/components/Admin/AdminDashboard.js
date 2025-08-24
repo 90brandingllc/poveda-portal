@@ -189,22 +189,6 @@ const AdminDashboard = () => {
 
       // Create notifications
       const newNotifications = [];
-      if (pending > 5) {
-        newNotifications.push({
-          id: 'pending-appointments',
-          type: 'warning',
-          message: `${pending} appointments waiting for approval`,
-          action: 'View Appointments'
-        });
-      }
-      // if (todaysCount > 0) {
-      //   newNotifications.push({
-      //     id: 'todays-appointments',
-      //     type: 'info',
-      //     message: `${todaysCount} appointments scheduled for today`,
-      //     action: 'View Schedule'
-      //   });
-      // }
 
       // Debug logging for revenue calculation
       console.log('📊 Revenue Calculation Debug:', {
