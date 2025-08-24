@@ -12,13 +12,7 @@ import {
   useTheme,
   Avatar
 } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  AccountCircle,
-  DirectionsCar,
-  Dashboard,
-  ExitToApp
-} from '@mui/icons-material';
+
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -57,18 +51,18 @@ const Navbar = () => {
   const menuItems = currentUser
     ? userRole === 'admin'
       ? [
-          { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
-          { label: 'Appointments', path: '/admin/appointments', icon: <DirectionsCar /> },
-          { label: 'Support Tickets', path: '/admin/tickets', icon: <AccountCircle /> },
-          { label: 'Estimates', path: '/admin/estimates', icon: <AccountCircle /> }
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Appointments', path: '/admin/appointments' },
+          { label: 'Support Tickets', path: '/admin/tickets' },
+          { label: 'Estimates', path: '/admin/estimates' }
         ]
       : [
-          { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
-          { label: 'Book Service', path: '/book-appointment', icon: <DirectionsCar /> },
-          { label: 'My Appointments', path: '/appointments', icon: <AccountCircle /> },
-          { label: 'Contact Us', path: '/contact', icon: <AccountCircle /> },
-          { label: 'Get Estimate', path: '/get-estimate', icon: <AccountCircle /> },
-          { label: 'My Estimates', path: '/my-estimates', icon: <AccountCircle /> }
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Book Service', path: '/book-appointment' },
+          { label: 'My Appointments', path: '/appointments' },
+          { label: 'Contact Us', path: '/contact' },
+          { label: 'Get Estimate', path: '/get-estimate' },
+          { label: 'My Estimates', path: '/my-estimates' }
         ]
     : [];
 
@@ -157,7 +151,7 @@ const Navbar = () => {
                     key={item.label}
                     component={Link}
                     to={item.path}
-                    startIcon={item.icon}
+
                     sx={{ 
                       color: 'text.primary',
                       fontWeight: 500,
@@ -167,18 +161,17 @@ const Navbar = () => {
                     {item.label}
                   </Button>
                 ))}
-                <IconButton
-                  size="large"
-                  aria-label="account of current user"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
+                <Button
                   onClick={handleMenu}
-                  color="inherit"
+                  sx={{ 
+                    color: 'text.primary',
+                    fontWeight: 500,
+                    minWidth: 'auto',
+                    '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' }
+                  }}
                 >
-                  <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                    {currentUser?.displayName?.[0] || currentUser?.email?.[0] || 'U'}
-                  </Avatar>
-                </IconButton>
+                  {currentUser?.displayName || currentUser?.email || 'Account'}
+                </Button>
                 <Menu
                   id="menu-appbar"
                   anchorEl={anchorEl}
@@ -195,11 +188,9 @@ const Navbar = () => {
                   onClose={handleClose}
                 >
                   <MenuItem onClick={handleClose}>
-                    <AccountCircle sx={{ mr: 1 }} />
                     Profile
                   </MenuItem>
                   <MenuItem onClick={handleLogout}>
-                    <ExitToApp sx={{ mr: 1 }} />
                     Logout
                   </MenuItem>
                 </Menu>
@@ -210,15 +201,16 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isMobile && (
-          <IconButton
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="menu"
+          <Button
             onClick={handleMobileMenu}
+            sx={{ 
+              color: 'text.primary',
+              fontWeight: 500,
+              minWidth: 'auto'
+            }}
           >
-            <MenuIcon />
-          </IconButton>
+            Menu
+          </Button>
         )}
 
         {/* Mobile Menu */}
@@ -244,7 +236,6 @@ const Navbar = () => {
               to={item.path}
               onClick={handleClose}
             >
-              {item.icon && <Box sx={{ mr: 1 }}>{item.icon}</Box>}
               {item.label}
             </MenuItem>
           ))}
@@ -259,7 +250,6 @@ const Navbar = () => {
             </>
           ) : (
             <MenuItem onClick={handleLogout}>
-              <ExitToApp sx={{ mr: 1 }} />
               Logout
             </MenuItem>
           )}

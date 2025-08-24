@@ -14,19 +14,7 @@ import {
   Stack,
   Divider
 } from '@mui/material';
-import {
-  CalendarToday,
-  DirectionsCar,
-  ContactSupport,
-  RequestQuote,
 
-  Add,
-  CheckCircle,
-  Schedule,
-  Cancel,
-  Star,
-  Notifications
-} from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
@@ -36,6 +24,7 @@ const ClientDashboard = () => {
   const { currentUser } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [estimates, setEstimates] = useState([]);
+  const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({
     totalAppointments: 0,
     pendingAppointments: 0,
@@ -193,9 +182,35 @@ const ClientDashboard = () => {
         console.error('ClientDashboard - Error fetching estimates:', error);
       });
 
+      // Real-time listener for user's tickets
+      const ticketsQuery = query(
+        collection(db, 'tickets'),
+        where('userId', '==', currentUser.uid)
+      );
+
+      const unsubscribeTickets = onSnapshot(ticketsQuery, (snapshot) => {
+        const ticketData = [];
+        snapshot.forEach((doc) => {
+          ticketData.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Sort by lastUpdated (most recent first) - client-side sorting
+        ticketData.sort((a, b) => {
+          const aTime = a.lastUpdated?.seconds ? a.lastUpdated.seconds * 1000 : new Date(a.lastUpdated).getTime();
+          const bTime = b.lastUpdated?.seconds ? b.lastUpdated.seconds * 1000 : new Date(b.lastUpdated).getTime();
+          return bTime - aTime;
+        });
+        
+        // Limit to 5 most recent
+        setTickets(ticketData.slice(0, 5));
+      }, (error) => {
+        console.error('ClientDashboard - Error fetching tickets:', error);
+      });
+
       return () => {
         unsubscribe();
         unsubscribeEstimates();
+        unsubscribeTickets();
       };
     }
   }, [currentUser]);
@@ -204,36 +219,41 @@ const ClientDashboard = () => {
     {
       title: 'Book Appointment',
       description: 'Schedule a new service',
-      icon: <CalendarToday />,
+      value: '+',
       color: '#1976d2',
+      bgColor: '#e3f2fd',
       link: '/book-appointment'
     },
     {
       title: 'My Appointments',
       description: 'View booking history',
-      icon: <DirectionsCar />,
+      value: stats.totalAppointments,
       color: '#2e7d32',
+      bgColor: '#e8f5e8',
       link: '/appointments'
     },
     {
       title: 'Contact Support',
       description: 'Get help or ask questions',
-      icon: <ContactSupport />,
+      value: '?',
       color: '#ed6c02',
+      bgColor: '#fff3e0',
       link: '/contact'
     },
     {
       title: 'Get Estimate',
       description: 'Request custom pricing',
-      icon: <RequestQuote />,
+      value: '+',
       color: '#9c27b0',
+      bgColor: '#f3e5f5',
       link: '/get-estimate'
     },
     {
       title: 'My Estimates',
       description: 'View estimate requests',
-      icon: <Star />,
+      value: estimates.length,
       color: '#ff9800',
+      bgColor: '#fff8e1',
       link: '/my-estimates'
     }
 
@@ -249,23 +269,14 @@ const ClientDashboard = () => {
       case 'in-progress': return '#1976d2';
       case 'quoted': return '#2e7d32';
       case 'declined': return '#d32f2f';
+      case 'open': return '#ed6c02';
+      case 'closed': return '#2e7d32';
+      case 'resolved': return '#1976d2';
       default: return '#757575';
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return <Schedule />;
-      case 'confirmed':
-      case 'approved': return <CheckCircle />;
-      case 'completed': return <Star />;
-      case 'rejected': return <Cancel />;
-      case 'in-progress': return <ContactSupport />;
-      case 'quoted': return <RequestQuote />;
-      case 'declined': return <Cancel />;
-      default: return <Schedule />;
-    }
-  };
+
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -306,7 +317,7 @@ const ClientDashboard = () => {
               to="/book-appointment"
               variant="contained"
               size="large"
-              startIcon={<Add />}
+
               sx={{
                 bgcolor: '#FFD700',
                 color: '#000',
@@ -323,26 +334,51 @@ const ClientDashboard = () => {
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {[
-          { title: 'Total Appointments', value: stats.totalAppointments, icon: <CalendarToday />, color: '#1976d2' },
-          { title: 'Pending', value: stats.pendingAppointments, icon: <Schedule />, color: '#ed6c02' },
-          { title: 'Approved', value: stats.approvedAppointments, icon: <CheckCircle />, color: '#2e7d32' },
-          { title: 'Money Spent', value: `$${stats.totalSpent.toFixed(2)}`, icon: <Star />, color: '#9c27b0' }
+          { title: 'Total Appointments', value: stats.totalAppointments, color: '#1976d2' },
+          { title: 'Pending', value: stats.pendingAppointments, color: '#ed6c02' },
+          { title: 'Approved', value: stats.approvedAppointments, color: '#2e7d32' },
+          { title: 'Money Spent', value: `$${stats.totalSpent.toFixed(2)}`, color: '#9c27b0' }
         ].map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card className="stats-card" sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography color="textSecondary" gutterBottom variant="body2">
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: stat.color }}>
-                      {stat.value}
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: stat.color, width: 56, height: 56 }}>
-                    {stat.icon}
-                  </Avatar>
+            <Card 
+              className="stats-card" 
+              sx={{ 
+                height: '100%',
+                border: '2px solid #e0e0e0',
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  borderColor: stat.color,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box>
+                  <Typography 
+                    color="textSecondary" 
+                    gutterBottom 
+                    variant="body2"
+                    sx={{ 
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                      mb: 1
+                    }}
+                  >
+                    {stat.title}
+                  </Typography>
+                  <Typography 
+                    variant="h3" 
+                    sx={{ 
+                      fontWeight: 700, 
+                      color: stat.color,
+                      fontSize: '2.2rem'
+                    }}
+                  >
+                    {stat.value}
+                  </Typography>
                 </Box>
               </CardContent>
             </Card>
@@ -365,22 +401,64 @@ const ClientDashboard = () => {
                   sx={{
                     textDecoration: 'none',
                     transition: 'all 0.3s ease',
+                    border: `2px solid ${action.color}30`,
+                    borderRadius: 2,
+                    background: action.bgColor,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    cursor: 'pointer',
+                    minHeight: '120px',
                     '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                      borderColor: action.color,
                     }
                   }}
                 >
-                  <CardContent>
+                  <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Avatar sx={{ bgcolor: action.color, mr: 2 }}>
-                        {action.icon}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      <Box 
+                        sx={{ 
+                          width: 48, 
+                          height: 48, 
+                          borderRadius: 2,
+                          backgroundColor: action.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mr: 2
+                        }}
+                      >
+                        <Typography 
+                          variant="h4" 
+                          sx={{ 
+                            color: 'white',
+                            fontWeight: 700,
+                            fontSize: '1.5rem'
+                          }}
+                        >
+                          {action.value}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 600,
+                            color: 'text.primary',
+                            mb: 0.5,
+                            fontSize: '1rem'
+                          }}
+                        >
                           {action.title}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary"
+                          sx={{ 
+                            fontSize: '0.85rem',
+                            lineHeight: 1.3
+                          }}
+                        >
                           {action.description}
                         </Typography>
                       </Box>
@@ -404,13 +482,7 @@ const ClientDashboard = () => {
                   {appointments.map((appointment, index) => (
                     <Box key={appointment.id}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <IconButton 
-                            size="small" 
-                            sx={{ color: getStatusColor(appointment.status), mr: 1 }}
-                          >
-                            {getStatusIcon(appointment.status)}
-                          </IconButton>
+                        <Box>
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               {appointment.service || 'Car Detailing'}
@@ -448,7 +520,6 @@ const ClientDashboard = () => {
                 </Stack>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <DirectionsCar sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
                   <Typography variant="body1" color="text.secondary" gutterBottom>
                     No appointments yet
                   </Typography>
@@ -481,13 +552,7 @@ const ClientDashboard = () => {
                   {estimates.map((estimate, index) => (
                     <Box key={estimate.id}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <IconButton 
-                            size="small" 
-                            sx={{ color: getStatusColor(estimate.status), mr: 1 }}
-                          >
-                            {getStatusIcon(estimate.status)}
-                          </IconButton>
+                        <Box>
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               {estimate.projectTitle || 'Project Estimate'}
@@ -525,7 +590,6 @@ const ClientDashboard = () => {
                 </Stack>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <RequestQuote sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
                   <Typography variant="body1" color="text.secondary" gutterBottom>
                     No estimates yet
                   </Typography>
@@ -545,14 +609,81 @@ const ClientDashboard = () => {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Recent Contact Us */}
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+            Recent Contact Us
+          </Typography>
+          <Card>
+            <CardContent>
+              {tickets.length > 0 ? (
+                <Stack spacing={2}>
+                  {tickets.map((ticket, index) => (
+                    <Box key={ticket.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {ticket.subject || 'Support Request'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {ticket.lastUpdated ? 
+                                (ticket.lastUpdated.toDate ? ticket.lastUpdated.toDate().toLocaleDateString() : 
+                                 ticket.lastUpdated.seconds ? new Date(ticket.lastUpdated.seconds * 1000).toLocaleDateString() : 
+                                 'Recently') : 'Recently'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Chip 
+                          label={ticket.status || 'open'} 
+                          size="small"
+                          sx={{
+                            bgcolor: getStatusColor(ticket.status),
+                            color: 'white',
+                            textTransform: 'capitalize'
+                          }}
+                        />
+                      </Box>
+                      {index < tickets.length - 1 && <Divider sx={{ mt: 2 }} />}
+                    </Box>
+                  ))}
+                  <Button
+                    component={Link}
+                    to="/contact"
+                    variant="outlined"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                  >
+                    View All Tickets
+                  </Button>
+                </Stack>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Typography variant="body1" color="text.secondary" gutterBottom>
+                    No support requests yet
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Contact us if you need any help
+                  </Typography>
+                  <Button
+                    component={Link}
+                    to="/contact"
+                    variant="contained"
+                    size="small"
+                  >
+                    Contact Support
+                  </Button>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       {/* Service Reminder */}
       <Paper sx={{ p: 3, mt: 4, bgcolor: '#f8f9fa' }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item>
-            <Notifications sx={{ color: '#1976d2', fontSize: 32 }} />
-          </Grid>
           <Grid item xs>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
               Keep Your Car Looking Great!
