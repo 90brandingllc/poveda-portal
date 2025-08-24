@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Rules for estimate files
+    match /estimates/{userId}/{fileName} {
+      // Allow authenticated users to upload files to their own folder
+      allow create: if request.auth != null && 
+                   request.auth.uid == userId &&
+                   // Validate file size (max 10MB)
+                   request.resource.size <= 10 * 1024 * 1024 &&
+                   // Validate file type (images and videos only)
+                   (request.resource.contentType.matches('image/.*') ||
+                    request.resource.contentType.matches('video/.*'));
+      
+      // Allow users to read their own files
+      allow read: if request.auth != null && 
+                 request.auth.uid == userId;
+      
+      // Allow admins to read all estimate files
+      allow read: if request.auth != null && 
+                 isAdmin(request.auth.uid);
+      
+      // Allow users to delete their own files
+      allow delete: if request.auth != null && 
+                   request.auth.uid == userId;
+      
+      // Allow admins to delete any estimate files
+      allow delete: if request.auth != null && 
+                   isAdmin(request.auth.uid);
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin(uid) {
+      return firestore.get(/databases/(default)/documents/users/$(uid)).data.role == 'admin';
+    }
+    
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

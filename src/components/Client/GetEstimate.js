@@ -516,54 +516,102 @@ const GetEstimate = () => {
                   
                   {/* File Preview */}
                   {formData.files.length > 0 && (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                      {formData.files.map((file, index) => (
-                        <Box key={index} sx={{ position: 'relative', maxWidth: 200 }}>
-                          {file.type.startsWith('image/') ? (
-                            <img
-                              src={file.url}
-                              alt={file.name}
-                              style={{
-                                width: '100%',
-                                height: 120,
-                                objectFit: 'cover',
-                                borderRadius: 8,
-                                border: '1px solid #ddd'
-                              }}
-                            />
-                          ) : (
-                            <Box
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                        Uploaded Files ({formData.files.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                        {formData.files.map((file, index) => (
+                          <Box key={index} sx={{ position: 'relative', maxWidth: 200 }}>
+                            {file.type.startsWith('image/') ? (
+                              <img
+                                src={file.url}
+                                alt={file.name}
+                                style={{
+                                  width: '100%',
+                                  height: 120,
+                                  objectFit: 'cover',
+                                  borderRadius: 8,
+                                  border: '1px solid #ddd',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => window.open(file.url, '_blank')}
+                              />
+                            ) : file.type.startsWith('video/') ? (
+                              <Box
+                                sx={{
+                                  width: 200,
+                                  height: 120,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  backgroundColor: '#f5f5f5',
+                                  borderRadius: 2,
+                                  border: '1px solid #ddd',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => window.open(file.url, '_blank')}
+                              >
+                                <Typography variant="h4">🎥</Typography>
+                                <Typography variant="caption" textAlign="center" sx={{ mt: 1 }}>
+                                  {file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {(file.size / (1024 * 1024)).toFixed(1)} MB
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Box
+                                sx={{
+                                  width: 200,
+                                  height: 120,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  backgroundColor: '#f5f5f5',
+                                  borderRadius: 2,
+                                  border: '1px solid #ddd'
+                                }}
+                              >
+                                <Typography variant="h4">📄</Typography>
+                                <Typography variant="caption" textAlign="center">
+                                  {file.name}
+                                </Typography>
+                              </Box>
+                            )}
+                            <IconButton
+                              size="small"
+                              onClick={() => handleFileRemove(index)}
                               sx={{
-                                width: 200,
-                                height: 120,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backgroundColor: '#f5f5f5',
-                                borderRadius: 2,
-                                border: '1px solid #ddd'
+                                position: 'absolute',
+                                top: 4,
+                                right: 4,
+                                backgroundColor: 'rgba(255,255,255,0.9)',
+                                '&:hover': { backgroundColor: 'rgba(255,255,255,1)' }
                               }}
                             >
-                              <Typography variant="body2" textAlign="center">
-                                📹 {file.name}
-                              </Typography>
-                            </Box>
-                          )}
-                          <IconButton
-                            size="small"
-                            onClick={() => handleFileRemove(index)}
-                            sx={{
-                              position: 'absolute',
-                              top: 4,
-                              right: 4,
-                              backgroundColor: 'white',
-                              '&:hover': { backgroundColor: '#f5f5f5' }
-                            }}
-                          >
-                            <Delete sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </Box>
-                      ))}
+                              <Delete sx={{ fontSize: 16 }} />
+                            </IconButton>
+                            <Typography 
+                              variant="caption" 
+                              sx={{ 
+                                position: 'absolute',
+                                bottom: -20,
+                                left: 0,
+                                right: 0,
+                                textAlign: 'center',
+                                backgroundColor: 'rgba(255,255,255,0.9)',
+                                borderRadius: 1,
+                                p: 0.5
+                              }}
+                            >
+                              Click to view
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
                     </Box>
                   )}
                 </Grid>
