@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 
 admin.initializeApp();
 
@@ -13,84 +14,199 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Send appointment confirmation email
+// Google Calendar configuration
+// You'll need to replace these with your actual Google Calendar API credentials
+const GOOGLE_CALENDAR_CREDENTIALS = {
+  type: "service_account",
+  project_id: "your-project-id",
+  private_key_id: "your-private-key-id",
+  private_key: "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n",
+  client_email: "your-service-account@your-project-id.iam.gserviceaccount.com",
+  client_id: "your-client-id",
+  auth_uri: "https://accounts.google.com/o/oauth2/auth",
+  token_uri: "https://oauth2.googleapis.com/token",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account%40your-project-id.iam.gserviceaccount.com"
+};
+
+const ADMIN_CALENDAR_ID = 'your-admin-calendar@gmail.com'; // Replace with admin's calendar ID
+
+// Helper function to create Google Calendar event
+async function createCalendarEvent(appointment) {
+  try {
+    // Create JWT auth client
+    const jwtClient = new google.auth.JWT(
+      GOOGLE_CALENDAR_CREDENTIALS.client_email,
+      null,
+      GOOGLE_CALENDAR_CREDENTIALS.private_key,
+      ['https://www.googleapis.com/auth/calendar']
+    );
+
+    // Authorize the client
+    await jwtClient.authorize();
+
+    // Create calendar API instance
+    const calendar = google.calendar({ version: 'v3', auth: jwtClient });
+
+    // Calculate appointment start and end times
+    const appointmentDate = appointment.date.toDate();
+    const timeString = appointment.time || '09:00';
+    const [hours, minutes] = timeString.split(':');
+    
+    const startDateTime = new Date(appointmentDate);
+    startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    
+    // Assume 2-hour duration for car detailing services
+    const endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+
+    // Create event object
+    const event = {
+      summary: `Car Detailing - ${appointment.service}`,
+      description: `
+Client: ${appointment.userName}
+Email: ${appointment.userEmail}
+Service: ${appointment.service}
+Category: ${appointment.category}
+Location: ${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}
+Price: $${appointment.finalPrice || appointment.estimatedPrice}
+Status: ${appointment.status}
+Notes: ${appointment.notes || 'No additional notes'}
+
+Payment Status: ${appointment.paymentStatus}
+${appointment.paymentId ? `Payment ID: ${appointment.paymentId}` : ''}
+      `.trim(),
+      location: `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}`,
+      start: {
+        dateTime: startDateTime.toISOString(),
+        timeZone: 'America/New_York',
+      },
+      end: {
+        dateTime: endDateTime.toISOString(),
+        timeZone: 'America/New_York',
+      },
+      attendees: [
+        {
+          email: appointment.userEmail,
+          displayName: appointment.userName,
+        },
+      ],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 }, // 24 hours before
+          { method: 'popup', minutes: 120 }, // 2 hours before
+          { method: 'popup', minutes: 30 }, // 30 minutes before
+        ],
+      },
+    };
+
+    // Insert the event
+    const response = await calendar.events.insert({
+      calendarId: ADMIN_CALENDAR_ID,
+      resource: event,
+    });
+
+    console.log(`Calendar event created: ${response.data.htmlLink}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating calendar event:', error);
+    throw error;
+  }
+}
+
+// Send appointment confirmation email and create calendar event
 exports.sendAppointmentConfirmation = functions.firestore
   .document('appointments/{appointmentId}')
   .onCreate(async (snap, context) => {
     const appointment = snap.data();
+    const appointmentId = context.params.appointmentId;
     
-    if (!appointment.emailReminders) {
-      return null;
+    // Send email if email reminders are enabled
+    if (appointment.emailReminders) {
+      const mailOptions = {
+        from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
+        to: appointment.userEmail,
+        subject: 'Appointment Confirmation - POVEDA PREMIUM AUTO CARE',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); color: white; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px;">POVEDA PREMIUM AUTO CARE</h1>
+              <p style="margin: 10px 0 0 0; font-size: 16px;">Your Appointment is Confirmed!</p>
+            </div>
+            
+            <div style="padding: 30px; background: #f8f9fa;">
+              <h2 style="color: #1976d2; margin-top: 0;">Hello ${appointment.userName}!</h2>
+              <p>Thank you for choosing POVEDA PREMIUM AUTO CARE. Your appointment has been successfully booked and is pending approval.</p>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #1976d2; margin-top: 0;">Appointment Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Service:</td>
+                    <td style="padding: 8px 0;">${appointment.service}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date:</td>
+                    <td style="padding: 8px 0;">${appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString() : 'TBD'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Time:</td>
+                    <td style="padding: 8px 0;">${appointment.time || 'TBD'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Location:</td>
+                    <td style="padding: 8px 0;">${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Total Price:</td>
+                    <td style="padding: 8px 0; color: #1976d2; font-weight: bold;">$${appointment.finalPrice || appointment.estimatedPrice}</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0; color: #1976d2;"><strong>What's Next?</strong></p>
+                <p style="margin: 5px 0 0 0;">Our team will review your booking and contact you within 24 hours to confirm the details. You'll receive another email once your appointment is approved.</p>
+              </div>
+              
+              <p>If you have any questions, please don't hesitate to contact us:</p>
+              <ul>
+                <li>Phone: (555) 123-4567</li>
+                <li>Email: info@povedaautocare.com</li>
+              </ul>
+              
+              <p>Thank you for choosing POVEDA PREMIUM AUTO CARE!</p>
+              <p><strong>The POVEDA Team</strong></p>
+            </div>
+            
+            <div style="background: #1976d2; color: white; padding: 20px; text-align: center;">
+              <p style="margin: 0; font-size: 14px;">© 2024 POVEDA PREMIUM AUTO CARE. All rights reserved.</p>
+            </div>
+          </div>
+        `
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        console.log('Appointment confirmation email sent successfully');
+      } catch (error) {
+        console.error('Error sending email:', error);
+      }
     }
 
-    const mailOptions = {
-      from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
-      to: appointment.userEmail,
-      subject: 'Appointment Confirmation - POVEDA PREMIUM AUTO CARE',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); color: white; padding: 30px; text-align: center;">
-            <h1 style="margin: 0; font-size: 28px;">POVEDA PREMIUM AUTO CARE</h1>
-            <p style="margin: 10px 0 0 0; font-size: 16px;">Your Appointment is Confirmed!</p>
-          </div>
-          
-          <div style="padding: 30px; background: #f8f9fa;">
-            <h2 style="color: #1976d2; margin-top: 0;">Hello ${appointment.userName}!</h2>
-            <p>Thank you for choosing POVEDA PREMIUM AUTO CARE. Your appointment has been successfully booked and is pending approval.</p>
-            
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #1976d2; margin-top: 0;">Appointment Details</h3>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold;">Service:</td>
-                  <td style="padding: 8px 0;">${appointment.service}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold;">Date:</td>
-                  <td style="padding: 8px 0;">${appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString() : 'TBD'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold;">Time:</td>
-                  <td style="padding: 8px 0;">${appointment.time || 'TBD'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold;">Location:</td>
-                  <td style="padding: 8px 0;">${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold;">Total Price:</td>
-                  <td style="padding: 8px 0; color: #1976d2; font-weight: bold;">$${appointment.finalPrice || appointment.estimatedPrice}</td>
-                </tr>
-              </table>
-            </div>
-            
-            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 0; color: #1976d2;"><strong>What's Next?</strong></p>
-              <p style="margin: 5px 0 0 0;">Our team will review your booking and contact you within 24 hours to confirm the details. You'll receive another email once your appointment is approved.</p>
-            </div>
-            
-            <p>If you have any questions, please don't hesitate to contact us:</p>
-            <ul>
-              <li>Phone: (555) 123-4567</li>
-              <li>Email: info@povedaautocare.com</li>
-            </ul>
-            
-            <p>Thank you for choosing POVEDA PREMIUM AUTO CARE!</p>
-            <p><strong>The POVEDA Team</strong></p>
-          </div>
-          
-          <div style="background: #1976d2; color: white; padding: 20px; text-align: center;">
-            <p style="margin: 0; font-size: 14px;">© 2024 POVEDA PREMIUM AUTO CARE. All rights reserved.</p>
-          </div>
-        </div>
-      `
-    };
-
+    // Create Google Calendar event for admin
     try {
-      await transporter.sendMail(mailOptions);
-      console.log('Appointment confirmation email sent successfully');
+      const calendarEvent = await createCalendarEvent(appointment);
+      console.log(`Calendar event created successfully for appointment ${appointmentId}`);
+      
+      // Optionally store the calendar event ID in the appointment document
+      await snap.ref.update({
+        calendarEventId: calendarEvent.id,
+        calendarEventUrl: calendarEvent.htmlLink
+      });
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error(`Error creating calendar event for appointment ${appointmentId}:`, error);
+      // Don't fail the entire function if calendar creation fails
     }
 
     return null;
@@ -193,6 +309,83 @@ exports.sendStatusUpdate = functions.firestore
       console.log(`Status update email sent for appointment ${context.params.appointmentId}`);
     } catch (error) {
       console.error('Error sending status update email:', error);
+    }
+
+    return null;
+  });
+
+// Update or delete calendar event when appointment status changes
+exports.updateCalendarEvent = functions.firestore
+  .document('appointments/{appointmentId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const appointmentId = context.params.appointmentId;
+    
+    // Only process if status changed and there's a calendar event ID
+    if (before.status === after.status || !after.calendarEventId) {
+      return null;
+    }
+
+    try {
+      // Create JWT auth client
+      const jwtClient = new google.auth.JWT(
+        GOOGLE_CALENDAR_CREDENTIALS.client_email,
+        null,
+        GOOGLE_CALENDAR_CREDENTIALS.private_key,
+        ['https://www.googleapis.com/auth/calendar']
+      );
+
+      // Authorize the client
+      await jwtClient.authorize();
+
+      // Create calendar API instance
+      const calendar = google.calendar({ version: 'v3', auth: jwtClient });
+
+      if (after.status === 'cancelled' || after.status === 'rejected') {
+        // Delete the calendar event
+        await calendar.events.delete({
+          calendarId: ADMIN_CALENDAR_ID,
+          eventId: after.calendarEventId,
+        });
+        
+        console.log(`Calendar event deleted for ${after.status} appointment ${appointmentId}`);
+        
+        // Remove calendar event references from appointment
+        await change.after.ref.update({
+          calendarEventId: admin.firestore.FieldValue.delete(),
+          calendarEventUrl: admin.firestore.FieldValue.delete()
+        });
+      } else if (after.status === 'approved' || after.status === 'confirmed') {
+        // Update the calendar event summary to reflect the new status
+        const updatedEvent = {
+          summary: `[${after.status.toUpperCase()}] Car Detailing - ${after.service}`,
+          description: `
+Client: ${after.userName}
+Email: ${after.userEmail}
+Service: ${after.service}
+Category: ${after.category}
+Location: ${after.address.street}, ${after.address.city}, ${after.address.state} ${after.address.zipCode}
+Price: $${after.finalPrice || after.estimatedPrice}
+Status: ${after.status}
+Notes: ${after.notes || 'No additional notes'}
+
+Payment Status: ${after.paymentStatus}
+${after.paymentId ? `Payment ID: ${after.paymentId}` : ''}
+          `.trim(),
+        };
+
+        await calendar.events.patch({
+          calendarId: ADMIN_CALENDAR_ID,
+          eventId: after.calendarEventId,
+          resource: updatedEvent,
+        });
+        
+        console.log(`Calendar event updated for ${after.status} appointment ${appointmentId}`);
+      }
+    } catch (error) {
+      console.error(`Error updating calendar event for appointment ${appointmentId}:`, error);
+      // Don't fail the entire function if calendar update fails
     }
 
     return null;
