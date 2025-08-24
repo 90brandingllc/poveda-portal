@@ -34,7 +34,7 @@ import {
   Save
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { Link } from 'react-router-dom';
 import { DatePicker, DesktopTimePicker } from '@mui/x-date-pickers';
@@ -193,6 +193,42 @@ const AppointmentsList = () => {
     });
     setRescheduleOpen(true);
     handleMenuClose();
+  };
+
+  const handleCancelAppointment = async () => {
+    if (!selectedAppointment) {
+      setSnackbar({
+        open: true,
+        message: 'No appointment selected. Please try again.',
+        severity: 'error'
+      });
+      return;
+    }
+
+    try {
+      console.log('Cancelling appointment:', selectedAppointment.id);
+      
+      // Delete the appointment from Firestore
+      await deleteDoc(doc(db, 'appointments', selectedAppointment.id));
+      
+      setSnackbar({
+        open: true,
+        message: 'Appointment cancelled successfully!',
+        severity: 'success'
+      });
+      
+      // Close the details dialog
+      setDetailsOpen(false);
+      setSelectedAppointment(null);
+      
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to cancel appointment. Please try again.',
+        severity: 'error'
+      });
+    }
   };
 
   const handleRescheduleSubmit = async () => {
@@ -495,7 +531,13 @@ const AppointmentsList = () => {
               <Edit sx={{ mr: 1 }} />
               Reschedule
             </MenuItem>
-            <MenuItem onClick={handleMenuClose}>
+            <MenuItem 
+              onClick={() => {
+                handleMenuClose();
+                handleCancelAppointment();
+              }}
+              sx={{ color: 'error.main' }}
+            >
               <Cancel sx={{ mr: 1 }} />
               Cancel Appointment
             </MenuItem>
@@ -756,6 +798,7 @@ const AppointmentsList = () => {
               color="error"
               size="large"
               startIcon={<Cancel />}
+              onClick={handleCancelAppointment}
             >
               Cancel Appointment
             </Button>

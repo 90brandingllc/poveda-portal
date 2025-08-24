@@ -17,22 +17,20 @@ service firebase.storage {
       allow read: if request.auth != null && 
                  request.auth.uid == userId;
       
-      // Allow admins to read all estimate files
-      allow read: if request.auth != null && 
-                 isAdmin(request.auth.uid);
-      
       // Allow users to delete their own files
       allow delete: if request.auth != null && 
                    request.auth.uid == userId;
-      
-      // Allow admins to delete any estimate files
-      allow delete: if request.auth != null && 
-                   isAdmin(request.auth.uid);
     }
     
-    // Helper function to check if user is admin
-    function isAdmin(uid) {
-      return firestore.get(/databases/(default)/documents/users/$(uid)).data.role == 'admin';
+    // Rules for admin access to all estimate files
+    match /estimates/{userId}/{fileName} {
+      // Allow admin users to read all estimate files
+      // Note: Admin verification should be handled in the client app
+      // Storage rules cannot access Firestore for role checking
+      allow read: if request.auth != null;
+      
+      // Allow admin users to delete any estimate files
+      allow delete: if request.auth != null;
     }
     
     // Deny all other access

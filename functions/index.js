@@ -5,11 +5,11 @@ const nodemailer = require('nodemailer');
 admin.initializeApp();
 
 // Email configuration - replace with your SMTP settings
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: functions.config().email.user, // Set using: firebase functions:config:set email.user="your-email@gmail.com"
-    pass: functions.config().email.pass  // Set using: firebase functions:config:set email.pass="your-app-password"
+    user: 'hasanmehmood458@gmail.com', // Replace with your email
+    pass: 'dummy-password-replace-me'  // Replace with your Gmail app password
   }
 });
 
@@ -201,7 +201,7 @@ exports.sendStatusUpdate = functions.firestore
 // Send appointment reminder (24 hours before)
 exports.send24HourReminder = functions.pubsub
   .schedule('every hour')
-  .timeZone('America/New_York') // Set your timezone
+  .timeZone('America/New_York')
   .onRun(async (context) => {
     const now = new Date();
     const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -257,7 +257,7 @@ exports.send24HourReminder = functions.pubsub
 // Send appointment reminder (2 hours before)
 exports.send2HourReminder = functions.pubsub
   .schedule('every 30 minutes')
-  .timeZone('America/New_York') // Set your timezone
+  .timeZone('America/New_York')
   .onRun(async (context) => {
     const now = new Date();
 

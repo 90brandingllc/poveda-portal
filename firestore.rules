@@ -20,6 +20,10 @@ service cloud.firestore {
       allow read: if request.auth != null && 
                  getUserRole(request.auth.uid) == 'admin';
       
+      // Allow authenticated users to read appointments for slot availability checking
+      // This allows reading appointment data to check if time slots are taken
+      allow read: if request.auth != null;
+      
       // Users can update their own pending appointments (for rescheduling)
       allow update: if request.auth != null && 
                    request.auth.uid == resource.data.userId &&
@@ -29,7 +33,12 @@ service cloud.firestore {
       allow update: if request.auth != null && 
                    getUserRole(request.auth.uid) == 'admin';
       
-      // Only admins can delete appointments
+      // Users can delete their own pending appointments (for cancellation)
+      allow delete: if request.auth != null && 
+                   request.auth.uid == resource.data.userId &&
+                   resource.data.status == 'pending';
+      
+      // Admins can delete any appointment
       allow delete: if request.auth != null && 
                    getUserRole(request.auth.uid) == 'admin';
     }
@@ -64,9 +73,22 @@ service cloud.firestore {
                          getUserRole(request.auth.uid) == 'admin';
     }
     
+    // Blocked slots rules (for appointment availability checking)
+    match /blockedSlots/{slotId} {
+      // All authenticated users can read blocked slots to check availability
+      allow read: if request.auth != null;
+      
+      // Only admins can create, update, or delete blocked slots
+      allow create, update, delete: if request.auth != null && 
+                                   getUserRole(request.auth.uid) == 'admin';
+    }
+    
+
+    
     // Helper function to get user role
     function getUserRole(uid) {
-      return get(/databases/$(database)/documents/users/$(uid)).data.role;
+      let userDoc = get(/databases/$(database)/documents/users/$(uid));
+      return userDoc != null && userDoc.data != null ? userDoc.data.role : 'client';
     }
   }
 }
