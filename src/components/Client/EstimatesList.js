@@ -18,6 +18,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  DialogContentText,
   IconButton,
   Avatar,
   CircularProgress,
@@ -31,8 +32,11 @@ import {
   History,
   Person,
   AdminPanelSettings,
-  AutoFixHigh,
-  ArrowBack
+  ArrowBack,
+  Edit,
+  Delete,
+  Save,
+  Cancel
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -43,14 +47,14 @@ import {
   onSnapshot, 
   updateDoc, 
   doc, 
-  arrayUnion 
+  arrayUnion,
+  deleteDoc 
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
-// OpenAI Integration
-const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
-
+// Updated: AI functionality removed from client side
 const EstimatesList = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -61,7 +65,10 @@ const EstimatesList = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [replyMessage, setReplyMessage] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
-  const [improvingText, setImprovingText] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({ subject: '', description: '' });
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
 
   // Business types for display
   const businessTypes = {
@@ -101,54 +108,7 @@ const EstimatesList = () => {
     }
   }, [currentUser]);
 
-  const improveTextWithAI = async (text) => {
-    if (!text.trim() || !OPENAI_API_KEY) {
-      alert('Please enter some text first, or OpenAI API key is not configured.');
-      return text;
-    }
 
-    setImprovingText(true);
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a professional writing assistant. Improve the user\'s message to be clear, professional, and grammatically correct while maintaining their original meaning and tone. Fix any spelling errors, improve grammar, and enhance clarity.'
-            },
-            {
-              role: 'user',
-              content: `Please improve this message: "${text}"`
-            }
-          ],
-          max_tokens: 300,
-          temperature: 0.3
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const improvedText = data.choices[0]?.message?.content?.trim() || text;
-      
-      setReplyMessage(improvedText);
-      return improvedText;
-    } catch (error) {
-      console.error('Error improving text:', error);
-      alert('Failed to improve text. Please try again.');
-      return text;
-    } finally {
-      setImprovingText(false);
-    }
-  };
 
   const handleSendReply = async () => {
     if (!replyMessage.trim() || !selectedEstimate) return;
@@ -454,16 +414,7 @@ const EstimatesList = () => {
                       onChange={(e) => setReplyMessage(e.target.value)}
                       variant="outlined"
                     />
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                      <Button
-                        size="small"
-                        onClick={() => improveTextWithAI(replyMessage)}
-                        disabled={improvingText || !replyMessage.trim()}
-                        startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
-                      >
-                        {improvingText ? 'Improving...' : 'Improve with AI'}
-                      </Button>
-                    </Box>
+
                   </Box>
                   <Button
                     variant="contained"
@@ -473,10 +424,7 @@ const EstimatesList = () => {
                   >
                     {replyLoading ? 'Sending...' : 'Send Message'}
                   </Button>
-                  
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    💡 Use the ✨ button to improve your message with AI before sending!
-                  </Alert>
+
                 </Box>
               </Paper>
             </Box>

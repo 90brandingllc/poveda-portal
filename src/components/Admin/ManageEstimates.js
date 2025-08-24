@@ -75,13 +75,7 @@ const ManageEstimates = () => {
   const [improvingText, setImprovingText] = useState(false);
   const [tabValue, setTabValue] = useState(0);
 
-  // Business types for display
-  const businessTypes = {
-    automotive: { name: 'Automotive & Detailing', icon: '🚗' },
-    construction: { name: 'Construction & Renovation', icon: '🏗️' },
-    beauty: { name: 'Beauty & Wellness', icon: '💅' },
-    general: { name: 'General Services', icon: '🔧' }
-  };
+
 
   useEffect(() => {
     const estimatesQuery = query(
@@ -386,7 +380,6 @@ const ManageEstimates = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Client & Project</TableCell>
-                  <TableCell>Service Type</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Budget/Quote</TableCell>
                   <TableCell>Timeline</TableCell>
@@ -401,24 +394,11 @@ const ManageEstimates = () => {
                     <TableCell>
                       <Box>
                         <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                          {estimate.projectTitle}
+                          {estimate.subject || estimate.projectTitle}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {estimate.userName} • {estimate.userEmail}
                         </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <span>{businessTypes[estimate.businessType]?.icon}</span>
-                        <Box>
-                          <Typography variant="body2">
-                            {businessTypes[estimate.businessType]?.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {estimate.serviceCategory}
-                          </Typography>
-                        </Box>
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -505,7 +485,7 @@ const ManageEstimates = () => {
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">{selectedEstimate?.projectTitle}</Typography>
+            <Typography variant="h6">{selectedEstimate?.subject || selectedEstimate?.projectTitle}</Typography>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <InputLabel>Status</InputLabel>
@@ -539,16 +519,6 @@ const ManageEstimates = () => {
                     Project Details
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="text.secondary">Service Type</Typography>
-                      <Typography variant="body1">
-                        {businessTypes[selectedEstimate.businessType]?.icon} {businessTypes[selectedEstimate.businessType]?.name}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="text.secondary">Category</Typography>
-                      <Typography variant="body1">{selectedEstimate.serviceCategory}</Typography>
-                    </Grid>
                     <Grid item xs={12}>
                       <Typography variant="subtitle2" color="text.secondary">Description</Typography>
                       <Typography variant="body1">{selectedEstimate.description}</Typography>

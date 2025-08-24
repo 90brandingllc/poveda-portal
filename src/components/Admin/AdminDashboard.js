@@ -739,7 +739,7 @@ const AdminDashboard = () => {
                       secondary={
                         <Box>
                           <Typography variant="caption" color="text.secondary">
-                            {estimate.projectTitle} - {estimate.serviceCategory}
+                            {estimate.subject || estimate.projectTitle}
                           </Typography>
                           <Chip 
                             label={estimate.status || 'pending'} 

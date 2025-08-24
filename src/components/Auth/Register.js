@@ -121,19 +121,13 @@ const Register = () => {
           background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
         }}
       >
-        {/* Logo and Header */}
+        {/* Logo Only */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <img 
             src="/logo.svg" 
             alt="POVEDA PREMIUM AUTO CARE" 
             style={{ height: 150, marginBottom: 24 }} 
           />
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
-            Create Account
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Join POVEDA for premium car care services
-          </Typography>
         </Box>
 
         {error && (

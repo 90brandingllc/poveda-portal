@@ -10,10 +10,6 @@ import {
   Box,
   Paper,
   Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   IconButton,
   Tooltip,
@@ -25,6 +21,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  DialogContentText,
   Tabs,
   Tab,
   CircularProgress
@@ -34,19 +31,22 @@ import {
   CheckCircle,
   Star,
   Send,
-  AutoFixHigh,
-  Refresh,
   History,
   Chat,
-  Add
+  Add,
+  Edit,
+  Delete,
+  Save,
+  Cancel
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion, deleteDoc } from 'firebase/firestore';
+import { db, storage } from '../../firebase/config';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
-// OpenAI Integration
-const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
+
 
 const GetEstimate = () => {
   const { currentUser } = useAuth();
@@ -57,74 +57,20 @@ const GetEstimate = () => {
   const [selectedEstimate, setSelectedEstimate] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [tabValue, setTabValue] = useState(0);
-  const [improvingText, setImprovingText] = useState(false);
+
   const [replyMessage, setReplyMessage] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({ subject: '', description: '' });
 
   const [formData, setFormData] = useState({
-    businessType: '',
-    serviceCategory: '',
-    projectTitle: '',
-    description: ''
+    subject: '',
+    description: '',
+    files: []
   });
+  const [uploading, setUploading] = useState(false);
 
-  // Business types and their service categories
-  const businessTypes = {
-    automotive: {
-      name: 'Automotive & Detailing',
-      icon: '🚗',
-      categories: [
-        'Exterior Detailing',
-        'Interior Cleaning',
-        'Paint Correction',
-        'Ceramic Coating',
-        'Full Detail Package',
-        'Maintenance Services',
-        'Custom Request'
-      ]
-    },
-    construction: {
-      name: 'Construction & Renovation',
-      icon: '🏗️',
-      categories: [
-        'Home Renovation',
-        'Kitchen Remodeling',
-        'Bathroom Remodeling',
-        'Roofing',
-        'Flooring',
-        'Electrical Work',
-        'Plumbing',
-        'Painting',
-        'Custom Build'
-      ]
-    },
-    beauty: {
-      name: 'Beauty & Wellness',
-      icon: '💅',
-      categories: [
-        'Hair Services',
-        'Nail Services',
-        'Spa Treatments',
-        'Facial Services',
-        'Massage Therapy',
-        'Wellness Packages',
-        'Event Styling',
-        'Custom Service'
-      ]
-    },
-    general: {
-      name: 'General Services',
-      icon: '🔧',
-      categories: [
-        'Consulting',
-        'Design Services',
-        'Maintenance',
-        'Repair Services',
-        'Installation',
-        'Custom Project'
-      ]
-    }
-  };
+
 
   useEffect(() => {
     if (currentUser) {
@@ -167,64 +113,13 @@ const GetEstimate = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
+      setFormData({
+        ...formData,
+        [name]: value
     });
   };
 
-  const improveTextWithAI = async (text, fieldName) => {
-    if (!text.trim() || !OPENAI_API_KEY) {
-      alert('Please enter some text first, or OpenAI API key is not configured.');
-      return text;
-    }
 
-    setImprovingText(true);
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a professional writing assistant. Improve the user\'s text to be clear, professional, and grammatically correct while maintaining their original meaning. Fix any spelling errors, improve grammar, and enhance clarity. Keep the tone professional but friendly.'
-            },
-            {
-              role: 'user',
-              content: `Please improve this ${fieldName}: "${text}"`
-            }
-          ],
-          max_tokens: 500,
-          temperature: 0.3
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const improvedText = data.choices[0]?.message?.content?.trim() || text;
-      
-      setFormData({
-        ...formData,
-        [fieldName]: improvedText
-      });
-
-      return improvedText;
-    } catch (error) {
-      console.error('Error improving text:', error);
-      alert('Failed to improve text. Please try again.');
-      return text;
-    } finally {
-      setImprovingText(false);
-    }
-  };
 
   const handleSendReply = async () => {
     if (!replyMessage.trim() || !selectedEstimate) return;
@@ -258,57 +153,191 @@ const GetEstimate = () => {
       
     } catch (error) {
       console.error('Error sending reply:', error);
-      alert('Failed to send message. Please try again.');
+      Swal.fire({
+        title: 'Message Failed!',
+        text: 'Failed to send message. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#d32f2f'
+      });
     }
     setReplyLoading(false);
   };
 
-  const improveReplyTextWithAI = async (text) => {
-    if (!text.trim() || !OPENAI_API_KEY) {
-      alert('Please enter some text first, or OpenAI API key is not configured.');
-      return text;
-    }
-
-    setImprovingText(true);
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a professional writing assistant. Improve the user\'s text to be clear, professional, and grammatically correct while maintaining their original meaning. Fix any spelling errors, improve grammar, and enhance clarity. Keep the tone professional but friendly.'
-            },
-            {
-              role: 'user',
-              content: `Please improve this text: "${text}"`
-            }
-          ],
-          max_tokens: 500,
-          temperature: 0.3
-        })
+  const handleEdit = () => {
+    if (selectedEstimate && selectedEstimate.status === 'pending') {
+      setEditMode(true);
+      setEditData({
+        subject: selectedEstimate.subject,
+        description: selectedEstimate.description
       });
+    }
+  };
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+  const handleSaveEdit = async () => {
+    if (!selectedEstimate || selectedEstimate.status !== 'pending') return;
+    
+    try {
+      const estimateRef = doc(db, 'estimates', selectedEstimate.id);
+      await updateDoc(estimateRef, {
+        subject: editData.subject,
+        description: editData.description,
+        lastUpdated: new Date()
+      });
+      
+      setEditMode(false);
+      Swal.fire({
+        title: 'Success!',
+        text: 'Estimate updated successfully!',
+        icon: 'success',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#1976d2'
+      });
+    } catch (error) {
+      console.error('Error updating estimate:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to update estimate. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#d32f2f'
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditData({ subject: '', description: '' });
+  };
+
+  const handleDeleteConfirm = async () => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'You want to delete this estimate? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d32f2f',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, 'estimates', selectedEstimate.id));
+        setDialogOpen(false);
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'Estimate deleted successfully!',
+          icon: 'success',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#1976d2'
+        });
+      } catch (error) {
+        console.error('Error deleting estimate:', error);
+        Swal.fire({
+          title: 'Error!',
+          text: 'Failed to delete estimate. Please try again.',
+          icon: 'error',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#d32f2f'
+        });
+      }
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    const uploadedFiles = [];
+
+    try {
+      for (const file of files) {
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          Swal.fire({
+            title: 'File Too Large!',
+            text: `File ${file.name} is too large. Maximum size is 10MB.`,
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#ff9800'
+          });
+          continue;
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+          Swal.fire({
+            title: 'Invalid File Type!',
+            text: `File ${file.name} is not a valid image or video file.`,
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#ff9800'
+          });
+          continue;
+        }
+
+        // Upload to Firebase Storage
+        const timestamp = Date.now();
+        const fileName = `estimates/${currentUser.uid}/${timestamp}_${file.name}`;
+        const storageRef = ref(storage, fileName);
+        
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        
+        uploadedFiles.push({
+          name: file.name,
+          url: downloadURL,
+          type: file.type,
+          size: file.size,
+          path: fileName
+        });
       }
 
-      const data = await response.json();
-      const improvedText = data.choices[0]?.message?.content?.trim() || text;
-      
-      setReplyMessage(improvedText);
-      return improvedText;
+      setFormData(prev => ({
+        ...prev,
+        files: [...prev.files, ...uploadedFiles]
+      }));
     } catch (error) {
-      console.error('Error improving text:', error);
-      alert('Failed to improve text. Please try again.');
-      return text;
-    } finally {
-      setImprovingText(false);
+      console.error('Error uploading files:', error);
+      Swal.fire({
+        title: 'Upload Failed!',
+        text: 'Failed to upload files. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#d32f2f'
+      });
+    }
+    
+    setUploading(false);
+  };
+
+  const handleFileRemove = async (index) => {
+    const file = formData.files[index];
+    
+    try {
+      // Delete from Firebase Storage
+      if (file.path) {
+        const storageRef = ref(storage, file.path);
+        await deleteObject(storageRef);
+      }
+      
+      // Remove from state
+      setFormData(prev => ({
+        ...prev,
+        files: prev.files.filter((_, i) => i !== index)
+      }));
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      Swal.fire({
+        title: 'Delete Failed!',
+        text: 'Failed to delete file. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#d32f2f'
+      });
     }
   };
 
@@ -320,16 +349,15 @@ const GetEstimate = () => {
         userId: currentUser.uid,
         userEmail: currentUser.email,
         userName: currentUser.displayName || currentUser.email,
-        businessType: formData.businessType,
-        serviceCategory: formData.serviceCategory,
-        projectTitle: formData.projectTitle,
+        subject: formData.subject,
         description: formData.description,
+        files: formData.files,
         status: 'pending',
         messages: [{
           id: Date.now(),
           sender: 'client',
           senderName: currentUser.displayName || currentUser.email,
-          message: `New estimate request: ${formData.projectTitle}`,
+          message: `New estimate request: ${formData.subject}`,
           timestamp: new Date(),
           isSystemMessage: true
         }],
@@ -340,14 +368,19 @@ const GetEstimate = () => {
       const docRef = await addDoc(collection(db, 'estimates'), estimateData);
       setSuccess(true);
       setFormData({
-        businessType: '',
-        serviceCategory: '',
-        projectTitle: '',
-        description: ''
+        subject: '',
+        description: '',
+        files: []
       });
     } catch (error) {
       console.error('Error creating estimate:', error);
-      alert('Failed to submit estimate request. Please try again.');
+      Swal.fire({
+        title: 'Submission Failed!',
+        text: 'Failed to submit estimate request. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#d32f2f'
+      });
     }
     setLoading(false);
   };
@@ -373,24 +406,24 @@ const GetEstimate = () => {
             Estimate Request Submitted!
           </Typography>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
-            We'll review your request and get back to you within 24 hours.
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 4 }}>
-            Our team will contact you via your preferred method with questions, clarifications, and a detailed quote.
+            We'll review your request and get back to you as soon as possible.
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() => setSuccess(false)}
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => setSuccess(false)}
               startIcon={<Add />}
-            >
-              Request Another Estimate
-            </Button>
+          >
+            Request Another Estimate
+          </Button>
             <Button
               variant="outlined"
               size="large"
-              onClick={() => setTabValue(1)}
+              onClick={() => {
+                setSuccess(false);
+                setTabValue(1);
+              }}
               startIcon={<History />}
             >
               View My Estimates
@@ -415,79 +448,29 @@ const GetEstimate = () => {
       </Box>
 
       {tabValue === 0 && (
-        <Grid container spacing={4}>
+      <Grid container spacing={4}>
           {/* Request Form */}
-          <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 4 }}>
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 4 }}>
               <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
                 Tell us what you need
               </Typography>
 
               <Grid container spacing={3}>
-                {/* Business Type Selection */}
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel>What type of service do you need?</InputLabel>
-                    <Select
-                      name="businessType"
-                      value={formData.businessType}
-                      onChange={handleChange}
-                      required
-                    >
-                      {Object.entries(businessTypes).map(([key, type]) => (
-                        <MenuItem key={key} value={key}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <span style={{ fontSize: '1.2em' }}>{type.icon}</span>
-                            {type.name}
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
 
-                {/* Service Category */}
-                {formData.businessType && (
-                  <Grid item xs={12}>
-                    <FormControl fullWidth>
-                      <InputLabel>Service Category</InputLabel>
-                      <Select
-                        name="serviceCategory"
-                        value={formData.serviceCategory}
-                        onChange={handleChange}
-                        required
-                      >
-                        {businessTypes[formData.businessType]?.categories.map(category => (
-                          <MenuItem key={category} value={category}>
-                            {category}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                )}
 
-                {/* Project Title */}
+                {/* Subject */}
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    name="projectTitle"
-                    label="Project Title"
-                    value={formData.projectTitle}
+                    name="subject"
+                    label="Subject"
+                    value={formData.subject}
                     onChange={handleChange}
                     placeholder="Brief title for your project..."
                     required
                   />
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                    <Button
-                      size="small"
-                      onClick={() => improveTextWithAI(formData.projectTitle, 'projectTitle')}
-                      disabled={improvingText || !formData.projectTitle.trim()}
-                      startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
-                    >
-                      {improvingText ? 'Improving...' : 'Improve with AI'}
-                    </Button>
-                  </Box>
+
                 </Grid>
 
                 {/* Description */}
@@ -497,128 +480,155 @@ const GetEstimate = () => {
                     multiline
                     rows={4}
                     name="description"
-                    label="Project Description"
+                    label="Description"
                     value={formData.description}
                     onChange={handleChange}
                     placeholder="Describe what you want done. Include any specific requirements, materials, colors, styles, or other important details..."
                     required
                   />
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                    <Button
-                      size="small"
-                      onClick={() => improveTextWithAI(formData.description, 'description')}
-                      disabled={improvingText || !formData.description.trim()}
-                      startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
-                    >
-                      {improvingText ? 'Improving...' : 'Improve with AI'}
-                    </Button>
-                  </Box>
                 </Grid>
 
-
-
-                {/* AI Helper Info */}
+                {/* File Upload */}
                 <Grid item xs={12}>
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                      💡 <strong>AI Text Improvement:</strong> Click the ✨ button next to any text field to automatically improve your writing. 
-                      Perfect for fixing grammar, spelling, or making your request clearer!
-                    </Typography>
-                  </Alert>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Attach Photos/Videos (Optional)
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,video/*"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                      id="file-upload"
+                    />
+                    <label htmlFor="file-upload">
+                      <Button
+                        variant="outlined"
+                        component="span"
+                        disabled={uploading}
+                        startIcon={uploading ? <CircularProgress size={20} /> : <Add />}
+                      >
+                        {uploading ? 'Uploading...' : 'Add Files'}
+                      </Button>
+                    </label>
+                  </Box>
+                  
+                  {/* File Preview */}
+                  {formData.files.length > 0 && (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                      {formData.files.map((file, index) => (
+                        <Box key={index} sx={{ position: 'relative', maxWidth: 200 }}>
+                          {file.type.startsWith('image/') ? (
+                            <img
+                              src={file.url}
+                              alt={file.name}
+                              style={{
+                                width: '100%',
+                                height: 120,
+                                objectFit: 'cover',
+                                borderRadius: 8,
+                                border: '1px solid #ddd'
+                              }}
+                            />
+                          ) : (
+                            <Box
+                              sx={{
+                                width: 200,
+                                height: 120,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: '#f5f5f5',
+                                borderRadius: 2,
+                                border: '1px solid #ddd'
+                              }}
+                            >
+                              <Typography variant="body2" textAlign="center">
+                                📹 {file.name}
+                              </Typography>
+                            </Box>
+                          )}
+                          <IconButton
+                            size="small"
+                            onClick={() => handleFileRemove(index)}
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              backgroundColor: 'white',
+                              '&:hover': { backgroundColor: '#f5f5f5' }
+                            }}
+                          >
+                            <Delete sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
                 </Grid>
+
               </Grid>
 
               <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
-                <Button
-                  variant="outlined"
+              <Button
+                variant="outlined"
                   onClick={() => navigate('/dashboard')}
-                >
+              >
                   Back to Dashboard
-                </Button>
+              </Button>
                 <Button
                   variant="contained"
                   onClick={handleSubmit}
-                  disabled={loading || !formData.businessType || !formData.projectTitle || !formData.description}
+                  disabled={loading || !formData.subject || !formData.description}
                   size="large"
                   startIcon={loading ? <CircularProgress size={20} /> : <Send />}
                   sx={{ flex: 1 }}
                 >
                   {loading ? 'Submitting...' : 'Submit Estimate Request'}
                 </Button>
-              </Box>
-            </Paper>
-          </Grid>
+            </Box>
+          </Paper>
+        </Grid>
 
           {/* Info Sidebar */}
-          <Grid item xs={12} md={4}>
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                  <Star sx={{ mr: 1, color: '#FFD700' }} />
+        <Grid item xs={12} md={4}>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                <Star sx={{ mr: 1, color: '#FFD700' }} />
                   How It Works
-                </Typography>
-                <List dense>
-                  <ListItem>
+              </Typography>
+              <List dense>
+                <ListItem>
                     <ListItemText 
                       primary="1. Tell us what you need"
                       secondary="Describe your project in detail"
                     />
                   </ListItem>
                   <ListItem>
-                    <ListItemText 
+                  <ListItemText 
                       primary="2. We review & respond"
-                      secondary="Get questions and clarifications within 24 hours"
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText 
+                      secondary="Get questions and clarifications as soon as possible"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText 
                       primary="3. Receive your quote"
                       secondary="Detailed pricing and timeline"
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText 
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText 
                       primary="4. Book your service"
                       secondary="Schedule when it works for you"
-                    />
-                  </ListItem>
-                </List>
-              </CardContent>
-            </Card>
+                  />
+                </ListItem>
+              </List>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                  💡 Tips for Better Estimates
-                </Typography>
-                <List dense>
-                  <ListItem>
-                    <ListItemText 
-                      primary="Be specific"
-                      secondary="More details = more accurate pricing"
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText 
-                      primary="Include photos"
-                      secondary="Mention if you can provide images"
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText 
-                      primary="Set realistic timelines"
-                      secondary="Rush jobs may cost more"
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText 
-                      primary="Use AI improvement"
-                      secondary="Click ✨ to enhance your text"
-                    />
-                  </ListItem>
-                </List>
-              </CardContent>
-            </Card>
+
           </Grid>
         </Grid>
       )}
@@ -627,14 +637,14 @@ const GetEstimate = () => {
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-              Your Estimate Requests
-            </Typography>
-            {estimates.length === 0 ? (
+                Your Estimate Requests
+              </Typography>
+              {estimates.length === 0 ? (
               <Paper sx={{ p: 6, textAlign: 'center' }}>
                 <RequestQuote sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No estimates requested yet
-                </Typography>
+                    No estimates requested yet
+                  </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                   Click "New Request" tab to get started!
                 </Typography>
@@ -667,23 +677,21 @@ const GetEstimate = () => {
                       <CardContent>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                           <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
-                            {estimate.projectTitle}
-                          </Typography>
-                          <Chip 
-                            label={estimate.status} 
-                            size="small"
-                            sx={{
-                              bgcolor: getStatusColor(estimate.status),
-                              color: 'white',
+                            {estimate.subject}
+                            </Typography>
+                            <Chip 
+                              label={estimate.status} 
+                              size="small"
+                              sx={{
+                                bgcolor: getStatusColor(estimate.status),
+                                color: 'white',
                               textTransform: 'capitalize',
                               ml: 1
-                            }}
-                          />
-                        </Box>
+                              }}
+                            />
+                          </Box>
                         
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          {businessTypes[estimate.businessType]?.icon} {estimate.serviceCategory}
-                        </Typography>
+
                         
                         <Typography variant="body2" sx={{ mb: 2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                           {estimate.description}
@@ -703,48 +711,134 @@ const GetEstimate = () => {
                             {estimate.messages?.length > 1 ? `${estimate.messages.length - 1} messages` : 'View Details'}
                           </Button>
                         </Box>
-                      </CardContent>
-                    </Card>
+            </CardContent>
+          </Card>
                   </Grid>
                 ))}
               </Grid>
             )}
-          </Grid>
         </Grid>
+      </Grid>
       )}
 
       {/* Estimate Details Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">{selectedEstimate?.projectTitle}</Typography>
-            <Chip 
-              label={selectedEstimate?.status} 
-              sx={{
-                bgcolor: getStatusColor(selectedEstimate?.status),
-                color: 'white',
-                textTransform: 'capitalize'
-              }}
-            />
+            <Typography variant="h6">{selectedEstimate?.subject}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {selectedEstimate?.status === 'pending' && !editMode && (
+                <>
+                  <IconButton 
+                    onClick={handleEdit}
+                    size="small"
+                    sx={{ color: 'primary.main' }}
+                  >
+                    <Edit />
+                  </IconButton>
+                  <IconButton 
+                    onClick={handleDeleteConfirm}
+                    size="small"
+                    sx={{ color: 'error.main' }}
+                  >
+                    <Delete />
+                  </IconButton>
+                </>
+              )}
+                <Chip 
+                label={selectedEstimate?.status} 
+                  sx={{
+                  bgcolor: getStatusColor(selectedEstimate?.status),
+                    color: 'white',
+                    textTransform: 'capitalize'
+                  }}
+                />
+            </Box>
           </Box>
         </DialogTitle>
         <DialogContent>
           {selectedEstimate && (
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">Service Type</Typography>
-                <Typography variant="body1">
-                  {businessTypes[selectedEstimate.businessType]?.icon} {businessTypes[selectedEstimate.businessType]?.name}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">Category</Typography>
-                <Typography variant="body1">{selectedEstimate.serviceCategory}</Typography>
+
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary">Subject</Typography>
+                {editMode ? (
+                  <TextField
+                    fullWidth
+                    value={editData.subject}
+                    onChange={(e) => setEditData({ ...editData, subject: e.target.value })}
+                    variant="outlined"
+                    sx={{ mb: 2 }}
+                  />
+                ) : (
+                  <Typography variant="body1" sx={{ mb: 2 }}>{selectedEstimate.subject}</Typography>
+                )}
               </Grid>
               <Grid item xs={12}>
                 <Typography variant="subtitle2" color="text.secondary">Description</Typography>
-                <Typography variant="body1" sx={{ mb: 2 }}>{selectedEstimate.description}</Typography>
+                {editMode ? (
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={editData.description}
+                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                    variant="outlined"
+                    sx={{ mb: 2 }}
+                  />
+                ) : (
+                  <Typography variant="body1" sx={{ mb: 2 }}>{selectedEstimate.description}</Typography>
+                )}
               </Grid>
+              
+              {/* Attached Files */}
+              {selectedEstimate.files && selectedEstimate.files.length > 0 && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>Attached Files</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    {selectedEstimate.files.map((file, index) => (
+                      <Box key={index} sx={{ maxWidth: 200 }}>
+                        {file.type.startsWith('image/') ? (
+                          <img
+                            src={file.url}
+                            alt={file.name}
+                            onClick={() => window.open(file.url, '_blank')}
+                            style={{
+                              width: '100%',
+                              height: 120,
+                              objectFit: 'cover',
+                              borderRadius: 8,
+                              border: '1px solid #ddd',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            onClick={() => window.open(file.url, '_blank')}
+                            sx={{
+                              width: 200,
+                              height: 120,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#f5f5f5',
+                              borderRadius: 2,
+                              border: '1px solid #ddd',
+                              cursor: 'pointer',
+                              '&:hover': { backgroundColor: '#e0e0e0' }
+                            }}
+                          >
+                            <Typography variant="body2" textAlign="center">
+                              📹 {file.name}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
+                </Grid>
+              )}
+              
               {selectedEstimate.timeline && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">Timeline</Typography>
@@ -862,7 +956,7 @@ const GetEstimate = () => {
                     <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                       <Chat sx={{ mr: 1 }} />
                       Send Message
-                    </Typography>
+                  </Typography>
                     <TextField
                       fullWidth
                       multiline
@@ -873,17 +967,7 @@ const GetEstimate = () => {
                       variant="outlined"
                       sx={{ mb: 2 }}
                     />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          size="small"
-                          onClick={() => improveReplyTextWithAI(replyMessage)}
-                          disabled={improvingText || !replyMessage.trim()}
-                          startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
-                        >
-                          {improvingText ? 'Improving...' : 'Improve with AI'}
-                        </Button>
-                      </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <Button
                         variant="contained"
                         onClick={handleSendReply}
@@ -900,9 +984,27 @@ const GetEstimate = () => {
           )}
         </DialogContent>
         <DialogActions>
+          {editMode ? (
+            <>
+              <Button onClick={handleCancelEdit} startIcon={<Cancel />}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveEdit} 
+                variant="contained" 
+                startIcon={<Save />}
+                disabled={!editData.subject.trim() || !editData.description.trim()}
+              >
+                Save Changes
+              </Button>
+            </>
+          ) : (
           <Button onClick={() => setDialogOpen(false)}>Close</Button>
+          )}
         </DialogActions>
       </Dialog>
+
+
     </Container>
   );
 };
