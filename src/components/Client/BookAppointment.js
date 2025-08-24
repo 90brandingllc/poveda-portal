@@ -391,20 +391,7 @@ const BookAppointment = () => {
                 />
               </Grid>
 
-              {/* Business Hours Info */}
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
-                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Schedule sx={{ mr: 1, color: 'primary.main' }} />
-                    Business Hours
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Monday - Friday: 9:00 AM - 5:00 PM<br />
-                    Saturday - Sunday: Closed<br />
-                    1-hour appointment slots available
-                  </Typography>
-                </Paper>
-              </Grid>
+
 
               {/* Time Slot Selection */}
               {formData.date && (

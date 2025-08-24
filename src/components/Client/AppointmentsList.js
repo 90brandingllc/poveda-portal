@@ -57,6 +57,8 @@ const AppointmentsList = () => {
   });
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
 
   useEffect(() => {
     let unsubscribe = null;
@@ -195,8 +197,11 @@ const AppointmentsList = () => {
     handleMenuClose();
   };
 
-  const handleCancelAppointment = async () => {
-    if (!selectedAppointment) {
+  const handleCancelAppointment = (appointment = null) => {
+    const appointmentToCancel = appointment || selectedAppointment;
+    
+    // Check if we have an appointment to cancel
+    if (!appointmentToCancel) {
       setSnackbar({
         open: true,
         message: 'No appointment selected. Please try again.',
@@ -205,11 +210,22 @@ const AppointmentsList = () => {
       return;
     }
 
+    // Set the appointment to cancel and show confirmation dialog
+    setAppointmentToCancel(appointmentToCancel);
+    setCancelConfirmOpen(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!appointmentToCancel) {
+      setCancelConfirmOpen(false);
+      return;
+    }
+
     try {
-      console.log('Cancelling appointment:', selectedAppointment.id);
+      console.log('Cancelling appointment:', appointmentToCancel.id);
       
       // Delete the appointment from Firestore
-      await deleteDoc(doc(db, 'appointments', selectedAppointment.id));
+      await deleteDoc(doc(db, 'appointments', appointmentToCancel.id));
       
       setSnackbar({
         open: true,
@@ -217,9 +233,12 @@ const AppointmentsList = () => {
         severity: 'success'
       });
       
-      // Close the details dialog
+      // Close all dialogs and reset state
+      setCancelConfirmOpen(false);
       setDetailsOpen(false);
       setSelectedAppointment(null);
+      setAppointmentToCancel(null);
+      setMenuAnchor(null);
       
     } catch (error) {
       console.error('Error cancelling appointment:', error);
@@ -228,7 +247,13 @@ const AppointmentsList = () => {
         message: 'Failed to cancel appointment. Please try again.',
         severity: 'error'
       });
+      setCancelConfirmOpen(false);
     }
+  };
+
+  const handleCancelConfirmClose = () => {
+    setCancelConfirmOpen(false);
+    setAppointmentToCancel(null);
   };
 
   const handleRescheduleSubmit = async () => {
@@ -902,6 +927,62 @@ const AppointmentsList = () => {
             }}
           >
             {rescheduleLoading ? 'Rescheduling...' : 'Reschedule Appointment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog
+        open={cancelConfirmOpen}
+        onClose={handleCancelConfirmClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ bgcolor: 'error.main', color: 'white' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Cancel sx={{ mr: 1 }} />
+            Cancel Appointment
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Are you sure you want to cancel your appointment?
+          </Typography>
+          {appointmentToCancel && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                <strong>{appointmentToCancel.service}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {formatDate(appointmentToCancel.date)} at {appointmentToCancel.time || 'TBD'}
+              </Typography>
+              {appointmentToCancel.address && (
+                <Typography variant="body2" color="text.secondary">
+                  {appointmentToCancel.address.street}, {appointmentToCancel.address.city}, {appointmentToCancel.address.state} {appointmentToCancel.address.zipCode}
+                </Typography>
+              )}
+            </Box>
+          )}
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            <strong>Warning:</strong> This action cannot be undone. Your appointment will be permanently cancelled.
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={handleCancelConfirmClose}
+            variant="outlined"
+            size="large"
+          >
+            No, Keep Appointment
+          </Button>
+          <Button
+            onClick={handleConfirmCancel}
+            variant="contained"
+            color="error"
+            size="large"
+            startIcon={<Cancel />}
+          >
+            Yes, Cancel Appointment
           </Button>
         </DialogActions>
       </Dialog>

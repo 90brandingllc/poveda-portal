@@ -68,9 +68,17 @@ service cloud.firestore {
       allow read: if request.auth != null && 
                  request.auth.uid == resource.data.userId;
       
-      // Admins can read and update all estimates
-      allow read, update: if request.auth != null && 
-                         getUserRole(request.auth.uid) == 'admin';
+      // Users can update their own estimates (for editing details)
+      allow update: if request.auth != null && 
+                   request.auth.uid == resource.data.userId;
+      
+      // Users can delete their own estimates
+      allow delete: if request.auth != null && 
+                   request.auth.uid == resource.data.userId;
+      
+      // Admins can read, update, and delete all estimates
+      allow read, update, delete: if request.auth != null && 
+                                 getUserRole(request.auth.uid) == 'admin';
     }
     
     // Blocked slots rules (for appointment availability checking)

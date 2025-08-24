@@ -50,6 +50,28 @@ code {
   100% { left: 100%; }
 }
 
+/* SweetAlert2 z-index fixes */
+.swal2-container {
+  z-index: 10000 !important;
+}
+
+.swal2-popup {
+  z-index: 10001 !important;
+}
+
+.swal-popup-front {
+  z-index: 10001 !important;
+}
+
+.swal-overlay-front {
+  z-index: 10000 !important;
+}
+
+/* Ensure SweetAlert2 appears above MUI components */
+.swal2-backdrop-show {
+  z-index: 9999 !important;
+}
+
 .service-card {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;

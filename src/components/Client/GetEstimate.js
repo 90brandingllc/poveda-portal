@@ -158,7 +158,9 @@ const GetEstimate = () => {
         text: 'Failed to send message. Please try again.',
         icon: 'error',
         confirmButtonText: 'OK',
-        confirmButtonColor: '#d32f2f'
+        confirmButtonColor: '#d32f2f',
+        zIndex: 9999,
+        backdrop: `rgba(0,0,0,0.4)`
       });
     }
     setReplyLoading(false);
@@ -191,7 +193,9 @@ const GetEstimate = () => {
         text: 'Estimate updated successfully!',
         icon: 'success',
         confirmButtonText: 'OK',
-        confirmButtonColor: '#1976d2'
+        confirmButtonColor: '#1976d2',
+        zIndex: 9999,
+        backdrop: `rgba(0,0,0,0.4)`
       });
     } catch (error) {
       console.error('Error updating estimate:', error);
@@ -200,7 +204,9 @@ const GetEstimate = () => {
         text: 'Failed to update estimate. Please try again.',
         icon: 'error',
         confirmButtonText: 'OK',
-        confirmButtonColor: '#d32f2f'
+        confirmButtonColor: '#d32f2f',
+        zIndex: 9999,
+        backdrop: `rgba(0,0,0,0.4)`
       });
     }
   };
@@ -219,7 +225,15 @@ const GetEstimate = () => {
       confirmButtonColor: '#d32f2f',
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'Cancel'
+      cancelButtonText: 'Cancel',
+      zIndex: 9999,
+      backdrop: `rgba(0,0,0,0.4)`,
+      allowOutsideClick: false,
+      allowEscapeKey: true,
+      customClass: {
+        popup: 'swal-popup-front',
+        overlay: 'swal-overlay-front'
+      }
     });
 
     if (result.isConfirmed) {
@@ -231,7 +245,9 @@ const GetEstimate = () => {
           text: 'Estimate deleted successfully!',
           icon: 'success',
           confirmButtonText: 'OK',
-          confirmButtonColor: '#1976d2'
+          confirmButtonColor: '#1976d2',
+          zIndex: 9999,
+          backdrop: `rgba(0,0,0,0.4)`
         });
       } catch (error) {
         console.error('Error deleting estimate:', error);
@@ -240,7 +256,9 @@ const GetEstimate = () => {
           text: 'Failed to delete estimate. Please try again.',
           icon: 'error',
           confirmButtonText: 'OK',
-          confirmButtonColor: '#d32f2f'
+          confirmButtonColor: '#d32f2f',
+          zIndex: 9999,
+          backdrop: `rgba(0,0,0,0.4)`
         });
       }
     }
@@ -262,7 +280,9 @@ const GetEstimate = () => {
             text: `File ${file.name} is too large. Maximum size is 10MB.`,
             icon: 'warning',
             confirmButtonText: 'OK',
-            confirmButtonColor: '#ff9800'
+            confirmButtonColor: '#ff9800',
+            zIndex: 9999,
+            backdrop: `rgba(0,0,0,0.4)`
           });
           continue;
         }
@@ -274,7 +294,9 @@ const GetEstimate = () => {
             text: `File ${file.name} is not a valid image or video file.`,
             icon: 'warning',
             confirmButtonText: 'OK',
-            confirmButtonColor: '#ff9800'
+            confirmButtonColor: '#ff9800',
+            zIndex: 9999,
+            backdrop: `rgba(0,0,0,0.4)`
           });
           continue;
         }
@@ -307,7 +329,9 @@ const GetEstimate = () => {
         text: 'Failed to upload files. Please try again.',
         icon: 'error',
         confirmButtonText: 'OK',
-        confirmButtonColor: '#d32f2f'
+        confirmButtonColor: '#d32f2f',
+        zIndex: 9999,
+        backdrop: `rgba(0,0,0,0.4)`
       });
     }
     
@@ -336,7 +360,9 @@ const GetEstimate = () => {
         text: 'Failed to delete file. Please try again.',
         icon: 'error',
         confirmButtonText: 'OK',
-        confirmButtonColor: '#d32f2f'
+        confirmButtonColor: '#d32f2f',
+        zIndex: 9999,
+        backdrop: `rgba(0,0,0,0.4)`
       });
     }
   };
@@ -379,7 +405,9 @@ const GetEstimate = () => {
         text: 'Failed to submit estimate request. Please try again.',
         icon: 'error',
         confirmButtonText: 'OK',
-        confirmButtonColor: '#d32f2f'
+        confirmButtonColor: '#d32f2f',
+        zIndex: 9999,
+        backdrop: `rgba(0,0,0,0.4)`
       });
     }
     setLoading(false);
