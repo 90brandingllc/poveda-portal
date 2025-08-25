@@ -171,46 +171,146 @@ const EstimatesList = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-        <IconButton 
-          onClick={() => navigate('/dashboard')}
-          sx={{ 
-            mr: 2,
-            bgcolor: 'primary.main',
-            color: 'white',
-            '&:hover': {
-              bgcolor: 'primary.dark',
-            }
-          }}
-        >
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 0 }}>
-          My Estimate Requests
-        </Typography>
-      </Box>
-
-      {estimates.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <RequestQuote sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No estimates requested yet
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Get started by requesting your first estimate!
-          </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => navigate('/get-estimate')}
-            startIcon={<RequestQuote />}
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+      pb: 6
+    }}>
+      <Container maxWidth="xl" sx={{ pt: 4 }}>
+        {/* Modern Header */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          mb: 8,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          p: { xs: 3, md: 5 },
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+        }}>
+          <IconButton 
+            onClick={() => navigate('/dashboard')}
+            sx={{ 
+              mr: 3,
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              width: 48,
+              height: 48,
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 1)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 25px rgba(0,0,0,0.1)'
+              }
+            }}
           >
-            Request Estimate
-          </Button>
-        </Paper>
-      ) : (
+            <ArrowBack sx={{ color: '#1e293b' }} />
+          </IconButton>
+          <Box>
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                fontWeight: 700,
+                fontSize: { xs: '1.875rem', md: '2.25rem' },
+                color: '#1e293b',
+                mb: 1,
+                background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}
+            >
+              My Estimate Requests
+            </Typography>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: '#64748b',
+                fontWeight: 400,
+                fontSize: '1.125rem'
+              }}
+            >
+              Track your project estimates and quotes
+            </Typography>
+          </Box>
+        </Box>
+
+        {estimates.length === 0 ? (
+          <Box sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '24px',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            p: 8,
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'
+          }}>
+            <Box 
+              sx={{
+                width: 120,
+                height: 120,
+                borderRadius: '24px',
+                background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 4,
+                fontSize: '3rem'
+              }}
+            >
+              💰
+            </Box>
+            <Typography 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 700,
+                color: '#1e293b',
+                mb: 2,
+                fontSize: '1.5rem'
+              }}
+            >
+              No estimates requested yet
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: '#64748b',
+                mb: 4,
+                maxWidth: 400,
+                mx: 'auto',
+                fontSize: '1.125rem',
+                lineHeight: 1.6
+              }}
+            >
+              Get started by requesting your first estimate!
+            </Typography>
+            <Button
+              onClick={() => navigate('/get-estimate')}
+              sx={{
+                background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
+                color: '#1e293b',
+                fontWeight: 600,
+                fontSize: '1rem',
+                px: 6,
+                py: 2,
+                borderRadius: '12px',
+                textTransform: 'none',
+                boxShadow: '0 10px 25px rgba(234, 179, 8, 0.3)',
+                '&:hover': { 
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 15px 30px rgba(234, 179, 8, 0.4)'
+                }
+              }}
+              startIcon={<RequestQuote />}
+            >
+              Request Estimate
+            </Button>
+          </Box>
+        ) : (
         <Grid container spacing={3}>
           {estimates.map((estimate) => (
             <Grid item xs={12} md={6} lg={4} key={estimate.id}>
@@ -435,7 +535,8 @@ const EstimatesList = () => {
           <Button onClick={() => setDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

@@ -380,126 +380,345 @@ const AppointmentsList = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          My Appointments
-        </Typography>
-        <Button
-          component={Link}
-          to="/book-appointment"
-          variant="contained"
-          startIcon={<CalendarToday />}
-        >
-          Book New Service
-        </Button>
-      </Box>
-
-      {appointments.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <DirectionsCar sx={{ fontSize: 80, color: 'text.secondary', mb: 3 }} />
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-            No appointments found
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            {currentUser ? 
-              "You haven't booked any appointments yet. Book your first service to get started with premium car care." :
-              "Please log in to view your appointments."
-            }
-          </Typography>
-          {currentUser && (
-            <Button
-              component={Link}
-              to="/book-appointment"
-              variant="contained"
-              size="large"
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+      pb: 6
+    }}>
+      <Container maxWidth="xl" sx={{ pt: 4 }}>
+        {/* Modern Header */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 8,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          p: { xs: 3, md: 5 },
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+        }}>
+          <Box>
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                fontWeight: 700,
+                fontSize: { xs: '1.875rem', md: '2.25rem' },
+                color: '#1e293b',
+                mb: 1,
+                background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}
             >
-              Book Your First Service
-            </Button>
-          )}
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Current User: {currentUser?.uid || 'Not logged in'}
-          </Typography>
-        </Paper>
-      ) : (
+              My Appointments
+            </Typography>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: '#64748b',
+                fontWeight: 400,
+                fontSize: '1.125rem'
+              }}
+            >
+              Manage your service appointments
+            </Typography>
+          </Box>
+          <Button
+            component={Link}
+            to="/book-appointment"
+            sx={{
+              background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
+              color: '#1e293b',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              px: 4,
+              py: 1.5,
+              borderRadius: '12px',
+              textTransform: 'none',
+              boxShadow: '0 10px 25px rgba(234, 179, 8, 0.3)',
+              '&:hover': { 
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 15px 30px rgba(234, 179, 8, 0.4)'
+              }
+            }}
+            startIcon={<CalendarToday />}
+          >
+            Book New Service
+          </Button>
+        </Box>
+
+        {appointments.length === 0 ? (
+          <Box sx={{ 
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '24px',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            p: 8,
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'
+          }}>
+            <Box 
+              sx={{
+                width: 120,
+                height: 120,
+                borderRadius: '24px',
+                background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 4,
+                fontSize: '3rem'
+              }}
+            >
+              🚗
+            </Box>
+            <Typography 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 700,
+                color: '#1e293b',
+                mb: 2,
+                fontSize: '1.5rem'
+              }}
+            >
+              No appointments found
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: '#64748b',
+                mb: 4,
+                maxWidth: 400,
+                mx: 'auto',
+                fontSize: '1.125rem',
+                lineHeight: 1.6
+              }}
+            >
+              {currentUser ? 
+                "You haven't booked any appointments yet. Book your first service to get started with premium car care." :
+                "Please log in to view your appointments."
+              }
+            </Typography>
+            {currentUser && (
+              <Button
+                component={Link}
+                to="/book-appointment"
+                sx={{
+                  background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
+                  color: '#1e293b',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  px: 6,
+                  py: 2,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  boxShadow: '0 10px 25px rgba(234, 179, 8, 0.3)',
+                  '&:hover': { 
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 15px 30px rgba(234, 179, 8, 0.4)'
+                  }
+                }}
+              >
+                Book Your First Service
+              </Button>
+            )}
+          </Box>
+        ) : (
         <Grid container spacing={3}>
           {appointments.map((appointment) => (
             <Grid item xs={12} md={6} lg={4} key={appointment.id}>
-              <Card 
+              <Box 
                 sx={{ 
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  p: 4,
                   height: '100%',
-                  transition: 'all 0.3s ease',
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+                    border: '1px solid rgba(255, 255, 255, 0.4)'
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '4px',
+                    background: `linear-gradient(135deg, ${getStatusColor(appointment.status)} 0%, ${getStatusColor(appointment.status)}80 100%)`,
+                    borderRadius: '20px 20px 0 0'
+                  }
                 }}
               >
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <IconButton 
-                        size="small" 
-                        sx={{ color: getStatusColor(appointment.status), mr: 1 }}
-                      >
-                        {getStatusIcon(appointment.status)}
-                      </IconButton>
-                      <Chip 
-                        label={appointment.status || 'pending'} 
-                        size="small"
-                        sx={{
-                          bgcolor: getStatusColor(appointment.status),
-                          color: 'white',
-                          textTransform: 'capitalize',
-                          fontWeight: 600
-                        }}
-                      />
-                    </Box>
-                    <IconButton 
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, appointment)}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+                  <Chip 
+                    label={appointment.status || 'pending'} 
+                    size="small"
+                    sx={{
+                      height: '24px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      background: `${getStatusColor(appointment.status)}15`,
+                      color: getStatusColor(appointment.status),
+                      border: `1px solid ${getStatusColor(appointment.status)}30`,
+                      textTransform: 'capitalize'
+                    }}
+                  />
+                  <IconButton 
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, appointment)}
+                    sx={{
+                      '&:hover': { backgroundColor: 'rgba(100, 116, 139, 0.1)' }
+                    }}
+                  >
+                    <MoreVert sx={{ color: '#64748b' }} />
+                  </IconButton>
+                </Box>
+
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: '#1e293b',
+                    mb: 3,
+                    fontSize: '1.125rem'
+                  }}
+                >
+                  {appointment.service || 'Car Detailing Service'}
+                </Typography>
+
+                <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box 
+                      sx={{ 
+                        width: 32, 
+                        height: 32, 
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mr: 2,
+                        fontSize: '1rem'
+                      }}
                     >
-                      <MoreVert />
-                    </IconButton>
-                  </Box>
-
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                    {appointment.service || 'Car Detailing Service'}
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <CalendarToday sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {formatDate(appointment.date)}
-                    </Typography>
+                      📅
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.75rem', mb: 0.5 }}>
+                        Date
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: '#1e293b', fontWeight: 600, fontSize: '0.875rem' }}>
+                        {formatDate(appointment.date)}
+                      </Typography>
+                    </Box>
                   </Box>
 
                   {appointment.time && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Schedule sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {appointment.time}
-                      </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box 
+                        sx={{ 
+                          width: 32, 
+                          height: 32, 
+                          borderRadius: '8px',
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mr: 2,
+                          fontSize: '1rem'
+                        }}
+                      >
+                        ⏰
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.75rem', mb: 0.5 }}>
+                          Time
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: '#1e293b', fontWeight: 600, fontSize: '0.875rem' }}>
+                          {appointment.time}
+                        </Typography>
+                      </Box>
                     </Box>
                   )}
 
                   {appointment.address && (
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                      <LocationOn sx={{ fontSize: 16, mr: 1, color: 'text.secondary', mt: 0.2 }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {appointment.address.street}<br />
-                        {appointment.address.city}, {appointment.address.state}
-                      </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                      <Box 
+                        sx={{ 
+                          width: 32, 
+                          height: 32, 
+                          borderRadius: '8px',
+                          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mr: 2,
+                          fontSize: '1rem',
+                          flexShrink: 0
+                        }}
+                      >
+                        📍
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.75rem', mb: 0.5 }}>
+                          Location
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: '#1e293b', fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.4 }}>
+                          {appointment.address.street}<br />
+                          {appointment.address.city}, {appointment.address.state}
+                        </Typography>
+                      </Box>
                     </Box>
                   )}
+                </Box>
 
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    p: 3,
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0'
+                  }}
+                >
+                  <Box>
+                    <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.75rem', mb: 0.5 }}>
                       Total Price
                     </Typography>
-                    <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
+                    <Typography variant="h6" sx={{ color: '#1e293b', fontWeight: 700, fontSize: '1.25rem' }}>
                       ${appointment.finalPrice || appointment.estimatedPrice || 'TBD'}
                     </Typography>
                   </Box>
+                  <Box 
+                    sx={{ 
+                      width: 40, 
+                      height: 40, 
+                      borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.25rem'
+                    }}
+                  >
+                    💰
+                  </Box>
+                </Box>
 
                   {appointment.status === 'pending' && (
                     <Alert severity="info" sx={{ mt: 2 }}>
@@ -530,18 +749,25 @@ const AppointmentsList = () => {
                   )}
 
                   {appointment.status === 'rejected' && (
-                    <Alert severity="error" sx={{ mt: 2 }}>
-                      Unfortunately, we couldn't accommodate this appointment.
-                    </Alert>
+                    <Box sx={{ 
+                      mt: 3,
+                      p: 2,
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(239, 68, 68, 0.2)'
+                    }}>
+                      <Typography variant="body2" sx={{ color: '#ef4444', fontSize: '0.875rem', fontWeight: 500 }}>
+                        ❌ Unfortunately, we couldn't accommodate this appointment.
+                      </Typography>
+                    </Box>
                   )}
-                </CardContent>
-              </Card>
+              </Box>
             </Grid>
           ))}
         </Grid>
       )}
 
-      {/* Context Menu */}
+        {/* Context Menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
@@ -1002,7 +1228,8 @@ const AppointmentsList = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

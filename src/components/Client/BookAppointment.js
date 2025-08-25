@@ -10,9 +10,7 @@ import {
   TextField,
   Box,
   Alert,
-  Stepper,
-  Step,
-  StepLabel,
+
   FormControlLabel,
   Checkbox,
   Divider,
@@ -699,19 +697,118 @@ const BookAppointment = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
-        Book Your Service
-      </Typography>
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+      pb: 6
+    }}>
+      <Container maxWidth="xl" sx={{ pt: 4 }}>
+        {/* Modern Header */}
+        <Box sx={{ 
+          mb: 8,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          p: { xs: 4, md: 6 },
+          textAlign: 'center',
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+        }}>
+          <Typography 
+            variant="h3" 
+            sx={{ 
+              fontWeight: 700,
+              fontSize: { xs: '1.875rem', md: '2.25rem' },
+              color: '#1e293b',
+              mb: 2,
+              background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}
+          >
+            Book Your Service
+          </Typography>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              color: '#64748b',
+              fontWeight: 400,
+              fontSize: '1.125rem',
+              mb: 4
+            }}
+          >
+            Premium car care at your location
+          </Typography>
 
-      <Paper sx={{ p: 4 }}>
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+          {/* Modern Progress Steps */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+            {steps.map((label, index) => (
+              <Box key={label} sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box 
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '12px',
+                    background: index <= activeStep 
+                      ? 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)'
+                      : 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 600,
+                    color: index <= activeStep ? '#1e293b' : '#94a3b8',
+                    fontSize: '0.875rem',
+                    transition: 'all 0.3s',
+                    boxShadow: index <= activeStep ? '0 4px 12px rgba(234, 179, 8, 0.3)' : 'none'
+                  }}
+                >
+                  {index + 1}
+                </Box>
+                {index < steps.length - 1 && (
+                  <Box 
+                    sx={{
+                      width: { xs: 24, md: 48 },
+                      height: 2,
+                      background: index < activeStep 
+                        ? 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)'
+                        : '#e2e8f0',
+                      mx: 1,
+                      borderRadius: 1
+                    }}
+                  />
+                )}
+              </Box>
+            ))}
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, mt: 2 }}>
+            {steps.map((label, index) => (
+              <Typography 
+                key={label}
+                variant="caption" 
+                sx={{ 
+                  color: index <= activeStep ? '#1e293b' : '#94a3b8',
+                  fontWeight: index === activeStep ? 600 : 400,
+                  fontSize: '0.75rem'
+                }}
+              >
+                {label}
+              </Typography>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Modern Step Content */}
+        <Box sx={{ 
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          p: { xs: 4, md: 6 },
+          mb: 4,
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'
+        }}>
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -776,8 +873,9 @@ const BookAppointment = () => {
             </Button>
           )}
         </Box>
-      </Paper>
-    </Container>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

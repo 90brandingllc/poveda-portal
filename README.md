@@ -12,6 +12,12 @@ A comprehensive car detailing service client portal built with React, Firebase, 
 - **Role-based Access Control** (Client & Admin)
 - **Secure Session Management**
 
+### 🌤️ Weather Integration
+- **Real-time Weather Display** - Current conditions with location
+- **Appointment Weather Forecasts** - Weather for upcoming appointment days
+- **Smart Geolocation** - Automatic location detection
+- **Modern Glassmorphism UI** - Beautiful weather cards
+
 ### 👤 Client Portal
 - **📊 Dashboard** - Overview with stats and quick actions
 - **📅 Book Appointments** - Multi-step booking with real-time pricing
@@ -63,8 +69,9 @@ A comprehensive car detailing service client portal built with React, Firebase, 
    cp .env.example .env
    ```
    
-   Edit `.env` with your Firebase configuration:
+   Edit `.env` with your configuration:
    ```env
+   # Firebase Configuration
    REACT_APP_FIREBASE_API_KEY=your-api-key
    REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
    REACT_APP_FIREBASE_PROJECT_ID=your-project-id
@@ -73,6 +80,10 @@ A comprehensive car detailing service client portal built with React, Firebase, 
    REACT_APP_FIREBASE_APP_ID=your-app-id
    REACT_APP_FIREBASE_MEASUREMENT_ID=your-measurement-id
    
+   # Weather API (Get free key from https://openweathermap.org/api)
+   REACT_APP_WEATHER_API_KEY=your-openweathermap-api-key
+   
+   # Contact Information
    REACT_APP_SUPPORT_EMAIL=support@povedaautocare.com
    REACT_APP_SUPPORT_PHONE=(555) 123-4567
    ```

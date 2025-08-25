@@ -2,23 +2,19 @@ import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
-  Card,
-  CardContent,
   Typography,
   Button,
   Box,
-  Paper,
   Avatar,
   Chip,
-  IconButton,
-  Stack,
-  Divider
+  Stack
 } from '@mui/material';
 
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import WeatherWidget from '../WeatherWidget';
 
 const ClientDashboard = () => {
   const { currentUser } = useAuth();
@@ -30,185 +26,109 @@ const ClientDashboard = () => {
     pendingAppointments: 0,
     approvedAppointments: 0,
     completedAppointments: 0,
-    totalSpent: 0
+    totalSpent: 0,
+    totalEstimates: 0,
+    pendingEstimates: 0
   });
 
   useEffect(() => {
     if (currentUser) {
-
-      
-      // Real-time listener for user's appointments (remove orderBy to avoid index issues)
+      // Fetch appointments
       const appointmentsQuery = query(
         collection(db, 'appointments'),
-        where('userId', '==', currentUser.uid)
+        where('userId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc'),
+        limit(5)
       );
 
-      const unsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
-        console.log('ClientDashboard - Received', snapshot.size, 'appointments');
-        
-        const appointmentData = [];
-        let totalSpent = 0;
-        let pending = 0;
-        let completed = 0;
-        let approved = 0;
+      const unsubscribeAppointments = onSnapshot(appointmentsQuery, (snapshot) => {
+        const userAppointments = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setAppointments(userAppointments);
 
-        snapshot.forEach((doc) => {
-          const data = { id: doc.id, ...doc.data() };
-          appointmentData.push(data);
-          
-          console.log('ClientDashboard - Processing appointment:', data.service, data.status, data.finalPrice || data.estimatedPrice);
-          
-          // Count by status
-          if (data.status === 'pending') pending++;
-          if (data.status === 'approved' || data.status === 'confirmed') approved++;
-          if (data.status === 'completed') completed++;
-          
-          // Calculate total spent - simpler approach
-          const appointmentCost = data.finalPrice || data.estimatedPrice || data.price || 0;
-          const depositPaid = data.depositAmount || 0;
-          
-          console.log(`ClientDashboard - Processing ${data.service}:`, {
-            id: data.id,
-            status: data.status,
-            paymentStatus: data.paymentStatus,
-            appointmentCost: appointmentCost,
-            depositPaid: depositPaid,
-            finalPrice: data.finalPrice,
-            estimatedPrice: data.estimatedPrice
-          });
-          
-          // Add to total spent based on what was actually paid
-          let amountToAdd = 0;
-          
-          if (data.status === 'completed') {
-            // For completed services, count the full amount
-            amountToAdd = appointmentCost;
-          } else if (data.paymentStatus === 'deposit_paid' && depositPaid > 0) {
-            // For services with deposit paid, count the deposit
-            amountToAdd = depositPaid;
-          } else if (data.depositAmount > 0) {
-            // Fallback: if there's a deposit amount, count it
-            amountToAdd = depositPaid;
-          }
-          
-          totalSpent += amountToAdd;
-          
-          console.log(`ClientDashboard - Added $${amountToAdd} to total. New total: $${totalSpent}`);
-        });
+        // Calculate stats
+        const totalAppointments = userAppointments.length;
+        const pendingAppointments = userAppointments.filter(app => app.status === 'pending').length;
+        const approvedAppointments = userAppointments.filter(app => app.status === 'approved').length;
+        const completedAppointments = userAppointments.filter(app => app.status === 'completed').length;
+        const totalSpent = userAppointments
+          .reduce((sum, app) => {
+            // Check multiple possible price fields from any appointment with a price
+            const price = app.totalAmount || app.finalPrice || app.estimatedPrice || app.price || app.amount || 0;
+            
+            // Handle different price formats (strings with $, numbers, etc.)
+            let numericPrice = 0;
+            if (typeof price === 'string') {
+              // Remove currency symbols and convert to number
+              numericPrice = parseFloat(price.replace(/[$,]/g, '')) || 0;
+            } else {
+              numericPrice = parseFloat(price) || 0;
+            }
+            
+            return sum + numericPrice;
+          }, 0);
 
-        // Sort by creation date (newest first) on client side
-        appointmentData.sort((a, b) => {
-          const aDate = a.createdAt?.toDate?.() || new Date(0);
-          const bDate = b.createdAt?.toDate?.() || new Date(0);
-          return bDate - aDate;
-        });
-
-        // Take only the first 5 for recent appointments display
-        const recentAppointments = appointmentData.slice(0, 5);
-
-        console.log('=== ClientDashboard - FINAL STATS ===');
-        console.log('Total appointments found:', appointmentData.length);
-        console.log('Pending appointments:', pending);
-        console.log('Approved/Confirmed appointments:', approved);
-        console.log('Completed appointments:', completed);
-        console.log('Total spent calculated:', `$${totalSpent.toFixed(2)}`);
-        
-        console.log('=== APPOINTMENT DETAILS ===');
-        appointmentData.forEach((apt, index) => {
-          console.log(`Appointment ${index + 1}:`, {
-            service: apt.service,
-            status: apt.status,
-            paymentStatus: apt.paymentStatus,
-            depositAmount: apt.depositAmount,
-            finalPrice: apt.finalPrice,
-            estimatedPrice: apt.estimatedPrice,
-            id: apt.id
-          });
-        });
-        
-        // Manual verification - let's calculate step by step
-        console.log('=== MANUAL VERIFICATION ===');
-        let manualTotal = 0;
-        appointmentData.forEach((apt, index) => {
-          if (apt.status === 'completed') {
-            const amount = apt.finalPrice || apt.estimatedPrice || apt.price || 0;
-            manualTotal += amount;
-            console.log(`✅ Appointment ${index + 1} (${apt.service}) - COMPLETED: +$${amount} (total: $${manualTotal})`);
-          } else if (apt.depositAmount > 0) {
-            manualTotal += apt.depositAmount;
-            console.log(`💳 Appointment ${index + 1} (${apt.service}) - DEPOSIT: +$${apt.depositAmount} (total: $${manualTotal})`);
-          } else {
-            console.log(`⏳ Appointment ${index + 1} (${apt.service}) - NO PAYMENT: +$0 (total: $${manualTotal})`);
-          }
-        });
-        console.log(`Manual calculation result: $${manualTotal}`);
-        console.log(`Auto calculation result: $${totalSpent}`);
-        console.log('=== END VERIFICATION ===');
-
-        setAppointments(recentAppointments);
         setStats({
-          totalAppointments: appointmentData.length,
-          pendingAppointments: pending,
-          approvedAppointments: approved,
-          completedAppointments: completed,
+          totalAppointments,
+          pendingAppointments,
+          approvedAppointments,
+          completedAppointments,
           totalSpent
         });
-      }, (error) => {
-        console.error('ClientDashboard - Error fetching appointments:', error);
       });
 
-      // Real-time listener for user's estimates
+      // Fetch estimates
       const estimatesQuery = query(
         collection(db, 'estimates'),
         where('userId', '==', currentUser.uid)
       );
 
-      const unsubscribeEstimates = onSnapshot(estimatesQuery, (snapshot) => {
-        const estimateData = [];
-        snapshot.forEach((doc) => {
-          estimateData.push({ id: doc.id, ...doc.data() });
-        });
-        
-        // Sort by lastUpdated (most recent first) - client-side sorting
-        estimateData.sort((a, b) => {
-          const aTime = a.lastUpdated?.seconds ? a.lastUpdated.seconds * 1000 : new Date(a.lastUpdated).getTime();
-          const bTime = b.lastUpdated?.seconds ? b.lastUpdated.seconds * 1000 : new Date(b.lastUpdated).getTime();
-          return bTime - aTime;
-        });
-        
-        // Limit to 5 most recent
-        setEstimates(estimateData.slice(0, 5));
-      }, (error) => {
-        console.error('ClientDashboard - Error fetching estimates:', error);
-      });
 
-      // Real-time listener for user's tickets
+
+      const unsubscribeEstimates = onSnapshot(
+        estimatesQuery, 
+        (snapshot) => {
+          const userEstimates = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+
+          
+          setEstimates(userEstimates);
+          
+          // Update stats with estimates data
+          setStats(prevStats => ({
+            ...prevStats,
+            totalEstimates: userEstimates.length,
+            pendingEstimates: userEstimates.filter(est => est.status === 'pending').length
+          }));
+        },
+        (error) => {
+          console.error('Error fetching estimates:', error);
+        }
+      );
+
+      // Fetch tickets
       const ticketsQuery = query(
         collection(db, 'tickets'),
-        where('userId', '==', currentUser.uid)
+        where('userId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc'),
+        limit(5)
       );
 
       const unsubscribeTickets = onSnapshot(ticketsQuery, (snapshot) => {
-        const ticketData = [];
-        snapshot.forEach((doc) => {
-          ticketData.push({ id: doc.id, ...doc.data() });
-        });
-        
-        // Sort by lastUpdated (most recent first) - client-side sorting
-        ticketData.sort((a, b) => {
-          const aTime = a.lastUpdated?.seconds ? a.lastUpdated.seconds * 1000 : new Date(a.lastUpdated).getTime();
-          const bTime = b.lastUpdated?.seconds ? b.lastUpdated.seconds * 1000 : new Date(b.lastUpdated).getTime();
-          return bTime - aTime;
-        });
-        
-        // Limit to 5 most recent
-        setTickets(ticketData.slice(0, 5));
-      }, (error) => {
-        console.error('ClientDashboard - Error fetching tickets:', error);
+        const userTickets = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setTickets(userTickets);
       });
 
       return () => {
-        unsubscribe();
+        unsubscribeAppointments();
         unsubscribeEstimates();
         unsubscribeTickets();
       };
@@ -217,495 +137,708 @@ const ClientDashboard = () => {
 
   const quickActions = [
     {
-      title: 'Book Appointment',
-      description: 'Schedule a new service',
-      value: '+',
-      color: '#1976d2',
-      bgColor: '#e3f2fd',
+      title: 'Book Service',
+      description: 'Schedule your next appointment',
+      icon: '📅',
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: '#667eea',
+      count: 0,
+      subtitle: 'new booking',
       link: '/book-appointment'
     },
     {
       title: 'My Appointments',
-      description: 'View booking history',
-      value: stats.totalAppointments,
-      color: '#2e7d32',
-      bgColor: '#e8f5e8',
+      description: 'View and manage bookings',
+      icon: '📅',
+      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      color: '#f093fb',
+      count: stats.totalAppointments,
+      subtitle: stats.pendingAppointments > 0 ? `${stats.pendingAppointments} pending` : 'appointments',
       link: '/appointments'
     },
     {
-      title: 'Contact Support',
-      description: 'Get help or ask questions',
-      value: '?',
-      color: '#ed6c02',
-      bgColor: '#fff3e0',
-      link: '/contact'
-    },
-    {
       title: 'Get Estimate',
-      description: 'Request custom pricing',
-      value: '+',
-      color: '#9c27b0',
-      bgColor: '#f3e5f5',
+      description: 'Request pricing for services',
+      icon: '💵',
+      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      color: '#4facfe',
+      count: 0,
+      subtitle: 'new request',
       link: '/get-estimate'
     },
     {
       title: 'My Estimates',
-      description: 'View estimate requests',
-      value: estimates.length,
-      color: '#ff9800',
-      bgColor: '#fff8e1',
+      description: 'View your estimate requests',
+      icon: '📋',
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: '#667eea',
+      count: stats.totalEstimates,
+      subtitle: stats.pendingEstimates > 0 ? `${stats.pendingEstimates} pending` : 'estimates',
       link: '/my-estimates'
+    },
+    {
+      title: 'Support Center',
+      description: 'Get help and assistance',
+      icon: '💬',
+      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      color: '#43e97b',
+      count: tickets.length,
+      subtitle: 'tickets',
+      link: '/contact'
     }
-
   ];
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return '#ed6c02';
-      case 'confirmed':
       case 'approved': return '#2e7d32';
-      case 'completed': return '#1976d2';
-      case 'rejected': return '#d32f2f';
+      case 'confirmed': return '#1976d2';
+      case 'completed': return '#9c27b0';
+      case 'cancelled': return '#d32f2f';
       case 'in-progress': return '#1976d2';
       case 'quoted': return '#2e7d32';
       case 'declined': return '#d32f2f';
-      case 'open': return '#ed6c02';
-      case 'closed': return '#2e7d32';
-      case 'resolved': return '#1976d2';
       default: return '#757575';
     }
   };
 
-
-
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Welcome Section */}
-      <Paper 
-        sx={{ 
-          p: 4, 
-          mb: 4, 
-          background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-          color: 'white'
-        }}
-      >
-        <Grid container spacing={3} alignItems="center">
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+      pb: 6
+    }}>
+      <Container maxWidth="xl" sx={{ pt: 4 }}>
+        {/* Modern Header */}
+        <Box sx={{ 
+          mb: 8,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          p: { xs: 3, md: 5 },
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+        }}>
+          <Grid container spacing={4} alignItems="center">
           <Grid item>
+              <Box sx={{ position: 'relative' }}>
             <Avatar 
               sx={{ 
-                width: 80, 
-                height: 80, 
-                bgcolor: 'rgba(255,255,255,0.2)',
-                fontSize: '2rem',
-                fontWeight: 600
+                    width: 72, 
+                    height: 72, 
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    fontSize: '1.75rem',
+                    fontWeight: 600,
+                    boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)'
               }}
             >
               {currentUser?.displayName?.[0] || currentUser?.email?.[0] || 'U'}
             </Avatar>
+                <Box sx={{ 
+                  position: 'absolute', 
+                  bottom: -2, 
+                  right: -2, 
+                  width: 20, 
+                  height: 20, 
+                  background: '#22c55e', 
+                  borderRadius: '50%',
+                  border: '3px solid white',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }} />
+              </Box>
           </Grid>
           <Grid item xs>
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-              Welcome back, {currentUser?.displayName || 'Valued Client'}!
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700,
+                  fontSize: { xs: '1.75rem', md: '2.25rem' },
+                  color: '#1e293b',
+                  mb: 1,
+                  background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Friend'}
             </Typography>
-            <Typography variant="h6" sx={{ opacity: 0.9 }}>
-              Ready to keep your vehicle looking its best?
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: '#64748b',
+                  fontWeight: 400,
+                  fontSize: '1.125rem'
+                }}
+              >
+                Ready to get your service scheduled?
             </Typography>
           </Grid>
           <Grid item>
             <Button
               component={Link}
               to="/book-appointment"
-              variant="contained"
-              size="large"
-
               sx={{
-                bgcolor: '#FFD700',
-                color: '#000',
+                  background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
+                  color: '#1e293b',
                 fontWeight: 600,
-                '&:hover': { bgcolor: '#FFC107' }
+                  fontSize: '0.875rem',
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  boxShadow: '0 10px 25px rgba(234, 179, 8, 0.3)',
+                  '&:hover': { 
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 15px 30px rgba(234, 179, 8, 0.4)'
+                  }
               }}
             >
               Book Service
             </Button>
           </Grid>
         </Grid>
-      </Paper>
+        </Box>
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {[
-          { title: 'Total Appointments', value: stats.totalAppointments, color: '#1976d2' },
-          { title: 'Pending', value: stats.pendingAppointments, color: '#ed6c02' },
-          { title: 'Approved', value: stats.approvedAppointments, color: '#2e7d32' },
-          { title: 'Money Spent', value: `$${stats.totalSpent.toFixed(2)}`, color: '#9c27b0' }
+        {/* Weather Widget */}
+        <Box sx={{ mb: 8 }}>
+          <WeatherWidget appointments={appointments} />
+        </Box>
+
+        {/* Modern Stats Grid */}
+        <Grid container spacing={4} sx={{ mb: 8 }}>
+          {[
+            { 
+              title: 'Total Visits', 
+              value: stats.totalAppointments, 
+              subtitle: 'All time',
+              gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              icon: '📊',
+              trend: '+12%'
+            },
+            { 
+              title: 'Pending', 
+              value: stats.pendingAppointments, 
+              subtitle: 'This month',
+              gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              icon: '⏳',
+              trend: '+5%'
+            },
+            { 
+              title: 'Estimates', 
+              value: stats.totalEstimates, 
+              subtitle: 'Requested',
+              gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              icon: '📋',
+              trend: stats.pendingEstimates > 0 ? `${stats.pendingEstimates} pending` : 'All reviewed'
+            },
+            { 
+              title: 'Total Spent', 
+              value: `$${stats.totalSpent.toFixed(2)}`, 
+              subtitle: 'All time',
+              gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+              icon: '💰',
+              trend: '+25%'
+            }
         ].map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card 
-              className="stats-card" 
+            <Grid item xs={12} sm={6} xl={3} key={index}>
+              <Box 
               sx={{ 
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  p: 3,
                 height: '100%',
-                border: '2px solid #e0e0e0',
-                borderRadius: 2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                transition: 'all 0.3s ease',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer',
                 '&:hover': {
-                  borderColor: stat.color,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  transform: 'translateY(-2px)'
-                }
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box>
-                  <Typography 
-                    color="textSecondary" 
-                    gutterBottom 
-                    variant="body2"
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+                    border: '1px solid rgba(255, 255, 255, 0.4)'
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Box 
                     sx={{ 
-                      fontWeight: 500,
-                      fontSize: '0.9rem',
-                      mb: 1
+                      background: stat.gradient,
+                      borderRadius: '12px',
+                      width: 48,
+                      height: 48,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.5rem',
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
                     }}
                   >
-                    {stat.title}
-                  </Typography>
-                  <Typography 
-                    variant="h3" 
+                    {stat.icon}
+                  </Box>
+                  <Chip 
+                    label={stat.trend}
+                    size="small"
+                    sx={{ 
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      color: '#16a34a',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      border: 'none'
+                    }}
+                  />
+                </Box>
+                
+                <Typography 
+                  variant="h4" 
                     sx={{ 
                       fontWeight: 700, 
-                      color: stat.color,
-                      fontSize: '2.2rem'
+                    color: '#1e293b',
+                    fontSize: '2rem',
+                    mb: 0.5
                     }}
                   >
                     {stat.value}
                   </Typography>
+                
+                <Typography 
+                  variant="body2"
+                  sx={{ 
+                    color: '#64748b',
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    mb: 0.5
+                  }}
+                >
+                  {stat.title}
+                </Typography>
+                
+                <Typography 
+                  variant="caption"
+                  sx={{ 
+                    color: '#94a3b8',
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  {stat.subtitle}
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
           </Grid>
         ))}
       </Grid>
 
-      <Grid container spacing={4}>
-        {/* Quick Actions */}
-        <Grid item xs={12} md={8}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+        <Grid container spacing={6}>
+          {/* Modern Quick Actions */}
+          <Grid item xs={12} lg={8}>
+            <Box sx={{ mb: 4 }}>
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: '#1e293b',
+                  fontSize: '1.5rem',
+                  mb: 1
+                }}
+              >
             Quick Actions
           </Typography>
-          <Grid container spacing={2}>
+              <Typography 
+                variant="body1"
+                sx={{ 
+                  color: '#64748b',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Manage your services efficiently
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
             {quickActions.map((action, index) => (
               <Grid item xs={12} sm={6} key={index}>
-                <Card 
+                  <Box 
                   component={Link}
                   to={action.link}
                   sx={{
                     textDecoration: 'none',
-                    transition: 'all 0.3s ease',
-                    border: `2px solid ${action.color}30`,
-                    borderRadius: 2,
-                    background: action.bgColor,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      display: 'block',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      backdropFilter: 'blur(12px)',
+                      borderRadius: '16px',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      p: 3,
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     cursor: 'pointer',
-                    minHeight: '120px',
+                      position: 'relative',
+                      overflow: 'hidden',
                     '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                      borderColor: action.color,
-                    }
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        transform: 'translateY(-6px)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.4)',
+                        '&::before': {
+                          opacity: 1
+                        }
+                      },
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '3px',
+                        background: action.gradient || action.color,
+                        opacity: 0,
+                        transition: 'opacity 0.3s'
+                      }
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                       <Box 
                         sx={{ 
-                          width: 48, 
-                          height: 48, 
-                          borderRadius: 2,
-                          backgroundColor: action.color,
+                          width: 50, 
+                          height: 50, 
+                          borderRadius: '12px',
+                          background: action.gradient || action.color,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          mr: 2
+                          mr: 3,
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                          fontSize: '1.5rem'
                         }}
                       >
-                        <Typography 
-                          variant="h4" 
-                          sx={{ 
-                            color: 'white',
-                            fontWeight: 700,
-                            fontSize: '1.5rem'
-                          }}
-                        >
-                          {action.value}
-                        </Typography>
+                        {action.icon || action.value}
                       </Box>
                       <Box sx={{ flex: 1 }}>
                         <Typography 
                           variant="h6" 
                           sx={{ 
                             fontWeight: 600,
-                            color: 'text.primary',
-                            mb: 0.5,
-                            fontSize: '1rem'
+                            color: '#1e293b',
+                            mb: 1,
+                            fontSize: '1.125rem'
                           }}
                         >
                           {action.title}
                         </Typography>
                         <Typography 
                           variant="body2" 
-                          color="text.secondary"
                           sx={{ 
-                            fontSize: '0.85rem',
-                            lineHeight: 1.3
+                            color: '#64748b',
+                            fontSize: '0.875rem',
+                            lineHeight: 1.5
                           }}
                         >
                           {action.description}
                         </Typography>
                       </Box>
                     </Box>
-                  </CardContent>
-                </Card>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Chip 
+                        label={`${action.count || 0} ${action.subtitle || 'items'}`}
+                        size="small"
+                        sx={{ 
+                          background: 'rgba(100, 116, 139, 0.1)',
+                          color: '#64748b',
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                          border: 'none'
+                        }}
+                      />
+                      <Typography 
+                        sx={{ 
+                          color: '#94a3b8',
+                          fontSize: '0.875rem',
+                          fontWeight: 500
+                        }}
+                      >
+                        →
+                      </Typography>
+                    </Box>
+                  </Box>
               </Grid>
             ))}
           </Grid>
         </Grid>
 
-        {/* Recent Appointments */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Recent Appointments
+          {/* Modern Activity Feed */}
+          <Grid item xs={12} lg={4}>
+            <Box sx={{ mb: 4 }}>
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: '#1e293b',
+                  fontSize: '1.5rem',
+                  mb: 1
+                }}
+              >
+                Recent Activity
+              </Typography>
+              <Typography 
+                variant="body1"
+                sx={{ 
+                  color: '#64748b',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Your latest appointments and updates
           </Typography>
-          <Card>
-            <CardContent>
-              {appointments.length > 0 ? (
-                <Stack spacing={2}>
-                  {appointments.map((appointment, index) => (
-                    <Box key={appointment.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {appointment.service || 'Car Detailing'}
+            </Box>
+
+            <Box 
+              sx={{
+                background: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(12px)',
+                borderRadius: '20px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                p: 4,
+                boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+              }}
+            >
+              {(appointments.length > 0 || estimates.length > 0) ? (
+                <Stack spacing={3}>
+                  {/* Show recent appointments */}
+                  {appointments.slice(0, 3).map((appointment, index) => (
+                    <Box 
+                      key={appointment.id}
+                      sx={{
+                        position: 'relative',
+                        pb: index < appointments.slice(0, 4).length - 1 ? 3 : 0,
+                        '&:not(:last-child)::after': {
+                          content: '""',
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: '1px',
+                          background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)'
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                        <Box 
+                          sx={{ 
+                            width: 40, 
+                            height: 40, 
+                            borderRadius: '10px',
+                            background: getStatusColor(appointment.status) || '#667eea',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.25rem',
+                            flexShrink: 0,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          {appointment.status === 'completed' ? '✅' : 
+                           appointment.status === 'approved' ? '📅' : 
+                           appointment.status === 'pending' ? '⏳' : '📋'}
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              fontWeight: 600,
+                              color: '#1e293b',
+                              fontSize: '0.875rem',
+                              mb: 0.5
+                            }}
+                          >
+                            {appointment.service || 'Car Detailing Service'}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                          <Typography 
+                            variant="body2"
+                            sx={{ 
+                              color: '#64748b',
+                              fontSize: '0.75rem',
+                              mb: 1
+                            }}
+                          >
                               {appointment.date ? 
                                 (appointment.date.toDate ? appointment.date.toDate().toLocaleDateString() : 
                                  appointment.date.seconds ? new Date(appointment.date.seconds * 1000).toLocaleDateString() : 
                                  'Date TBD') : 'Date TBD'}
                             </Typography>
-                          </Box>
-                        </Box>
                         <Chip 
                           label={appointment.status || 'pending'} 
                           size="small"
                           sx={{
-                            bgcolor: getStatusColor(appointment.status),
-                            color: 'white',
+                              height: '20px',
+                              fontSize: '0.65rem',
+                              fontWeight: 600,
+                              background: `${getStatusColor(appointment.status)}15`,
+                              color: getStatusColor(appointment.status),
+                              border: `1px solid ${getStatusColor(appointment.status)}30`,
                             textTransform: 'capitalize'
                           }}
                         />
+                        </Box>
                       </Box>
-                      {index < appointments.length - 1 && <Divider sx={{ mt: 2 }} />}
                     </Box>
                   ))}
+
+                  {/* Show recent estimates */}
+                  {estimates.slice(0, 2).map((estimate, index) => (
+                    <Box 
+                      key={`estimate-${estimate.id}`}
+                      sx={{
+                        position: 'relative',
+                        pb: 3,
+                        '&::after': {
+                          content: '""',
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: '1px',
+                          background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)'
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box 
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.25rem',
+                            flexShrink: 0,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          📋
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              fontWeight: 600, 
+                              color: '#1e293b',
+                              fontSize: '0.875rem',
+                              mb: 0.5
+                            }}
+                          >
+                            {estimate.projectTitle || 'Estimate Request'}
+                          </Typography>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: '#64748b',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            {estimate.serviceCategory} • {estimate.status || 'pending'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              color: '#94a3b8',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            {estimate.createdAt ? new Date(estimate.createdAt.toDate()).toLocaleDateString() : 'Recent'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))}
+                  
                   <Button
                     component={Link}
                     to="/appointments"
-                    variant="outlined"
+                    sx={{
+                      mt: 2,
+                      background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      py: 1.5,
+                      borderRadius: '12px',
+                      textTransform: 'none',
+                      '&:hover': { 
+                        background: 'linear-gradient(135deg, #475569 0%, #64748b 100%)',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
                     fullWidth
-                    sx={{ mt: 2 }}
                   >
-                    View All Appointments
+                    View All Activity
                   </Button>
                 </Stack>
               ) : (
-                <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography variant="body1" color="text.secondary" gutterBottom>
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Box 
+                    sx={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: '16px',
+                      background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mx: 'auto',
+                      mb: 3,
+                      fontSize: '2rem'
+                    }}
+                  >
+                    📅
+                  </Box>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: '#1e293b',
+                      mb: 1,
+                      fontSize: '1rem'
+                    }}
+                  >
                     No appointments yet
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: '#64748b',
+                      mb: 3,
+                      fontSize: '0.875rem'
+                    }}
+                  >
                     Book your first service to get started
                   </Typography>
                   <Button
                     component={Link}
                     to="/book-appointment"
-                    variant="contained"
-                    size="small"
+                    sx={{
+                      background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
+                      color: '#1e293b',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      px: 4,
+                      py: 1.5,
+                      borderRadius: '12px',
+                      textTransform: 'none',
+                      '&:hover': { 
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
                   >
                     Book Now
                   </Button>
                 </Box>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Recent Estimates */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Recent Estimates
-          </Typography>
-          <Card>
-            <CardContent>
-              {estimates.length > 0 ? (
-                <Stack spacing={2}>
-                  {estimates.map((estimate, index) => (
-                    <Box key={estimate.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {estimate.projectTitle || 'Project Estimate'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {estimate.serviceCategory} • {estimate.lastUpdated ? 
-                                (estimate.lastUpdated.toDate ? estimate.lastUpdated.toDate().toLocaleDateString() : 
-                                 estimate.lastUpdated.seconds ? new Date(estimate.lastUpdated.seconds * 1000).toLocaleDateString() : 
-                                 'Recently') : 'Recently'}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Chip 
-                          label={estimate.status || 'pending'} 
-                          size="small"
-                          sx={{
-                            bgcolor: getStatusColor(estimate.status),
-                            color: 'white',
-                            textTransform: 'capitalize'
-                          }}
-                        />
-                      </Box>
-                      {index < estimates.length - 1 && <Divider sx={{ mt: 2 }} />}
-                    </Box>
-                  ))}
-                  <Button
-                    component={Link}
-                    to="/my-estimates"
-                    variant="outlined"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                  >
-                    View All Estimates
-                  </Button>
-                </Stack>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography variant="body1" color="text.secondary" gutterBottom>
-                    No estimates yet
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Request a custom quote to get started
-                  </Typography>
-                  <Button
-                    component={Link}
-                    to="/get-estimate"
-                    variant="contained"
-                    size="small"
-                  >
-                    Get Estimate
-                  </Button>
                 </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Recent Contact Us */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Recent Contact Us
-          </Typography>
-          <Card>
-            <CardContent>
-              {tickets.length > 0 ? (
-                <Stack spacing={2}>
-                  {tickets.map((ticket, index) => (
-                    <Box key={ticket.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {ticket.subject || 'Support Request'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {ticket.lastUpdated ? 
-                                (ticket.lastUpdated.toDate ? ticket.lastUpdated.toDate().toLocaleDateString() : 
-                                 ticket.lastUpdated.seconds ? new Date(ticket.lastUpdated.seconds * 1000).toLocaleDateString() : 
-                                 'Recently') : 'Recently'}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Chip 
-                          label={ticket.status || 'open'} 
-                          size="small"
-                          sx={{
-                            bgcolor: getStatusColor(ticket.status),
-                            color: 'white',
-                            textTransform: 'capitalize'
-                          }}
-                        />
-                      </Box>
-                      {index < tickets.length - 1 && <Divider sx={{ mt: 2 }} />}
-                    </Box>
-                  ))}
-                  <Button
-                    component={Link}
-                    to="/contact"
-                    variant="outlined"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                  >
-                    View All Tickets
-                  </Button>
-                </Stack>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography variant="body1" color="text.secondary" gutterBottom>
-                    No support requests yet
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Contact us if you need any help
-                  </Typography>
-                  <Button
-                    component={Link}
-                    to="/contact"
-                    variant="contained"
-                    size="small"
-                  >
-                    Contact Support
-                  </Button>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Service Reminder */}
-      <Paper sx={{ p: 3, mt: 4, bgcolor: '#f8f9fa' }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-              Keep Your Car Looking Great!
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Regular detailing helps maintain your vehicle's value and appearance. 
-              Book your next service to keep your car in pristine condition.
-            </Typography>
-          </Grid>
-          <Grid item>
-            <Button
-              component={Link}
-              to="/book-appointment"
-              variant="contained"
-              color="primary"
-            >
-              Schedule Service
-            </Button>
           </Grid>
         </Grid>
-      </Paper>
     </Container>
+    </Box>
   );
 };
 
