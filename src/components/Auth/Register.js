@@ -27,7 +27,8 @@ import {
   VisibilityOff,
   Google,
   AdminPanelSettings,
-  PersonOutline
+  PersonOutline,
+  Phone
 } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,6 +37,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: ''
   });
@@ -69,11 +71,21 @@ const Register = () => {
       return;
     }
 
+    // Phone number validation (if provided)
+    if (formData.phoneNumber) {
+      const cleanPhone = formData.phoneNumber.replace(/\s|-|\(|\)|\.|\+/g, '');
+      if (cleanPhone && !/^\d{10,15}$/.test(cleanPhone)) {
+        setError('Please enter a valid phone number (10-15 digits)');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       await signup(formData.email, formData.password, {
         displayName: formData.displayName,
+        phoneNumber: formData.phoneNumber,
         role: 'client' // All regular registrations are clients
       });
       navigate('/dashboard');
@@ -88,7 +100,9 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await signInWithGoogle();
+      await signInWithGoogle({
+        phoneNumber: formData.phoneNumber // Include phone number if provided
+      });
       navigate('/dashboard');
     } catch (error) {
       setError(getErrorMessage(error.code));
@@ -173,6 +187,24 @@ const Register = () => {
               }}
             />
 
+            <TextField
+              fullWidth
+              name="phoneNumber"
+              label="Phone Number"
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              variant="outlined"
+              placeholder="e.g. +1 (555) 123-4567"
+              helperText="Optional - for appointment reminders and updates"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Phone color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
 
             <TextField

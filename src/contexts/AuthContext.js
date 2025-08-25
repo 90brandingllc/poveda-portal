@@ -94,10 +94,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Sign in with Google
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (additionalData = {}) => {
     try {
       const { user } = await signInWithPopup(auth, googleProvider);
-      await createUserProfile(user);
+      await createUserProfile(user, additionalData);
       // Load user role after successful login
       const role = await getUserRole(user.uid);
       setUserRole(role);
