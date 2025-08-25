@@ -113,11 +113,11 @@ const ManageEstimates = () => {
           messages: [
             {
               role: 'system',
-              content: 'You are a professional business communication assistant. Improve the admin\'s message to be clear, professional, and helpful while maintaining a friendly business tone. Fix any grammar issues and enhance clarity.'
+              content: 'You are a text enhancement assistant. Your ONLY job is to improve the given text by fixing grammar, enhancing clarity, and making it more professional. DO NOT add any greetings, signatures, templates, or extra content. ONLY return the enhanced version of the exact text provided, keeping the same meaning and structure.'
             },
             {
               role: 'user',
-              content: `Please improve this business message: "${text}"`
+              content: `Enhance this text (return ONLY the enhanced version, no additional content): "${text}"`
             }
           ],
           max_tokens: 300,
@@ -130,7 +130,29 @@ const ManageEstimates = () => {
       }
 
       const data = await response.json();
-      const improvedText = data.choices[0]?.message?.content?.trim() || text;
+      let improvedText = data.choices[0]?.message?.content?.trim() || text;
+      
+      // Clean up any potential unwanted additions (remove common template phrases)
+      const unwantedPhrases = [
+        'Dear Customer,',
+        'Dear Client,',
+        'Thank you for your inquiry.',
+        'Best regards,',
+        'Sincerely,',
+        'Please let me know if you have any questions.',
+        'Looking forward to hearing from you.',
+        'Have a great day!'
+      ];
+      
+      // Remove unwanted phrases if they were added
+      unwantedPhrases.forEach(phrase => {
+        if (improvedText.includes(phrase) && !text.includes(phrase)) {
+          improvedText = improvedText.replace(phrase, '').trim();
+        }
+      });
+      
+      // Remove extra line breaks and clean up
+      improvedText = improvedText.replace(/\n\n+/g, '\n').trim();
       
       setReplyMessage(improvedText);
       return improvedText;
@@ -745,7 +767,7 @@ const ManageEstimates = () => {
                           disabled={improvingText || !replyMessage.trim()}
                           startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
                         >
-                          {improvingText ? 'Improving...' : 'Improve with AI'}
+                          {improvingText ? 'Enhancing...' : 'Enhance Text'}
                         </Button>
                       </Box>
                     </Box>
@@ -771,7 +793,7 @@ const ManageEstimates = () => {
                     </Box>
                     
                     <Alert severity="info" sx={{ mt: 2 }}>
-                      💡 Use the ✨ button to improve your message with AI for better professional communication!
+                      💡 Use the ✨ button to enhance your text - it will improve grammar, clarity, and professionalism without adding extra content!
                     </Alert>
                   </Box>
                 </Paper>
