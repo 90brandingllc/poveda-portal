@@ -234,7 +234,7 @@ const ContactUs = () => {
                       Email Support
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      support@povedaautocare.com
+                      support@povedapremiumautocare.com
                     </Typography>
                   </Box>
                 </Box>
@@ -246,8 +246,9 @@ const ContactUs = () => {
                       Support Hours
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Mon-Fri: 8AM-6PM<br />
-                      Sat-Sun: 9AM-5PM
+                      Regular: Monday–Sunday, 7:00 a.m. – 6:00 p.m.<br />
+                      Summer: Monday–Sunday, 7:00 a.m. – 9:00 p.m.<br />
+                      Customer Service Phone Support 24/7
                     </Typography>
                   </Box>
                 </Box>
@@ -259,52 +260,18 @@ const ContactUs = () => {
                       Service Area
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Mobile Service Available<br />
-                      We Come To You!
+                      4529 Parkwick Dr, Columbus, OH 43228<br />
+                      Mobile Service Also Available
                     </Typography>
                   </Box>
                 </Box>
               </Box>
 
-              <Paper sx={{ p: 2, bgcolor: '#e3f2fd' }}>
-                <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
-                  Emergency Support
-                </Typography>
-                <Typography variant="body2">
-                  For urgent matters, please call our emergency line at (555) 123-4567
-                </Typography>
-              </Paper>
+
             </CardContent>
           </Card>
 
-          {/* FAQ Quick Links */}
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Quick Help
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemText 
-                    primary="How to reschedule my appointment?"
-                    secondary="Visit 'My Appointments' to modify your booking"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText 
-                    primary="What should I prepare for service?"
-                    secondary="Remove personal items and ensure vehicle access"
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText 
-                    primary="How long does detailing take?"
-                    secondary="2-6 hours depending on the package selected"
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
+
         </Grid>
 
         {/* Support Ticket Form & History */}

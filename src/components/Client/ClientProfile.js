@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Typography,
   Grid,
@@ -10,16 +10,25 @@ import {
   Avatar,
   Paper,
   Divider,
-  Alert
+  Alert,
+  IconButton,
+  CircularProgress,
+  Tooltip
 } from '@mui/material';
 import {
   Edit,
   Save,
   Cancel,
   Person,
-  Email
+  Email,
+  CameraAlt,
+  CloudUpload
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { storage, db } from '../../firebase/config';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { doc, updateDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
 import ClientLayout from '../Layout/ClientLayout';
 
 const ClientProfile = () => {
@@ -33,6 +42,9 @@ const ClientProfile = () => {
   });
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [profilePhotoURL, setProfilePhotoURL] = useState(currentUser?.photoURL || null);
+  const fileInputRef = useRef(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -40,6 +52,62 @@ const ClientProfile = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    setUploadingPhoto(true);
+
+    try {
+      // Create a reference to the user's profile photo
+      const photoRef = ref(storage, `profile-photos/${currentUser.uid}/${file.name}`);
+      
+      // Upload the file
+      await uploadBytes(photoRef, file);
+      
+      // Get the download URL
+      const downloadURL = await getDownloadURL(photoRef);
+      
+      // Update user's profile in Firebase Auth
+      await updateProfile(currentUser, {
+        photoURL: downloadURL
+      });
+
+      // Update user document in Firestore
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userDocRef, {
+        photoURL: downloadURL
+      });
+
+      // Update local state
+      setProfilePhotoURL(downloadURL);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Failed to upload photo. Please try again.');
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const handleSave = async () => {
@@ -97,18 +165,63 @@ const ClientProfile = () => {
             textAlign: 'center',
             p: 3
           }}>
-            <Avatar 
-              sx={{ 
-                width: 120, 
-                height: 120, 
-                mx: 'auto', 
-                mb: 3,
-                background: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
-                fontSize: '3rem'
-              }}
-            >
-              {currentUser?.displayName?.[0] || currentUser?.email?.[0] || 'U'}
-            </Avatar>
+            <Box sx={{ position: 'relative', display: 'inline-block' }}>
+              <Avatar 
+                src={profilePhotoURL}
+                onClick={handlePhotoClick}
+                sx={{ 
+                  width: 120, 
+                  height: 120, 
+                  mx: 'auto', 
+                  mb: 3,
+                  background: profilePhotoURL ? 'transparent' : 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
+                  fontSize: '3rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 8px 25px rgba(8, 145, 178, 0.3)'
+                  }
+                }}
+              >
+                {!profilePhotoURL && (currentUser?.displayName?.[0] || currentUser?.email?.[0] || 'U')}
+              </Avatar>
+              
+              {/* Upload overlay */}
+              <Tooltip title="Click to upload profile picture">
+                <IconButton
+                  onClick={handlePhotoClick}
+                  disabled={uploadingPhoto}
+                  sx={{
+                    position: 'absolute',
+                    bottom: 8,
+                    right: 8,
+                    background: 'rgba(8, 145, 178, 0.9)',
+                    color: 'white',
+                    width: 40,
+                    height: 40,
+                    '&:hover': {
+                      background: 'rgba(8, 145, 178, 1)',
+                    }
+                  }}
+                >
+                  {uploadingPhoto ? (
+                    <CircularProgress size={20} sx={{ color: 'white' }} />
+                  ) : (
+                    <CameraAlt />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePhotoUpload}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
+            </Box>
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
               {currentUser?.displayName || 'User'}
             </Typography>
@@ -256,7 +369,7 @@ const ClientProfile = () => {
               </Typography>
               
               <Grid container spacing={3}>
-                <Grid item xs={6} sm={3}>
+                <Grid item xs={12} sm={4}>
                   <Paper sx={{ p: 2, textAlign: 'center', background: 'rgba(14, 145, 178, 0.1)' }}>
                     <Typography variant="h4" sx={{ fontWeight: 700, color: '#0891b2' }}>
                       12
@@ -266,7 +379,7 @@ const ClientProfile = () => {
                     </Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid item xs={12} sm={4}>
                   <Paper sx={{ p: 2, textAlign: 'center', background: 'rgba(34, 197, 94, 0.1)' }}>
                     <Typography variant="h4" sx={{ fontWeight: 700, color: '#22c55e' }}>
                       3
@@ -286,16 +399,7 @@ const ClientProfile = () => {
                     </Typography>
                   </Paper>
                 </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Paper sx={{ p: 2, textAlign: 'center', background: 'rgba(168, 85, 247, 0.1)' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#a855f7' }}>
-                      4.9
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
-                      Rating
-                    </Typography>
-                  </Paper>
-                </Grid>
+
               </Grid>
             </CardContent>
           </Card>

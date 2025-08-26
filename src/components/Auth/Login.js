@@ -201,8 +201,6 @@ const Login = () => {
               mt: { xs: 2, sm: 0 }
             }}
           >
-
-
             {/* Logo Section */}
             <Slide direction="down" in={true} timeout={1000}>
               <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 5 } }}>
@@ -211,40 +209,19 @@ const Login = () => {
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mb: { xs: 2, sm: 4 }
+                    mb: { xs: 2, sm: 3 }
                   }}
                 >
                   <img 
                     src="/POVEDA PREMIUM AUTO CARE - LOGO.svg" 
                     alt="POVEDA PREMIUM AUTO CARE" 
                     style={{ 
-                      height: window.innerWidth < 600 ? 80 : 112, 
+                      height: window.innerWidth < 600 ? 100 : 140, 
                       width: 'auto',
                       filter: 'drop-shadow(0 10px 30px rgba(8, 145, 178, 0.3))'
                     }} 
                   />
                 </Box>
-                <Typography 
-                  variant="h4" 
-                  sx={{ 
-                    fontWeight: 700,
-                    color: '#4b5563',
-                    mb: 1,
-                    fontSize: { xs: '1.5rem', sm: '1.875rem' }
-                  }}
-                >
-                  Login
-                </Typography>
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
-                    color: 'rgba(75, 85, 99, 0.7)',
-                    fontWeight: 400,
-                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                  }}
-                >
-                  Sign in to your account to continue
-                </Typography>
               </Box>
             </Slide>
 
@@ -437,16 +414,13 @@ const Login = () => {
                       Remember me
                     </Typography>
                   </Box>
-                  <Typography
-                    component="button"
-                    type="button"
+                  <Link
+                    component={RouterLink}
+                    to="/forgot-password"
                     sx={{
                       color: '#0891b2',
                       fontSize: '0.875rem',
                       fontWeight: 500,
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
                       textDecoration: 'none',
                       '&:hover': {
                         color: 'rgba(8, 145, 178, 0.8)',
@@ -455,7 +429,7 @@ const Login = () => {
                     }}
                   >
                     Forgot password?
-                  </Typography>
+                  </Link>
                 </Box>
 
                 <Button

@@ -117,19 +117,19 @@ const Footer = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Phone sx={{ color: '#1976d2' }} />
                 <Typography variant="body2" sx={{ color: '#cccccc' }}>
-                  {process.env.REACT_APP_SUPPORT_PHONE || '(555) 123-4567'}
+                  {process.env.REACT_APP_SUPPORT_PHONE || '(614) 653-5882'}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Email sx={{ color: '#1976d2' }} />
                 <Typography variant="body2" sx={{ color: '#cccccc' }}>
-                  {process.env.REACT_APP_SUPPORT_EMAIL || 'info@povedaautocare.com'}
+                  {process.env.REACT_APP_SUPPORT_EMAIL || 'support@povedapremiumautocare.com'}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LocationOn sx={{ color: '#1976d2' }} />
                 <Typography variant="body2" sx={{ color: '#cccccc' }}>
-                  Mobile Service - We Come To You!
+                  4529 Parkwick Dr, Columbus, OH 43228
                 </Typography>
               </Box>
             </Box>
@@ -139,9 +139,9 @@ const Footer = () => {
                 Business Hours
               </Typography>
               <Typography variant="body2" sx={{ color: '#cccccc' }}>
-                Monday - Friday: 8:00 AM - 6:00 PM<br />
-                Saturday: 9:00 AM - 5:00 PM<br />
-                Sunday: 10:00 AM - 4:00 PM
+                Regular: Monday–Sunday, 7:00 a.m. – 6:00 p.m.<br />
+                Summer: Monday–Sunday, 7:00 a.m. – 9:00 p.m.<br />
+                Customer Service Phone Support 24/7
               </Typography>
             </Box>
           </Grid>

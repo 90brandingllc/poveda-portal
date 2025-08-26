@@ -31,6 +31,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import ClientLayout from '../Layout/ClientLayout';
+import { generateSampleData } from '../../utils/generateSampleData';
 
 const ClientDashboard = () => {
   const { currentUser, logout } = useAuth();
@@ -74,6 +75,21 @@ const ClientDashboard = () => {
 
   const handleNotificationsClose = () => {
     setNotificationsAnchor(null);
+  };
+
+  const handleGenerateSampleData = async () => {
+    try {
+      console.log('Generating sample data...');
+      const result = await generateSampleData(
+        currentUser.uid,
+        currentUser.email,
+        currentUser.displayName || currentUser.email
+      );
+      alert(`✅ Sample data generated successfully!\n\n📊 Created:\n• ${result.estimates} Estimates\n• ${result.appointments} Appointments\n• ${result.tickets} Support Tickets\n\nRefresh the page to see the new data!`);
+    } catch (error) {
+      console.error('Error generating sample data:', error);
+      alert('❌ Error generating sample data. Check console for details.');
+    }
   };
 
   const handleLogout = async () => {
@@ -170,7 +186,7 @@ const ClientDashboard = () => {
     }
   }, [currentUser]);
 
-    return (
+  return (
     <ClientLayout>
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 4, sm: 6 } }}>
@@ -189,7 +205,7 @@ const ClientDashboard = () => {
             </IconButton>
             <IconButton 
               onClick={handleNotificationsClick}
-              sx={{ 
+        sx={{ 
                 color: '#0891b2',
                 '&:hover': {
                   background: 'rgba(8, 145, 178, 0.1)'
@@ -230,6 +246,28 @@ const ClientDashboard = () => {
             <Typography sx={{ fontWeight: 500, color: '#4b5563', display: { xs: 'none', md: 'block' } }}>
               {currentUser?.displayName || 'User'}
             </Typography>
+            
+            {/* Temporary Demo Data Button */}
+            <Button
+              onClick={handleGenerateSampleData}
+              variant="outlined"
+              size="small"
+              sx={{
+                ml: 2,
+                borderColor: '#22c55e',
+                color: '#22c55e',
+                fontSize: '0.75rem',
+                px: 2,
+                py: 0.5,
+                '&:hover': {
+                  borderColor: '#16a34a',
+                  color: '#16a34a',
+                  background: 'rgba(34, 197, 94, 0.1)'
+                }
+              }}
+            >
+              📊 Generate Demo Data
+            </Button>
         </Box>
         </Box>
 
@@ -284,11 +322,11 @@ const ClientDashboard = () => {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mb: 1 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                         {notification.title}
-                      </Typography>
+                  </Typography>
                       <Chip 
                         size="small" 
                         label={notification.type}
-                        sx={{ 
+                    sx={{ 
                           background: notification.type === 'success' ? '#dcfce7' : '#dbeafe',
                           color: notification.type === 'success' ? '#166534' : '#1e40af',
                           fontSize: '0.75rem'
@@ -309,6 +347,8 @@ const ClientDashboard = () => {
             <Box sx={{ textAlign: 'center', mt: 2 }}>
               <Button 
                 size="small" 
+                component={Link}
+                to="/notifications"
                 sx={{ color: '#0891b2' }}
                 onClick={handleNotificationsClose}
               >
@@ -345,7 +385,7 @@ const ClientDashboard = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+      </Grid>
 
           {/* Upcoming Appointments */}
           <Grid item xs={12} md={6}>
@@ -375,7 +415,7 @@ const ClientDashboard = () => {
                           <Typography sx={{ fontWeight: 600 }}>{appointment.service || 'Car Detailing'}</Typography>
                           <Typography sx={{ fontSize: '0.875rem', color: '#6b7280' }}>
                             {appointment.vehicleDetails || 'Your vehicle'}
-                          </Typography>
+                        </Typography>
                         </Box>
                       </Box>
                       <Box sx={{ textAlign: 'right' }}>
@@ -388,21 +428,21 @@ const ClientDashboard = () => {
                       </Box>
                     </Box>
                   )) : (
-                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                <Box sx={{ textAlign: 'center', py: 3 }}>
                       <Typography sx={{ color: '#6b7280', mb: 2 }}>No upcoming appointments</Typography>
-                      <Button 
-                        component={Link} 
-                        to="/book-appointment" 
-                        variant="contained" 
+                  <Button
+                    component={Link}
+                    to="/book-appointment"
+                    variant="contained"
                         sx={{ background: '#0891b2', '&:hover': { background: '#0e7490' } }}
-                      >
+                  >
                         Book Service
-                      </Button>
-                    </Box>
-                  )}
+                  </Button>
+                </Box>
+              )}
                 </Stack>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
         </Grid>
 
           {/* Stats Cards */}
@@ -418,9 +458,9 @@ const ClientDashboard = () => {
                       <Typography sx={{ fontSize: '0.75rem', color: '#7c3aed', fontWeight: 600 }}>TODAY'S APPOINTMENTS</Typography>
                       <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#581c87' }}>{stats.pendingAppointments}</Typography>
             </Box>
-            </Box>
-                </CardContent>
-              </Card>
+                </Box>
+            </CardContent>
+          </Card>
 
               
 
@@ -430,7 +470,7 @@ const ClientDashboard = () => {
                     <Box sx={{ width: 40, height: 40, background: '#f97316', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Description sx={{ color: 'white', fontSize: '1.25rem' }} />
                     </Box>
-                    <Box>
+                        <Box>
                       <Typography sx={{ fontSize: '0.75rem', color: '#c2410c', fontWeight: 600 }}>PENDING ESTIMATES</Typography>
                       <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#9a3412' }}>{stats.pendingEstimates}</Typography>
                         </Box>
@@ -438,8 +478,41 @@ const ClientDashboard = () => {
                 </CardContent>
               </Card>
 
+              {/* Leave a Review Card */}
+              <Card sx={{ background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)', border: 0, boxShadow: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Box sx={{ width: 40, height: 40, background: '#22c55e', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      ⭐
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 600 }}>SHARE YOUR EXPERIENCE</Typography>
+                      <Typography sx={{ fontSize: '1.125rem', fontWeight: 700, color: '#166534' }}>Leave a Review</Typography>
+                    </Box>
+                  </Box>
+                  <Button
+                    href="https://reviewthis.biz/povedadetailing1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="contained"
+                    fullWidth
+                    sx={{
+                      background: '#22c55e',
+                      color: 'white',
+                      fontWeight: 600,
+                      '&:hover': {
+                        background: '#16a34a',
+                        transform: 'translateY(-1px)'
+                      },
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Write Review
+                  </Button>
+                </CardContent>
+              </Card>
 
-            </Stack>
+                </Stack>
           </Grid>
 
           {/* Service Reminder */}
@@ -480,8 +553,8 @@ const ClientDashboard = () => {
                     <Box sx={{ width: 64, height: 64, background: 'rgba(255, 255, 255, 0.4)', borderRadius: '50%', position: 'absolute', top: 32, right: 48 }} />
                   </Box>
                 </Box>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
           </Grid>
         </Grid>
     </ClientLayout>

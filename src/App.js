@@ -7,6 +7,7 @@ import { CircularProgress, Box } from '@mui/material';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import SetupAdmin from './components/Auth/SetupAdmin';
+import ForgotPassword from './components/Auth/ForgotPassword';
 
 
 // Client Components
@@ -17,6 +18,7 @@ import AppointmentsList from './components/Client/AppointmentsList';
 import ContactUs from './components/Client/ContactUs';
 import GetEstimate from './components/Client/GetEstimate';
 import EstimatesList from './components/Client/EstimatesList';
+import Notifications from './components/Client/Notifications';
 
 // Admin Portal
 import AdminRouter from './components/AdminPortal/AdminRouter';
@@ -78,6 +80,7 @@ function App() {
   const isAuthPage = window.location.pathname === '/login' || 
                       window.location.pathname === '/register' || 
                       window.location.pathname === '/setup-admin' ||
+                      window.location.pathname === '/forgot-password' ||
                       window.location.pathname === '/dashboard' ||
                       window.location.pathname === '/profile' ||
                       window.location.pathname === '/book-appointment' ||
@@ -85,6 +88,7 @@ function App() {
                       window.location.pathname === '/contact' ||
                       window.location.pathname === '/get-estimate' ||
                       window.location.pathname === '/my-estimates' ||
+                      window.location.pathname === '/notifications' ||
                       window.location.pathname.startsWith('/admin');
 
   return (
@@ -117,6 +121,14 @@ function App() {
           element={
             <PublicRoute>
               <SetupAdmin />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/forgot-password" 
+          element={
+            <PublicRoute>
+              <ForgotPassword />
             </PublicRoute>
           } 
         />
@@ -186,6 +198,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['client']}>
               <EstimatesList />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/notifications" 
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <Notifications />
             </ProtectedRoute>
           }
         />

@@ -299,7 +299,7 @@ const BookAppointment = () => {
       setSuccess(true);
       setTimeout(() => {
         navigate('/appointments');
-      }, 3000);
+      }, 2000);
       
     } catch (error) {
       setError(`Failed to book appointment: ${error.message}`);

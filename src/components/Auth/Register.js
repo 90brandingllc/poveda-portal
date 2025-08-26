@@ -124,71 +124,115 @@ const Register = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #4285f4 0%, #1976d2 50%, #0d47a1 100%)',
-        backgroundSize: '400% 400%',
-        animation: 'gradientShift 15s ease infinite',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         position: 'relative',
-        overflow: 'hidden',
-        py: 4
+        overflow: 'hidden'
       }}
     >
-      {/* Floating geometric shapes */}
+      {/* Frosted glass background */}
       <Box
         sx={{
           position: 'absolute',
-          top: '5%',
-          right: '10%',
-          width: '120px',
-          height: '120px',
-          background: 'rgba(255, 255, 255, 0.08)',
+          inset: 0,
+          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #ffffff 100%)'
+        }}
+      />
+      
+      {/* Frosted glass overlay */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(255, 255, 255, 0.4)',
+          backdropFilter: 'blur(8px)'
+        }}
+      />
+
+      {/* Floating glass orbs */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: { xs: '2rem', sm: '5rem' },
+          left: { xs: '1rem', sm: '5rem' },
+          width: { xs: '4rem', sm: '8rem' },
+          height: { xs: '4rem', sm: '8rem' },
+          background: 'rgba(255, 255, 255, 0.2)',
           borderRadius: '50%',
-          animation: 'float 7s ease-in-out infinite',
+          filter: 'blur(40px)',
+          animation: 'pulseGlow 2s ease-in-out infinite alternate',
           zIndex: 1
         }}
       />
       <Box
         sx={{
           position: 'absolute',
-          top: '60%',
-          left: '8%',
-          width: '90px',
-          height: '90px',
-          background: 'rgba(255, 255, 255, 0.06)',
-          borderRadius: '40%',
-          animation: 'float 9s ease-in-out infinite reverse',
+          top: { xs: '6rem', sm: '10rem' },
+          right: { xs: '1rem', sm: '8rem' },
+          width: { xs: '3rem', sm: '6rem' },
+          height: { xs: '3rem', sm: '6rem' },
+          background: 'rgba(8, 145, 178, 0.3)',
+          borderRadius: '50%',
+          filter: 'blur(30px)',
+          animation: 'pulseGlow 2s ease-in-out infinite alternate 1000ms',
           zIndex: 1
         }}
       />
       <Box
         sx={{
           position: 'absolute',
-          bottom: '10%',
-          right: '20%',
-          width: '70px',
-          height: '70px',
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '30%',
-          animation: 'float 6s ease-in-out infinite',
+          bottom: '8rem',
+          left: '33%',
+          width: '10rem',
+          height: '10rem',
+          background: 'rgba(59, 130, 246, 0.25)',
+          borderRadius: '50%',
+          filter: 'blur(60px)',
+          animation: 'pulseGlow 2s ease-in-out infinite alternate 500ms',
+          zIndex: 1
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: '5rem',
+          right: '5rem',
+          width: '7rem',
+          height: '7rem',
+          background: 'rgba(255, 255, 255, 0.25)',
+          borderRadius: '50%',
+          filter: 'blur(40px)',
+          animation: 'pulseGlow 2s ease-in-out infinite alternate 700ms',
           zIndex: 1
         }}
       />
 
-      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 2 }}>
+      {/* Subtle grid pattern */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          opacity: 0.05,
+          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(8,145,178,0.3) 1px, transparent 0)',
+          backgroundSize: '40px 40px',
+          zIndex: 1
+        }}
+      />
+
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 10, py: { xs: 2, sm: 4 }, px: { xs: 2, sm: 3 } }}>
         <Fade in={true} timeout={800}>
           <Paper 
             elevation={0}
             sx={{ 
-              p: { xs: 3, sm: 5 },
-              borderRadius: 4,
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(20px)',
+              p: { xs: 3, sm: 6 },
+              borderRadius: { xs: 2, sm: 3 },
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(16px)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              maxWidth: { xs: '100%', sm: '28rem' },
+              margin: '0 auto',
+              mt: { xs: 2, sm: 0 }
             }}
           >
             {/* Subtle inner glow effect */}
@@ -217,12 +261,12 @@ const Register = () => {
                   }}
                 >
                   <img 
-                    src="/logo.svg" 
+                    src="/POVEDA PREMIUM AUTO CARE - LOGO.svg" 
                     alt="POVEDA PREMIUM AUTO CARE" 
                     style={{ 
-                      height: 120, 
+                      height: window.innerWidth < 600 ? 100 : 140, 
                       width: 'auto',
-                      filter: 'drop-shadow(0 10px 30px rgba(66, 133, 244, 0.3))'
+                      filter: 'drop-shadow(0 10px 30px rgba(8, 145, 178, 0.3))'
                     }} 
                   />
                 </Box>
