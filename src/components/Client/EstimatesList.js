@@ -51,6 +51,7 @@ import {
   deleteDoc 
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import ClientLayout from '../Layout/ClientLayout';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
@@ -171,12 +172,7 @@ const EstimatesList = () => {
   };
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-      pb: 6
-    }}>
-      <Container maxWidth="xl" sx={{ pt: 4 }}>
+    <ClientLayout>
         {/* Modern Header */}
         <Box sx={{ 
           display: 'flex', 
@@ -535,8 +531,7 @@ const EstimatesList = () => {
           <Button onClick={() => setDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-      </Container>
-    </Box>
+    </ClientLayout>
   );
 };
 

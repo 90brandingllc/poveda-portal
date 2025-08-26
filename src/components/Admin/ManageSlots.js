@@ -17,7 +17,17 @@ import {
   Alert,
   CircularProgress,
   Stack,
-  TextField
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  ButtonGroup,
+  Tooltip,
+  Avatar,
+  MenuItem
 } from '@mui/material';
 import {
   Schedule,
@@ -27,7 +37,15 @@ import {
   CalendarToday,
   AccessTime,
   CheckCircle,
-  Cancel
+  Cancel,
+  ChevronLeft,
+  ChevronRight,
+  Today,
+  ViewWeek,
+  ViewModule,
+  Person,
+  Event,
+  Add
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -45,51 +63,140 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import { weatherService } from '../../services/weatherService';
 
 const ManageSlots = () => {
   const navigate = useNavigate();
+  const [currentWeek, setCurrentWeek] = useState(dayjs().startOf('week'));
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [appointments, setAppointments] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState('week'); // 'week' or 'day'
   const [deleteDialog, setDeleteDialog] = useState({ open: false, slot: null });
+  const [newSlotDialog, setNewSlotDialog] = useState({ open: false, date: null, time: null });
+  const [addAppointmentDialog, setAddAppointmentDialog] = useState({ 
+    open: false, 
+    date: null, 
+    timeSlot: null 
+  });
+  const [appointmentForm, setAppointmentForm] = useState({
+    userName: '',
+    userEmail: '',
+    userPhone: '',
+    service: '',
+    vehicleDetails: '',
+    notes: ''
+  });
+  const [weatherForecast, setWeatherForecast] = useState([]);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
+  // Service options for appointments
+  const serviceOptions = [
+    'Exterior Detail',
+    'Interior Detail',
+    'Full Detail',
+    'Ceramic Coating',
+    'Paint Protection Film',
+    'Engine Bay Cleaning',
+    'Headlight Restoration',
+    'Wheel & Tire Detail'
+  ];
 
   // Generate time slots for business hours (9 AM - 5 PM)
-  const generateTimeSlots = (date) => {
+  const generateTimeSlots = () => {
     const slots = [];
-    const selectedDay = dayjs(date);
-    
-    // Skip weekends
-    if (selectedDay.day() === 0 || selectedDay.day() === 6) {
-      return [];
-    }
-    
     // Generate 1-hour slots from 9 AM to 5 PM
     for (let hour = 9; hour < 17; hour++) {
-      const slotTime = selectedDay.hour(hour).minute(0).second(0);
       slots.push({
-        time: slotTime,
-        label: slotTime.format('h:mm A'),
-        hour: hour
+        hour: hour,
+        label: dayjs().hour(hour).minute(0).format('h:mm A'),
+        time: `${hour}:00`
       });
     }
-    
     return slots;
   };
 
-  // Load appointments and blocked slots for selected date
-  const loadSlotData = async (date) => {
+  // Get week days for calendar view
+  const getWeekDays = () => {
+    const days = [];
+    for (let i = 1; i <= 5; i++) { // Monday to Friday only
+      const day = currentWeek.add(i, 'day');
+      days.push(day);
+    }
+    return days;
+  };
+
+  // Get appointments for a specific date and time
+  const getAppointmentForSlot = (date, time) => {
+    return appointments.find(apt => {
+      const aptDate = dayjs(apt.date.toDate());
+      return aptDate.isSame(date, 'day') && apt.timeSlot === time;
+    });
+  };
+
+  // Get blocked slot for a specific date and time
+  const getBlockedSlotForTime = (date, time) => {
+    return blockedSlots.find(blocked => {
+      const blockedDate = dayjs(blocked.date.toDate());
+      return blockedDate.isSame(date, 'day') && blocked.timeSlot === time;
+    });
+  };
+
+  // Check if a slot is available
+  const isSlotAvailable = (date, time) => {
+    // Skip weekends
+    if (date.day() === 0 || date.day() === 6) return false;
+    
+    // Check if there's an appointment
+    if (getAppointmentForSlot(date, time)) return false;
+    
+    // Check if slot is blocked
+    if (getBlockedSlotForTime(date, time)) return false;
+    
+    return true;
+  };
+
+  // Load weather forecast for the week
+  const loadWeatherData = async () => {
+    setWeatherLoading(true);
+    try {
+      // Get user's location
+      const location = await weatherService.getUserLocation();
+      
+      // Get appointment dates for the week
+      const weekDays = getWeekDays();
+      const appointmentDates = weekDays.map(day => day.toDate());
+      
+      // Fetch weather forecast
+      const forecast = await weatherService.getForecast(
+        location.lat, 
+        location.lon, 
+        appointmentDates
+      );
+      
+      setWeatherForecast(forecast);
+    } catch (error) {
+      console.error('Error loading weather data:', error);
+      setWeatherForecast([]);
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
+  // Load appointments and blocked slots for the current week
+  const loadWeekData = async () => {
     setLoading(true);
     try {
-      const dayStart = dayjs(date).startOf('day').toDate();
-      const dayEnd = dayjs(date).endOf('day').toDate();
+      const weekStart = currentWeek.startOf('week').toDate();
+      const weekEnd = currentWeek.endOf('week').toDate();
 
-      // Load appointments
+      // Load appointments for the week
       const appointmentsQuery = query(
         collection(db, 'appointments'),
-        where('date', '>=', dayStart),
-        where('date', '<=', dayEnd)
+        where('date', '>=', weekStart),
+        where('date', '<=', weekEnd)
       );
       
       const appointmentSnapshot = await getDocs(appointmentsQuery);
@@ -98,11 +205,11 @@ const ManageSlots = () => {
         appointmentData.push({ id: doc.id, ...doc.data() });
       });
 
-      // Load blocked slots
+      // Load blocked slots for the week
       const blockedQuery = query(
         collection(db, 'blockedSlots'),
-        where('date', '>=', dayStart),
-        where('date', '<=', dayEnd)
+        where('date', '>=', weekStart),
+        where('date', '<=', weekEnd)
       );
       
       const blockedSnapshot = await getDocs(blockedQuery);
@@ -113,266 +220,661 @@ const ManageSlots = () => {
 
       setAppointments(appointmentData);
       setBlockedSlots(blockedData);
-
-      // Generate available slots
-      const allSlots = generateTimeSlots(date);
-      const bookedSlots = appointmentData.map(app => app.timeSlot);
-      const adminBlockedSlots = blockedData.map(block => block.timeSlot);
       
-      const slotsWithStatus = allSlots.map(slot => ({
-        ...slot,
-        status: bookedSlots.includes(slot.label) ? 'booked' :
-                adminBlockedSlots.includes(slot.label) ? 'blocked' : 'available',
-        appointmentInfo: appointmentData.find(app => app.timeSlot === slot.label),
-        blockedInfo: blockedData.find(block => block.timeSlot === slot.label)
-      }));
-
-      setAvailableSlots(slotsWithStatus);
+      // Load weather data for the week
+      loadWeatherData();
     } catch (error) {
-      console.error('Error loading slot data:', error);
+      console.error('Error loading week data:', error);
     }
     setLoading(false);
   };
 
   // Block a time slot
-  const blockSlot = async (slot) => {
+  const blockSlot = async (date, timeSlot) => {
     try {
       await addDoc(collection(db, 'blockedSlots'), {
-        date: selectedDate.toDate(),
-        timeSlot: slot.label,
+        date: date.toDate(),
+        timeSlot: timeSlot,
         blockedBy: 'admin',
         reason: 'Manually blocked',
         createdAt: serverTimestamp()
       });
       
-      loadSlotData(selectedDate);
+      loadWeekData();
     } catch (error) {
       console.error('Error blocking slot:', error);
     }
   };
 
   // Unblock a time slot
-  const unblockSlot = async (slot) => {
+  const unblockSlot = async (blockedSlotId) => {
     try {
-      if (slot.blockedInfo) {
-        await deleteDoc(doc(db, 'blockedSlots', slot.blockedInfo.id));
-        loadSlotData(selectedDate);
-      }
+      await deleteDoc(doc(db, 'blockedSlots', blockedSlotId));
+      loadWeekData();
     } catch (error) {
       console.error('Error unblocking slot:', error);
     }
   };
 
+  // Open dialog to add appointment manually
+  const openAddAppointmentDialog = (date, timeSlot) => {
+    setAddAppointmentDialog({
+      open: true,
+      date: date,
+      timeSlot: timeSlot
+    });
+    setAppointmentForm({
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      service: '',
+      vehicleDetails: '',
+      notes: ''
+    });
+  };
+
+  // Close add appointment dialog
+  const closeAddAppointmentDialog = () => {
+    setAddAppointmentDialog({ open: false, date: null, timeSlot: null });
+    setAppointmentForm({
+      userName: '',
+      userEmail: '',
+      userPhone: '',
+      service: '',
+      vehicleDetails: '',
+      notes: ''
+    });
+  };
+
+  // Handle form input changes
+  const handleFormChange = (field, value) => {
+    setAppointmentForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Create appointment manually
+  const createAppointment = async () => {
+    try {
+      if (!appointmentForm.userName || !appointmentForm.userEmail || !appointmentForm.service) {
+        alert('Please fill in all required fields (Name, Email, Service)');
+        return;
+      }
+
+      const appointmentData = {
+        userName: appointmentForm.userName,
+        userEmail: appointmentForm.userEmail,
+        userPhone: appointmentForm.userPhone || '',
+        service: appointmentForm.service,
+        vehicleDetails: appointmentForm.vehicleDetails || '',
+        notes: appointmentForm.notes || '',
+        date: addAppointmentDialog.date.toDate(),
+        timeSlot: addAppointmentDialog.timeSlot,
+        status: 'confirmed',
+        bookedBy: 'admin',
+        createdAt: serverTimestamp(),
+        paymentStatus: 'pending'
+      };
+
+      await addDoc(collection(db, 'appointments'), appointmentData);
+      
+      closeAddAppointmentDialog();
+      loadWeekData();
+      
+      alert('Appointment created successfully!');
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      alert('Error creating appointment. Please try again.');
+    }
+  };
+
+  // Get weather for a specific date
+  const getWeatherForDate = (date) => {
+    if (!weatherForecast.length) return null;
+    return weatherService.getWeatherForDate(weatherForecast, date.toDate());
+  };
+
+  // Navigation functions
+  const goToPreviousWeek = () => {
+    setCurrentWeek(currentWeek.subtract(1, 'week'));
+  };
+
+  const goToNextWeek = () => {
+    setCurrentWeek(currentWeek.add(1, 'week'));
+  };
+
+  const goToToday = () => {
+    setCurrentWeek(dayjs().startOf('week'));
+  };
+
   useEffect(() => {
-    loadSlotData(selectedDate);
-  }, [selectedDate]);
+    loadWeekData();
+  }, [currentWeek]);
 
-  const getSlotColor = (status) => {
-    switch (status) {
-      case 'booked': return '#f44336';
-      case 'blocked': return '#ff9800';
-      case 'available': return '#4caf50';
-      default: return '#757575';
+  // Render calendar cell content
+  const renderCalendarCell = (date, timeSlot) => {
+    const appointment = getAppointmentForSlot(date, timeSlot.label);
+    const blockedSlot = getBlockedSlotForTime(date, timeSlot.label);
+    
+    if (appointment) {
+      return (
+        <Box
+          sx={{
+            height: '100%',
+            minHeight: 60,
+            p: 1,
+            bgcolor: '#e3f2fd',
+            border: '2px solid #2196f3',
+            borderRadius: 1,
+            cursor: 'pointer',
+            '&:hover': { bgcolor: '#bbdefb' }
+          }}
+        >
+          <Typography variant="caption" sx={{ fontWeight: 600, color: '#1565c0' }}>
+            {appointment.userName}
+          </Typography>
+          <Typography variant="caption" display="block" sx={{ color: '#1976d2' }}>
+            {appointment.service}
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
+            <Chip 
+              label="Booked" 
+              size="small" 
+              sx={{ 
+                height: 16, 
+                fontSize: '0.65rem',
+                bgcolor: '#2196f3',
+                color: 'white'
+              }} 
+            />
+            {(() => {
+              const weather = getWeatherForDate(date);
+              if (weather) {
+                return (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                    <img 
+                      src={weatherService.getIconUrl(weather.icon)} 
+                      alt={weather.description}
+                      style={{ width: 14, height: 14 }}
+                    />
+                    <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#1976d2' }}>
+                      {weather.temperature}°
+                    </Typography>
+                  </Box>
+                );
+              }
+              return null;
+            })()}
+          </Box>
+        </Box>
+      );
     }
-  };
 
-  const getSlotIcon = (status) => {
-    switch (status) {
-      case 'booked': return <Cancel />;
-      case 'blocked': return <Block />;
-      case 'available': return <CheckCircle />;
-      default: return <Schedule />;
+    if (blockedSlot) {
+      return (
+        <Box
+          sx={{
+            height: '100%',
+            minHeight: 60,
+            p: 1,
+            bgcolor: '#fff3e0',
+            border: '2px solid #ff9800',
+            borderRadius: 1,
+            cursor: 'pointer',
+            '&:hover': { bgcolor: '#ffe0b2' }
+          }}
+          onClick={() => unblockSlot(blockedSlot.id)}
+        >
+          <Typography variant="caption" sx={{ fontWeight: 600, color: '#ef6c00' }}>
+            Blocked
+          </Typography>
+          <Typography variant="caption" display="block" sx={{ color: '#f57c00' }}>
+            {blockedSlot.reason}
+          </Typography>
+          <Chip 
+            label="Click to unblock" 
+            size="small" 
+            sx={{ 
+              height: 16, 
+              fontSize: '0.65rem',
+              bgcolor: '#ff9800',
+              color: 'white',
+              mt: 0.5
+            }} 
+          />
+        </Box>
+      );
     }
-  };
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-        <IconButton 
-          component={Link}
-          to="/admin/dashboard"
-          sx={{ 
-            mr: 2,
-            bgcolor: 'primary.main',
-            color: 'white',
+    // Available slot with options
+    return (
+      <Box
+        sx={{
+          height: '100%',
+          minHeight: 60,
+          p: 1,
+          bgcolor: '#f1f8e9',
+          border: '2px dashed #4caf50',
+          borderRadius: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.5
+        }}
+      >
+        <Button
+          size="small"
+          variant="contained"
+          color="primary"
+          startIcon={<Add />}
+          onClick={() => openAddAppointmentDialog(date, timeSlot.label)}
+          sx={{
+            fontSize: '0.7rem',
+            py: 0.5,
+            px: 1,
+            minHeight: 24,
+            backgroundColor: '#2196f3',
             '&:hover': {
-              bgcolor: 'primary.dark',
+              backgroundColor: '#1976d2'
             }
           }}
         >
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 0 }}>
-          Manage Appointment Slots
-        </Typography>
+          Add Appointment
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          color="warning"
+          startIcon={<Block />}
+          onClick={() => blockSlot(date, timeSlot.label)}
+          sx={{
+            fontSize: '0.7rem',
+            py: 0.5,
+            px: 1,
+            minHeight: 24,
+            borderColor: '#ff9800',
+            color: '#ef6c00',
+            '&:hover': {
+              borderColor: '#f57c00',
+              backgroundColor: 'rgba(255, 152, 0, 0.04)'
+            }
+          }}
+        >
+          Block Slot
+        </Button>
+      </Box>
+    );
+  };
+
+  return (
+    <Box>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton 
+            component={Link}
+            to="/admin/dashboard"
+            sx={{ 
+              mr: 2,
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              }
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+            Appointment Calendar
+          </Typography>
+        </Box>
+
+        {/* View Controls */}
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <ButtonGroup variant="outlined">
+            <Button
+              variant={viewMode === 'week' ? 'contained' : 'outlined'}
+              startIcon={<ViewWeek />}
+              onClick={() => setViewMode('week')}
+            >
+              Week
+            </Button>
+            <Button
+              variant={viewMode === 'day' ? 'contained' : 'outlined'}
+              startIcon={<ViewModule />}
+              onClick={() => setViewMode('day')}
+            >
+              Day
+            </Button>
+          </ButtonGroup>
+        </Box>
       </Box>
 
-      {/* Date Selection */}
+      {/* Calendar Navigation */}
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="Select Date to Manage"
-                value={selectedDate}
-                onChange={(newValue) => setSelectedDate(newValue)}
-                minDate={dayjs()}
-                maxDate={dayjs().add(90, 'day')}
-                shouldDisableDate={(date) => {
-                  // Disable weekends
-                  return date.day() === 0 || date.day() === 6;
-                }}
-                renderInput={(params) => (
-                  <TextField {...params} fullWidth />
-                )}
-              />
-            </LocalizationProvider>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Chip 
-                icon={<CheckCircle />} 
-                label="Available" 
-                sx={{ bgcolor: '#4caf50', color: 'white' }} 
-              />
-              <Chip 
-                icon={<Cancel />} 
-                label="Booked" 
-                sx={{ bgcolor: '#f44336', color: 'white' }} 
-              />
-              <Chip 
-                icon={<Block />} 
-                label="Blocked" 
-                sx={{ bgcolor: '#ff9800', color: 'white' }} 
-              />
-            </Box>
-          </Grid>
-        </Grid>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton onClick={goToPreviousWeek} sx={{ bgcolor: '#f5f5f5' }}>
+              <ChevronLeft />
+            </IconButton>
+            <Typography variant="h5" sx={{ fontWeight: 600, minWidth: 300, textAlign: 'center' }}>
+              {currentWeek.format('MMMM YYYY')}
+            </Typography>
+            <IconButton onClick={goToNextWeek} sx={{ bgcolor: '#f5f5f5' }}>
+              <ChevronRight />
+            </IconButton>
+          </Box>
+          
+          <Button
+            variant="outlined"
+            startIcon={<Today />}
+            onClick={goToToday}
+            sx={{ ml: 2 }}
+          >
+            Today
+          </Button>
+        </Box>
+
+        {/* Legend */}
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 16, height: 16, bgcolor: '#e3f2fd', border: '2px solid #2196f3', borderRadius: 0.5 }} />
+            <Typography variant="body2">Booked Appointment</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 16, height: 16, bgcolor: '#fff3e0', border: '2px solid #ff9800', borderRadius: 0.5 }} />
+            <Typography variant="body2">Blocked Slot</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 16, height: 16, bgcolor: '#f1f8e9', border: '2px dashed #4caf50', borderRadius: 0.5 }} />
+            <Typography variant="body2">Available Slot</Typography>
+          </Box>
+        </Box>
       </Paper>
 
       {/* Business Hours Info */}
       <Alert severity="info" sx={{ mb: 4 }}>
         <Typography variant="body2">
-          <strong>Business Hours:</strong> Monday - Friday, 9:00 AM - 5:00 PM (1-hour slots)
-          <br />
-          <strong>Weekend Policy:</strong> Closed on Saturdays and Sundays
+          <strong>Business Hours:</strong> Monday - Friday, 9:00 AM - 5:00 PM (1-hour slots) • 
+          <strong> Weekend Policy:</strong> Closed on Saturdays and Sundays
         </Typography>
       </Alert>
 
-      {/* Slots Grid */}
+      {/* Calendar Grid */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
+          <CircularProgress size={60} />
         </Box>
-      ) : selectedDate.day() === 0 || selectedDate.day() === 6 ? (
-        <Alert severity="warning">
-          Business is closed on weekends. Please select a weekday.
-        </Alert>
       ) : (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Slots for {selectedDate.format('dddd, MMMM D, YYYY')}
-          </Typography>
-          
-          <Grid container spacing={2}>
-            {availableSlots.map((slot, index) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                <Card 
-                  sx={{ 
-                    border: `2px solid ${getSlotColor(slot.status)}`,
-                    '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-                  }}
-                >
-                  <CardContent sx={{ p: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <IconButton 
-                          size="small" 
-                          sx={{ color: getSlotColor(slot.status), mr: 1 }}
-                        >
-                          {getSlotIcon(slot.status)}
-                        </IconButton>
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {slot.label}
+        <Paper sx={{ overflow: 'hidden' }}>
+          <TableContainer sx={{ maxHeight: 600 }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell 
+                    sx={{ 
+                      bgcolor: '#f5f5f5', 
+                      fontWeight: 600,
+                      width: 120,
+                      borderRight: '1px solid #e0e0e0'
+                    }}
+                  >
+                    Time
+                  </TableCell>
+                  {getWeekDays().map((day) => (
+                    <TableCell 
+                      key={day.format('YYYY-MM-DD')}
+                      align="center"
+                      sx={{ 
+                        bgcolor: '#f5f5f5', 
+                        fontWeight: 600,
+                        minWidth: 180,
+                        borderRight: '1px solid #e0e0e0'
+                      }}
+                    >
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {day.format('ddd')}
                         </Typography>
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 700,
+                          color: day.isSame(dayjs(), 'day') ? 'primary.main' : 'inherit'
+                        }}>
+                          {day.format('D')}
+                        </Typography>
+                        {(() => {
+                          const weather = getWeatherForDate(day);
+                          if (weather) {
+                            return (
+                              <Box sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                mt: 1,
+                                gap: 0.5
+                              }}>
+                                <img 
+                                  src={weatherService.getIconUrl(weather.icon)} 
+                                  alt={weather.description}
+                                  style={{ width: 24, height: 24 }}
+                                />
+                                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                                  {weather.temperature}°C
+                                </Typography>
+                              </Box>
+                            );
+                          } else if (weatherLoading) {
+                            return (
+                              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+                                <CircularProgress size={16} />
+                              </Box>
+                            );
+                          }
+                          return null;
+                        })()}
                       </Box>
-                      <Chip 
-                        label={slot.status}
-                        size="small"
-                        sx={{
-                          bgcolor: getSlotColor(slot.status),
-                          color: 'white',
-                          textTransform: 'capitalize'
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {generateTimeSlots().map((timeSlot) => (
+                  <TableRow key={timeSlot.hour}>
+                    <TableCell 
+                      sx={{ 
+                        fontWeight: 600,
+                        bgcolor: '#fafafa',
+                        borderRight: '1px solid #e0e0e0',
+                        verticalAlign: 'top',
+                        py: 1
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {timeSlot.label}
+                      </Typography>
+                    </TableCell>
+                    {getWeekDays().map((day) => (
+                      <TableCell 
+                        key={`${day.format('YYYY-MM-DD')}-${timeSlot.hour}`}
+                        sx={{ 
+                          p: 1, 
+                          borderRight: '1px solid #e0e0e0',
+                          verticalAlign: 'top'
                         }}
-                      />
-                    </Box>
-
-                    {/* Slot Info */}
-                    {slot.status === 'booked' && slot.appointmentInfo && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Customer: {slot.appointmentInfo.userName}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Service: {slot.appointmentInfo.service}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {slot.status === 'blocked' && slot.blockedInfo && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Reason: {slot.blockedInfo.reason}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {/* Actions */}
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {slot.status === 'available' && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<Block />}
-                          onClick={() => blockSlot(slot)}
-                          fullWidth
-                        >
-                          Block
-                        </Button>
-                      )}
-                      
-                      {slot.status === 'blocked' && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<CheckCircle />}
-                          onClick={() => unblockSlot(slot)}
-                          fullWidth
-                        >
-                          Unblock
-                        </Button>
-                      )}
-                      
-                      {slot.status === 'booked' && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          disabled
-                          fullWidth
-                        >
-                          Booked
-                        </Button>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                      >
+                        {renderCalendarCell(day, timeSlot)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Paper>
       )}
-    </Container>
+
+      {/* Add Appointment Dialog */}
+      <Dialog 
+        open={addAppointmentDialog.open} 
+        onClose={closeAddAppointmentDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Event color="primary" />
+          Add New Appointment
+          {addAppointmentDialog.date && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
+              <Chip
+                label={`${addAppointmentDialog.date.format('MMM D, YYYY')} at ${addAppointmentDialog.timeSlot}`}
+                color="primary"
+                variant="outlined"
+                size="small"
+              />
+              {(() => {
+                const weather = getWeatherForDate(addAppointmentDialog.date);
+                if (weather) {
+                  return (
+                    <Chip
+                      icon={
+                        <img 
+                          src={weatherService.getIconUrl(weather.icon)} 
+                          alt={weather.description}
+                          style={{ width: 16, height: 16 }}
+                        />
+                      }
+                      label={`${weather.temperature}°C - ${weather.description}`}
+                      variant="outlined"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: '#e3f2fd',
+                        borderColor: '#2196f3',
+                        color: '#1976d2'
+                      }}
+                    />
+                  );
+                }
+                return null;
+              })()}
+            </Box>
+          )}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            {/* Customer Information */}
+            <Grid item xs={12}>
+              <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                Customer Information
+              </Typography>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Customer Name *"
+                value={appointmentForm.userName}
+                onChange={(e) => handleFormChange('userName', e.target.value)}
+                variant="outlined"
+                required
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Email Address *"
+                type="email"
+                value={appointmentForm.userEmail}
+                onChange={(e) => handleFormChange('userEmail', e.target.value)}
+                variant="outlined"
+                required
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                value={appointmentForm.userPhone}
+                onChange={(e) => handleFormChange('userPhone', e.target.value)}
+                variant="outlined"
+              />
+            </Grid>
+
+            {/* Service Information */}
+            <Grid item xs={12}>
+              <Typography variant="h6" sx={{ mb: 2, mt: 2, color: 'primary.main' }}>
+                Service Details
+              </Typography>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                select
+                label="Service Type *"
+                value={appointmentForm.service}
+                onChange={(e) => handleFormChange('service', e.target.value)}
+                variant="outlined"
+                required
+                SelectProps={{
+                  native: true,
+                }}
+              >
+                <option value="">Select a service</option>
+                {serviceOptions.map((service) => (
+                  <option key={service} value={service}>
+                    {service}
+                  </option>
+                ))}
+              </TextField>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Vehicle Details"
+                value={appointmentForm.vehicleDetails}
+                onChange={(e) => handleFormChange('vehicleDetails', e.target.value)}
+                variant="outlined"
+                placeholder="e.g., 2020 Honda Civic, White"
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                value={appointmentForm.notes}
+                onChange={(e) => handleFormChange('notes', e.target.value)}
+                variant="outlined"
+                multiline
+                rows={3}
+                placeholder="Additional notes or special requests..."
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={closeAddAppointmentDialog}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={createAppointment}
+            variant="contained"
+            color="primary"
+            startIcon={<Event />}
+            disabled={!appointmentForm.userName || !appointmentForm.userEmail || !appointmentForm.service}
+          >
+            Create Appointment
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 

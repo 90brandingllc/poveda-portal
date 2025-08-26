@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Typography,
   Card,
   CardContent,
@@ -9,7 +8,6 @@ import {
   Box,
   Button,
   Alert,
-  Paper,
   Divider,
   IconButton,
   Menu,
@@ -29,13 +27,13 @@ import {
   MoreVert,
   LocationOn,
   CalendarToday,
-  DirectionsCar,
   Edit,
   Save
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import ClientLayout from '../Layout/ClientLayout';
 import { Link } from 'react-router-dom';
 import { DatePicker, DesktopTimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -371,21 +369,16 @@ const AppointmentsList = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <ClientLayout>
         <Typography variant="h4" gutterBottom>
           Loading appointments...
         </Typography>
-      </Container>
+      </ClientLayout>
     );
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-      pb: 6
-    }}>
-      <Container maxWidth="xl" sx={{ pt: 4 }}>
+    <ClientLayout>
         {/* Modern Header */}
         <Box sx={{ 
           display: 'flex', 
@@ -1228,8 +1221,7 @@ const AppointmentsList = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      </Container>
-    </Box>
+    </ClientLayout>
   );
 };
 

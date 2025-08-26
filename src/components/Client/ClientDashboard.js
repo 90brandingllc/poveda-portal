@@ -1,26 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Grid,
   Typography,
   Button,
   Box,
   Avatar,
-  Chip,
-  Stack
+  Stack,
+  Card,
+  CardContent,
+  CardHeader,
+  Badge,
+  IconButton,
+  Menu,
+  MenuItem,
+  Divider,
+  Chip
 } from '@mui/material';
+import {
+  Search,
+  Notifications,
+  WbSunny,
+  DirectionsCar,
+  AccessTime,
+  Description,
+  Logout
+} from '@mui/icons-material';
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import WeatherWidget from '../WeatherWidget';
+import ClientLayout from '../Layout/ClientLayout';
 
 const ClientDashboard = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
-  const [estimates, setEstimates] = useState([]);
-  const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({
     totalAppointments: 0,
     pendingAppointments: 0,
@@ -30,6 +45,47 @@ const ClientDashboard = () => {
     totalEstimates: 0,
     pendingEstimates: 0
   });
+  const [notificationsAnchor, setNotificationsAnchor] = useState(null);
+  const notificationsOpen = Boolean(notificationsAnchor);
+  const [notifications] = useState([
+    {
+      id: 1,
+      title: 'Appointment Confirmed',
+      message: 'Your appointment on Dec 28 has been confirmed',
+      time: '2 hours ago',
+      type: 'success'
+    },
+    {
+      id: 2,
+      title: 'Estimate Ready',
+      message: 'Your ceramic coating estimate is ready for review',
+      time: '1 day ago',
+      type: 'info'
+    }
+  ]);
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
+  const handleNotificationsClick = (event) => {
+    setNotificationsAnchor(event.currentTarget);
+  };
+
+  const handleNotificationsClose = () => {
+    setNotificationsAnchor(null);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+
 
   useEffect(() => {
     if (currentUser) {
@@ -95,10 +151,6 @@ const ClientDashboard = () => {
             ...doc.data()
           }));
           
-
-          
-          setEstimates(userEstimates);
-          
           // Update stats with estimates data
           setStats(prevStats => ({
             ...prevStats,
@@ -111,734 +163,328 @@ const ClientDashboard = () => {
         }
       );
 
-      // Fetch tickets
-      const ticketsQuery = query(
-        collection(db, 'tickets'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc'),
-        limit(5)
-      );
-
-      const unsubscribeTickets = onSnapshot(ticketsQuery, (snapshot) => {
-        const userTickets = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setTickets(userTickets);
-      });
-
       return () => {
         unsubscribeAppointments();
         unsubscribeEstimates();
-        unsubscribeTickets();
       };
     }
   }, [currentUser]);
 
-  const quickActions = [
-    {
-      title: 'Book Service',
-      description: 'Schedule your next appointment',
-      icon: '📅',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: '#667eea',
-      count: 0,
-      subtitle: 'new booking',
-      link: '/book-appointment'
-    },
-    {
-      title: 'My Appointments',
-      description: 'View and manage bookings',
-      icon: '📅',
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      color: '#f093fb',
-      count: stats.totalAppointments,
-      subtitle: stats.pendingAppointments > 0 ? `${stats.pendingAppointments} pending` : 'appointments',
-      link: '/appointments'
-    },
-    {
-      title: 'Get Estimate',
-      description: 'Request pricing for services',
-      icon: '💵',
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      color: '#4facfe',
-      count: 0,
-      subtitle: 'new request',
-      link: '/get-estimate'
-    },
-    {
-      title: 'My Estimates',
-      description: 'View your estimate requests',
-      icon: '📋',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: '#667eea',
-      count: stats.totalEstimates,
-      subtitle: stats.pendingEstimates > 0 ? `${stats.pendingEstimates} pending` : 'estimates',
-      link: '/my-estimates'
-    },
-    {
-      title: 'Support Center',
-      description: 'Get help and assistance',
-      icon: '💬',
-      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      color: '#43e97b',
-      count: tickets.length,
-      subtitle: 'tickets',
-      link: '/contact'
-    }
-  ];
+    return (
+    <ClientLayout>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 4, sm: 6 } }}>
+          <Box>
+            <Typography sx={{ color: '#0891b2', mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+              Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Friend'}👋
+            </Typography>
+            <Typography variant="h3" sx={{ fontWeight: 700, color: '#4b5563', fontSize: { xs: '1.75rem', sm: '2.5rem' } }}>
+              Dashboard
+            </Typography>
+          </Box>
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return '#ed6c02';
-      case 'approved': return '#2e7d32';
-      case 'confirmed': return '#1976d2';
-      case 'completed': return '#9c27b0';
-      case 'cancelled': return '#d32f2f';
-      case 'in-progress': return '#1976d2';
-      case 'quoted': return '#2e7d32';
-      case 'declined': return '#d32f2f';
-      default: return '#757575';
-    }
-  };
-
-  return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-      pb: 6
-    }}>
-      <Container maxWidth="xl" sx={{ pt: 4 }}>
-        {/* Modern Header */}
-        <Box sx={{ 
-          mb: 8,
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          p: { xs: 3, md: 5 },
-          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
-        }}>
-          <Grid container spacing={4} alignItems="center">
-          <Grid item>
-              <Box sx={{ position: 'relative' }}>
-            <Avatar 
+          <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2 }}>
+            <IconButton sx={{ color: '#6b7280' }}>
+              <Search />
+            </IconButton>
+            <IconButton 
+              onClick={handleNotificationsClick}
               sx={{ 
-                    width: 72, 
-                    height: 72, 
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    fontSize: '1.75rem',
-                    fontWeight: 600,
-                    boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)'
+                color: '#0891b2',
+                '&:hover': {
+                  background: 'rgba(8, 145, 178, 0.1)'
+                }
+              }}
+            >
+              <Badge badgeContent={notifications.length} color="error">
+                <Notifications />
+              </Badge>
+            </IconButton>
+            <IconButton 
+              onClick={handleLogout}
+              sx={{ 
+                color: '#dc2626',
+                '&:hover': {
+                  background: 'rgba(220, 38, 38, 0.1)',
+                  color: '#b91c1c'
+                }
+              }}
+              title="Logout"
+            >
+              <Logout />
+            </IconButton>
+            <Avatar 
+              onClick={handleProfileClick}
+              sx={{ 
+                background: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
+                cursor: 'pointer',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #0e7490 0%, #0891b2 100%)',
+                  transform: 'scale(1.05)'
+                },
+                transition: 'all 0.2s ease'
               }}
             >
               {currentUser?.displayName?.[0] || currentUser?.email?.[0] || 'U'}
             </Avatar>
-                <Box sx={{ 
-                  position: 'absolute', 
-                  bottom: -2, 
-                  right: -2, 
-                  width: 20, 
-                  height: 20, 
-                  background: '#22c55e', 
-                  borderRadius: '50%',
-                  border: '3px solid white',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                }} />
-              </Box>
-          </Grid>
-          <Grid item xs>
-              <Typography 
-                variant="h3" 
-                sx={{ 
-                  fontWeight: 700,
-                  fontSize: { xs: '1.75rem', md: '2.25rem' },
-                  color: '#1e293b',
-                  mb: 1,
-                  background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}
-              >
-                Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Friend'}
+            <Typography sx={{ fontWeight: 500, color: '#4b5563', display: { xs: 'none', md: 'block' } }}>
+              {currentUser?.displayName || 'User'}
             </Typography>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: '#64748b',
-                  fontWeight: 400,
-                  fontSize: '1.125rem'
-                }}
-              >
-                Ready to get your service scheduled?
-            </Typography>
-          </Grid>
-          <Grid item>
-            <Button
-              component={Link}
-              to="/book-appointment"
-              sx={{
-                  background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
-                  color: '#1e293b',
-                fontWeight: 600,
-                  fontSize: '0.875rem',
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
-                  textTransform: 'none',
-                  boxShadow: '0 10px 25px rgba(234, 179, 8, 0.3)',
-                  '&:hover': { 
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 15px 30px rgba(234, 179, 8, 0.4)'
-                  }
-              }}
-            >
-              Book Service
-            </Button>
-          </Grid>
-        </Grid>
+        </Box>
         </Box>
 
-        {/* Weather Widget */}
-        <Box sx={{ mb: 8 }}>
-          <WeatherWidget appointments={appointments} />
-        </Box>
-
-        {/* Modern Stats Grid */}
-        <Grid container spacing={4} sx={{ mb: 8 }}>
-          {[
-            { 
-              title: 'Total Visits', 
-              value: stats.totalAppointments, 
-              subtitle: 'All time',
-              gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              icon: '📊',
-              trend: '+12%'
-            },
-            { 
-              title: 'Pending', 
-              value: stats.pendingAppointments, 
-              subtitle: 'This month',
-              gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-              icon: '⏳',
-              trend: '+5%'
-            },
-            { 
-              title: 'Estimates', 
-              value: stats.totalEstimates, 
-              subtitle: 'Requested',
-              gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-              icon: '📋',
-              trend: stats.pendingEstimates > 0 ? `${stats.pendingEstimates} pending` : 'All reviewed'
-            },
-            { 
-              title: 'Total Spent', 
-              value: `$${stats.totalSpent.toFixed(2)}`, 
-              subtitle: 'All time',
-              gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-              icon: '💰',
-              trend: '+25%'
+        {/* Notifications Menu */}
+        <Menu
+          anchorEl={notificationsAnchor}
+          open={notificationsOpen}
+          onClose={handleNotificationsClose}
+          PaperProps={{
+            sx: {
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '16px',
+              boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+              width: '350px',
+              maxHeight: '400px'
             }
-        ].map((stat, index) => (
-            <Grid item xs={12} sm={6} xl={3} key={index}>
-              <Box 
-              sx={{ 
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(12px)',
-                  borderRadius: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  p: 3,
-                height: '100%',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  cursor: 'pointer',
-                '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
-                    border: '1px solid rgba(255, 255, 255, 0.4)'
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box 
-                    sx={{ 
-                      background: stat.gradient,
-                      borderRadius: '12px',
-                      width: 48,
-                      height: 48,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.5rem',
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                    }}
-                  >
-                    {stat.icon}
-                  </Box>
-                  <Chip 
-                    label={stat.trend}
-                    size="small"
-                    sx={{ 
-                      background: 'rgba(34, 197, 94, 0.1)',
-                      color: '#16a34a',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      border: 'none'
-                    }}
-                  />
-                </Box>
-                
-                <Typography 
-                  variant="h4" 
-                    sx={{ 
-                      fontWeight: 700, 
-                    color: '#1e293b',
-                    fontSize: '2rem',
-                    mb: 0.5
-                    }}
-                  >
-                    {stat.value}
-                  </Typography>
-                
-                <Typography 
-                  variant="body2"
-                  sx={{ 
-                    color: '#64748b',
-                    fontWeight: 500,
-                    fontSize: '0.875rem',
-                    mb: 0.5
-                  }}
-                >
-                  {stat.title}
-                </Typography>
-                
-                <Typography 
-                  variant="caption"
-                  sx={{ 
-                    color: '#94a3b8',
-                    fontSize: '0.75rem'
-                  }}
-                >
-                  {stat.subtitle}
-                  </Typography>
-                </Box>
-          </Grid>
-        ))}
-      </Grid>
-
-        <Grid container spacing={6}>
-          {/* Modern Quick Actions */}
-          <Grid item xs={12} lg={8}>
-            <Box sx={{ mb: 4 }}>
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  fontWeight: 700,
-                  color: '#1e293b',
-                  fontSize: '1.5rem',
-                  mb: 1
-                }}
-              >
-            Quick Actions
-          </Typography>
-              <Typography 
-                variant="body1"
-                sx={{ 
-                  color: '#64748b',
-                  fontSize: '0.875rem'
-                }}
-              >
-                Manage your services efficiently
+          }}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+        >
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              Notifications
+            </Typography>
+            {notifications.length === 0 ? (
+              <Typography variant="body2" sx={{ color: '#6b7280', textAlign: 'center', py: 4 }}>
+                No new notifications
               </Typography>
-            </Box>
-            
-            <Grid container spacing={3}>
-            {quickActions.map((action, index) => (
-              <Grid item xs={12} sm={6} key={index}>
-                  <Box 
-                  component={Link}
-                  to={action.link}
-                  sx={{
-                    textDecoration: 'none',
-                      display: 'block',
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      backdropFilter: 'blur(12px)',
-                      borderRadius: '16px',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      p: 3,
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    cursor: 'pointer',
-                      position: 'relative',
-                      overflow: 'hidden',
-                    '&:hover': {
-                        transform: 'translateY(-6px)',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.4)',
-                        '&::before': {
-                          opacity: 1
-                        }
-                      },
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: '3px',
-                        background: action.gradient || action.color,
-                        opacity: 0,
-                        transition: 'opacity 0.3s'
+            ) : (
+              notifications.map((notification, index) => (
+                <Box key={notification.id}>
+                  <MenuItem 
+                    onClick={handleNotificationsClose}
+                    sx={{ 
+                      flexDirection: 'column', 
+                      alignItems: 'flex-start',
+                      py: 2,
+                      borderRadius: '8px',
+                      '&:hover': {
+                        background: 'rgba(8, 145, 178, 0.1)'
                       }
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                      <Box 
-                        sx={{ 
-                          width: 50, 
-                          height: 50, 
-                          borderRadius: '12px',
-                          background: action.gradient || action.color,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mr: 3,
-                          boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-                          fontSize: '1.5rem'
-                        }}
-                      >
-                        {action.icon || action.value}
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography 
-                          variant="h6" 
-                          sx={{ 
-                            fontWeight: 600,
-                            color: '#1e293b',
-                            mb: 1,
-                            fontSize: '1.125rem'
-                          }}
-                        >
-                          {action.title}
-                        </Typography>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            color: '#64748b',
-                            fontSize: '0.875rem',
-                            lineHeight: 1.5
-                          }}
-                        >
-                          {action.description}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {notification.title}
+                      </Typography>
                       <Chip 
-                        label={`${action.count || 0} ${action.subtitle || 'items'}`}
-                        size="small"
+                        size="small" 
+                        label={notification.type}
                         sx={{ 
-                          background: 'rgba(100, 116, 139, 0.1)',
-                          color: '#64748b',
-                          fontWeight: 500,
-                          fontSize: '0.75rem',
-                          border: 'none'
+                          background: notification.type === 'success' ? '#dcfce7' : '#dbeafe',
+                          color: notification.type === 'success' ? '#166534' : '#1e40af',
+                          fontSize: '0.75rem'
                         }}
                       />
-                      <Typography 
-                        sx={{ 
-                          color: '#94a3b8',
-                          fontSize: '0.875rem',
-                          fontWeight: 500
-                        }}
-                      >
-                        →
-                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                      {notification.message}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#9ca3af' }}>
+                      {notification.time}
+                    </Typography>
+                  </MenuItem>
+                  {index < notifications.length - 1 && <Divider />}
+                </Box>
+              ))
+            )}
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Button 
+                size="small" 
+                sx={{ color: '#0891b2' }}
+                onClick={handleNotificationsClose}
+              >
+                View All Notifications
+              </Button>
+            </Box>
+          </Box>
+        </Menu>
+
+        {/* Dashboard Grid */}
+        <Grid container spacing={{ xs: 3, sm: 6 }}>
+          {/* Weather Card */}
+          <Grid item xs={12} md={6}>
+            <Card sx={{ background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(8px)', border: 0, boxShadow: 3 }}>
+                            <CardHeader
+                title={
+                  <Typography sx={{ fontSize: '1.125rem', fontWeight: 600 }}>Today's Weather</Typography>
+                }
+              />
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <WbSunny sx={{ fontSize: '4rem', color: '#eab308', mb: 1 }} />
+                      <Typography sx={{ fontSize: '2rem', fontWeight: 700 }}>72°F</Typography>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#6b7280' }}>Sunny</Typography>
                     </Box>
                   </Box>
-              </Grid>
-            ))}
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography sx={{ fontSize: '0.875rem', color: '#6b7280' }}>Perfect for detailing!</Typography>
+                    <Typography sx={{ fontWeight: 600 }}>Low humidity: 45%</Typography>
+                    <Typography sx={{ fontSize: '0.875rem', color: '#6b7280' }}>Wind: 5 mph</Typography>
+                </Box>
+                </Box>
+              </CardContent>
+            </Card>
           </Grid>
+
+          {/* Upcoming Appointments */}
+          <Grid item xs={12} md={6}>
+            <Card sx={{ background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(8px)', border: 0, boxShadow: 3 }}>
+              <CardHeader 
+                title={
+                  <Typography sx={{ fontSize: '1.125rem', fontWeight: 600 }}>Upcoming Appointments</Typography>
+                }
+                action={
+                  <Button 
+                  component={Link}
+                    to="/appointments" 
+                    variant="text" 
+                    sx={{ color: '#0891b2', p: 0, fontSize: '0.875rem' }}
+                  >
+                    View all appointments
+                  </Button>
+                }
+              />
+              <CardContent>
+                <Stack spacing={2}>
+                  {appointments.length > 0 ? appointments.slice(0, 2).map((appointment, index) => (
+                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, backgroundColor: '#f9fafb', borderRadius: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <DirectionsCar sx={{ fontSize: '2rem', color: '#0891b2' }} />
+                        <Box>
+                          <Typography sx={{ fontWeight: 600 }}>{appointment.service || 'Car Detailing'}</Typography>
+                          <Typography sx={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                            {appointment.vehicleDetails || 'Your vehicle'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography sx={{ fontWeight: 600 }}>
+                          {appointment.time || '2:00 PM'}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                          {appointment.date ? new Date(appointment.date.toDate ? appointment.date.toDate() : appointment.date).toLocaleDateString() : 'Today'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )) : (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography sx={{ color: '#6b7280', mb: 2 }}>No upcoming appointments</Typography>
+                      <Button 
+                        component={Link} 
+                        to="/book-appointment" 
+                        variant="contained" 
+                        sx={{ background: '#0891b2', '&:hover': { background: '#0e7490' } }}
+                      >
+                        Book Service
+                      </Button>
+                    </Box>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
         </Grid>
 
-          {/* Modern Activity Feed */}
-          <Grid item xs={12} lg={4}>
-            <Box sx={{ mb: 4 }}>
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  fontWeight: 700,
-                  color: '#1e293b',
-                  fontSize: '1.5rem',
-                  mb: 1
-                }}
-              >
-                Recent Activity
-              </Typography>
-              <Typography 
-                variant="body1"
-                sx={{ 
-                  color: '#64748b',
-                  fontSize: '0.875rem'
-                }}
-              >
-                Your latest appointments and updates
-          </Typography>
+          {/* Stats Cards */}
+          <Grid item xs={12} md={3}>
+            <Stack spacing={{ xs: 3, sm: 6 }}>
+              <Card sx={{ background: 'linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%)', border: 0, boxShadow: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ width: 40, height: 40, background: '#8b5cf6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <AccessTime sx={{ color: 'white', fontSize: '1.25rem' }} />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#7c3aed', fontWeight: 600 }}>TODAY'S APPOINTMENTS</Typography>
+                      <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#581c87' }}>{stats.pendingAppointments}</Typography>
             </Box>
+            </Box>
+                </CardContent>
+              </Card>
 
-            <Box 
-              sx={{
-                background: 'rgba(255, 255, 255, 0.9)',
-                backdropFilter: 'blur(12px)',
-                borderRadius: '20px',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                p: 4,
-                boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
-              }}
-            >
-              {(appointments.length > 0 || estimates.length > 0) ? (
-                <Stack spacing={3}>
-                  {/* Show recent appointments */}
-                  {appointments.slice(0, 3).map((appointment, index) => (
-                    <Box 
-                      key={appointment.id}
-                      sx={{
-                        position: 'relative',
-                        pb: index < appointments.slice(0, 4).length - 1 ? 3 : 0,
-                        '&:not(:last-child)::after': {
-                          content: '""',
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          height: '1px',
-                          background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)'
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
-                        <Box 
-                          sx={{ 
-                            width: 40, 
-                            height: 40, 
-                            borderRadius: '10px',
-                            background: getStatusColor(appointment.status) || '#667eea',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.25rem',
-                            flexShrink: 0,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                          }}
-                        >
-                          {appointment.status === 'completed' ? '✅' : 
-                           appointment.status === 'approved' ? '📅' : 
-                           appointment.status === 'pending' ? '⏳' : '📋'}
-                        </Box>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography 
-                            variant="body1" 
-                            sx={{ 
-                              fontWeight: 600,
-                              color: '#1e293b',
-                              fontSize: '0.875rem',
-                              mb: 0.5
-                            }}
-                          >
-                            {appointment.service || 'Car Detailing Service'}
-                            </Typography>
-                          <Typography 
-                            variant="body2"
-                            sx={{ 
-                              color: '#64748b',
-                              fontSize: '0.75rem',
-                              mb: 1
-                            }}
-                          >
-                              {appointment.date ? 
-                                (appointment.date.toDate ? appointment.date.toDate().toLocaleDateString() : 
-                                 appointment.date.seconds ? new Date(appointment.date.seconds * 1000).toLocaleDateString() : 
-                                 'Date TBD') : 'Date TBD'}
-                            </Typography>
-                        <Chip 
-                          label={appointment.status || 'pending'} 
-                          size="small"
-                          sx={{
-                              height: '20px',
-                              fontSize: '0.65rem',
-                              fontWeight: 600,
-                              background: `${getStatusColor(appointment.status)}15`,
-                              color: getStatusColor(appointment.status),
-                              border: `1px solid ${getStatusColor(appointment.status)}30`,
-                            textTransform: 'capitalize'
-                          }}
-                        />
+              
+
+              <Card sx={{ background: 'linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)', border: 0, boxShadow: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ width: 40, height: 40, background: '#f97316', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Description sx={{ color: 'white', fontSize: '1.25rem' }} />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#c2410c', fontWeight: 600 }}>PENDING ESTIMATES</Typography>
+                      <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#9a3412' }}>{stats.pendingEstimates}</Typography>
                         </Box>
                       </Box>
-                    </Box>
-                  ))}
+                </CardContent>
+              </Card>
 
-                  {/* Show recent estimates */}
-                  {estimates.slice(0, 2).map((estimate, index) => (
-                    <Box 
-                      key={`estimate-${estimate.id}`}
-                      sx={{
-                        position: 'relative',
-                        pb: 3,
-                        '&::after': {
-                          content: '""',
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          height: '1px',
-                          background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)'
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box 
-                          sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: '12px',
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.25rem',
-                            flexShrink: 0,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                          }}
-                        >
-                          📋
-                        </Box>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography 
-                            variant="body1" 
-                            sx={{ 
-                              fontWeight: 600, 
-                              color: '#1e293b',
-                              fontSize: '0.875rem',
-                              mb: 0.5
-                            }}
-                          >
-                            {estimate.projectTitle || 'Estimate Request'}
-                          </Typography>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: '#64748b',
-                              fontSize: '0.75rem'
-                            }}
-                          >
-                            {estimate.serviceCategory} • {estimate.status || 'pending'}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
-                              color: '#94a3b8',
-                              fontSize: '0.75rem'
-                            }}
-                          >
-                            {estimate.createdAt ? new Date(estimate.createdAt.toDate()).toLocaleDateString() : 'Recent'}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Box>
-                  ))}
-                  
-                  <Button
-                    component={Link}
-                    to="/appointments"
-                    sx={{
-                      mt: 2,
-                      background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-                      color: 'white',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                      py: 1.5,
-                      borderRadius: '12px',
-                      textTransform: 'none',
-                      '&:hover': { 
-                        background: 'linear-gradient(135deg, #475569 0%, #64748b 100%)',
-                        transform: 'translateY(-1px)'
-                      }
-                    }}
-                    fullWidth
-                  >
-                    View All Activity
-                  </Button>
-                </Stack>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Box 
-                    sx={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: '16px',
-                      background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      mx: 'auto',
-                      mb: 3,
-                      fontSize: '2rem'
-                    }}
-                  >
-                    📅
-                  </Box>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 600,
-                      color: '#1e293b',
-                      mb: 1,
-                      fontSize: '1rem'
-                    }}
-                  >
-                    No appointments yet
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: '#64748b',
-                      mb: 3,
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Book your first service to get started
+
+            </Stack>
+          </Grid>
+
+          {/* Service Reminder */}
+          <Grid item xs={12} md={9}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)', 
+              border: 0, 
+              boxShadow: 3, 
+              color: 'white',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <CardContent sx={{ p: 6 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', mb: 1, fontSize: '0.875rem' }}>REMINDER</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                      Schedule your next
+                      <br />
+                      service appointment
                   </Typography>
                   <Button
                     component={Link}
                     to="/book-appointment"
                     sx={{
-                      background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
-                      color: '#1e293b',
+                        background: 'white', 
+                        color: '#0891b2', 
                       fontWeight: 600,
-                      fontSize: '0.875rem',
-                      px: 4,
-                      py: 1.5,
-                      borderRadius: '12px',
-                      textTransform: 'none',
-                      '&:hover': { 
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                        transform: 'translateY(-1px)'
-                      }
-                    }}
-                  >
-                    Book Now
+                        '&:hover': { background: '#f8fafc' }
+                      }}
+                    >
+                      Book now
                   </Button>
                 </Box>
-              )}
+                  <Box sx={{ position: 'relative', display: { xs: 'none', sm: 'block' } }}>
+                    <Box sx={{ width: 128, height: 128, background: 'rgba(255, 255, 255, 0.2)', borderRadius: '50%', position: 'absolute', top: -32, right: -32 }} />
+                    <Box sx={{ width: 96, height: 96, background: 'rgba(255, 255, 255, 0.3)', borderRadius: '50%', position: 'absolute', top: 16, right: 16 }} />
+                    <Box sx={{ width: 64, height: 64, background: 'rgba(255, 255, 255, 0.4)', borderRadius: '50%', position: 'absolute', top: 32, right: 48 }} />
+                  </Box>
                 </Box>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
-    </Container>
-    </Box>
+    </ClientLayout>
   );
 };
 

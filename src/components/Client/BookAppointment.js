@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Paper,
   Typography,
   Grid,
@@ -10,7 +9,6 @@ import {
   TextField,
   Box,
   Alert,
-
   FormControlLabel,
   Checkbox,
   Divider,
@@ -33,6 +31,7 @@ import { db } from '../../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import DepositPayment from '../Payment/DepositPayment';
 import { calculateDepositAmount, formatCurrency } from '../../services/stripeService';
+import ClientLayout from '../Layout/ClientLayout';
 
 const BookAppointment = () => {
   const { currentUser } = useAuth();
@@ -672,7 +671,7 @@ const BookAppointment = () => {
 
   if (success) {
     return (
-      <Container maxWidth="md" sx={{ py: 8 }}>
+      <ClientLayout>
         <Paper sx={{ p: 6, textAlign: 'center' }}>
           <CheckCircle sx={{ fontSize: 80, color: 'success.main', mb: 3 }} />
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: 'success.main' }}>
@@ -692,17 +691,12 @@ const BookAppointment = () => {
             View My Appointments
           </Button>
         </Paper>
-      </Container>
+      </ClientLayout>
     );
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-      pb: 6
-    }}>
-      <Container maxWidth="xl" sx={{ pt: 4 }}>
+    <ClientLayout>
         {/* Modern Header */}
         <Box sx={{ 
           mb: 8,
@@ -874,8 +868,7 @@ const BookAppointment = () => {
           )}
         </Box>
         </Box>
-      </Container>
-    </Box>
+    </ClientLayout>
   );
 };
 

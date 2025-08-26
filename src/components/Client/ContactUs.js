@@ -34,8 +34,9 @@ import {
   Pending
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import ClientLayout from '../Layout/ClientLayout';
 
 const ContactUs = () => {
   const { currentUser } = useAuth();
@@ -197,7 +198,7 @@ const ContactUs = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <ClientLayout>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
         Contact & Support
       </Typography>
@@ -582,7 +583,7 @@ const ContactUs = () => {
           <Button onClick={() => setDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </ClientLayout>
   );
 };
 

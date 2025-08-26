@@ -168,7 +168,7 @@ const ManageAppointments = () => {
   const filteredAppointments = getFilteredAppointments();
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Box>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -583,7 +583,7 @@ const ManageAppointments = () => {
           </Alert>
         </Snackbar>
       </motion.div>
-    </Container>
+    </Box>
   );
 };
 

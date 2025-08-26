@@ -11,6 +11,7 @@ import SetupAdmin from './components/Auth/SetupAdmin';
 
 // Client Components
 import ClientDashboard from './components/Client/ClientDashboard';
+import ClientProfile from './components/Client/ClientProfile';
 import BookAppointment from './components/Client/BookAppointment';
 import AppointmentsList from './components/Client/AppointmentsList';
 import ContactUs from './components/Client/ContactUs';
@@ -77,6 +78,13 @@ function App() {
   const isAuthPage = window.location.pathname === '/login' || 
                       window.location.pathname === '/register' || 
                       window.location.pathname === '/setup-admin' ||
+                      window.location.pathname === '/dashboard' ||
+                      window.location.pathname === '/profile' ||
+                      window.location.pathname === '/book-appointment' ||
+                      window.location.pathname === '/appointments' ||
+                      window.location.pathname === '/contact' ||
+                      window.location.pathname === '/get-estimate' ||
+                      window.location.pathname === '/my-estimates' ||
                       window.location.pathname.startsWith('/admin');
 
   return (
@@ -125,6 +133,14 @@ function App() {
         />
         
         {/* Client Routes */}
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <ClientProfile />
+            </ProtectedRoute>
+          } 
+        />
         <Route 
           path="/book-appointment" 
           element={

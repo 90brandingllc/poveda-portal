@@ -14,6 +14,9 @@ import ManageTickets from '../Admin/ManageTickets';
 import ManageEstimates from '../Admin/ManageEstimates';
 import ManageUsers from '../Admin/ManageUsers';
 import ManageSlots from '../Admin/ManageSlots';
+import AdminProfile from '../Admin/AdminProfile';
+import Analytics from '../Admin/Analytics';
+import AdminLayout from '../Admin/AdminLayout';
 
 // Protected Route Component for Admin Portal
 const AdminProtectedRoute = ({ children }) => {
@@ -86,7 +89,9 @@ const AdminRouter = () => {
         path="/dashboard" 
         element={
           <AdminProtectedRoute>
-            <AdminDashboard />
+            <AdminLayout>
+              <AdminDashboard />
+            </AdminLayout>
           </AdminProtectedRoute>
         } 
       />
@@ -94,7 +99,9 @@ const AdminRouter = () => {
         path="/appointments" 
         element={
           <AdminProtectedRoute>
-            <ManageAppointments />
+            <AdminLayout>
+              <ManageAppointments />
+            </AdminLayout>
           </AdminProtectedRoute>
         } 
       />
@@ -102,7 +109,9 @@ const AdminRouter = () => {
         path="/tickets" 
         element={
           <AdminProtectedRoute>
-            <ManageTickets />
+            <AdminLayout>
+              <ManageTickets />
+            </AdminLayout>
           </AdminProtectedRoute>
         } 
       />
@@ -110,7 +119,9 @@ const AdminRouter = () => {
         path="/estimates" 
         element={
           <AdminProtectedRoute>
-            <ManageEstimates />
+            <AdminLayout>
+              <ManageEstimates />
+            </AdminLayout>
           </AdminProtectedRoute>
         } 
       />
@@ -118,7 +129,9 @@ const AdminRouter = () => {
         path="/users" 
         element={
           <AdminProtectedRoute>
-            <ManageUsers />
+            <AdminLayout>
+              <ManageUsers />
+            </AdminLayout>
           </AdminProtectedRoute>
         } 
       />
@@ -126,7 +139,29 @@ const AdminRouter = () => {
         path="/slots" 
         element={
           <AdminProtectedRoute>
-            <ManageSlots />
+            <AdminLayout>
+              <ManageSlots />
+            </AdminLayout>
+          </AdminProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          <AdminProtectedRoute>
+            <AdminLayout>
+              <AdminProfile />
+            </AdminLayout>
+          </AdminProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/analytics" 
+        element={
+          <AdminProtectedRoute>
+            <AdminLayout>
+              <Analytics />
+            </AdminLayout>
           </AdminProtectedRoute>
         } 
       />

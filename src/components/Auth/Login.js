@@ -7,21 +7,18 @@ import {
   Typography,
   Box,
   Alert,
-  Divider,
   Link,
   InputAdornment,
   IconButton,
   Stack,
-  Chip
+  Fade,
+  Slide
 } from '@mui/material';
 import {
   Email,
   Lock,
   Visibility,
-  VisibilityOff,
-  Google,
-  PersonOutline,
-  AdminPanelSettings
+  VisibilityOff
 } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -90,157 +87,523 @@ const Login = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 4,
-          borderRadius: 3,
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+    <Box
+      sx={{
+        minHeight: '100vh',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      {/* Frosted glass background */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #ffffff 100%)'
         }}
-      >
-        {/* Logo Only */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <img 
-            src="/logo.svg" 
-            alt="POVEDA PREMIUM AUTO CARE" 
-            style={{ height: 150, marginBottom: 24 }} 
-          />
-        </Box>
+      />
+      
+      {/* Frosted glass overlay */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(255, 255, 255, 0.4)',
+          backdropFilter: 'blur(8px)'
+        }}
+      />
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+      {/* Floating glass orbs */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: { xs: '2rem', sm: '5rem' },
+          left: { xs: '1rem', sm: '5rem' },
+          width: { xs: '4rem', sm: '8rem' },
+          height: { xs: '4rem', sm: '8rem' },
+          background: 'rgba(255, 255, 255, 0.2)',
+          borderRadius: '50%',
+          filter: 'blur(40px)',
+          animation: 'pulseGlow 2s ease-in-out infinite alternate',
+          zIndex: 1
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          top: { xs: '6rem', sm: '10rem' },
+          right: { xs: '1rem', sm: '8rem' },
+          width: { xs: '3rem', sm: '6rem' },
+          height: { xs: '3rem', sm: '6rem' },
+          background: 'rgba(8, 145, 178, 0.3)',
+          borderRadius: '50%',
+          filter: 'blur(30px)',
+          animation: 'pulseGlow 2s ease-in-out infinite alternate 1000ms',
+          zIndex: 1
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: '8rem',
+          left: '33%',
+          width: '10rem',
+          height: '10rem',
+          background: 'rgba(59, 130, 246, 0.25)',
+          borderRadius: '50%',
+          filter: 'blur(60px)',
+          animation: 'pulseGlow 2s ease-in-out infinite alternate 500ms',
+          zIndex: 1
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: '5rem',
+          right: '5rem',
+          width: '7rem',
+          height: '7rem',
+          background: 'rgba(255, 255, 255, 0.25)',
+          borderRadius: '50%',
+          filter: 'blur(40px)',
+          animation: 'pulseGlow 2s ease-in-out infinite alternate 700ms',
+          zIndex: 1
+        }}
+      />
 
-        <form onSubmit={handleSubmit}>
-          <Stack spacing={3}>
-            <TextField
-              fullWidth
-              name="email"
-              label="Email Address"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              variant="outlined"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
+      {/* Subtle grid pattern */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          opacity: 0.05,
+          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(8,145,178,0.3) 1px, transparent 0)',
+          backgroundSize: '40px 40px',
+          zIndex: 1
+        }}
+      />
 
-            <TextField
-              fullWidth
-              name="password"
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={handleChange}
-              required
-              variant="outlined"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 10, py: { xs: 2, sm: 4 }, px: { xs: 2, sm: 3 } }}>
+        <Fade in={true} timeout={800}>
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: { xs: 3, sm: 6 },
+              borderRadius: { xs: 2, sm: 3 },
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              overflow: 'hidden',
+              maxWidth: { xs: '100%', sm: '28rem' },
+              margin: '0 auto',
+              mt: { xs: 2, sm: 0 }
+            }}
+          >
+
+
+            {/* Logo Section */}
+            <Slide direction="down" in={true} timeout={1000}>
+              <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 5 } }}>
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: { xs: 2, sm: 4 }
+                  }}
+                >
+                  <img 
+                    src="/POVEDA PREMIUM AUTO CARE - LOGO.svg" 
+                    alt="POVEDA PREMIUM AUTO CARE" 
+                    style={{ 
+                      height: window.innerWidth < 600 ? 80 : 112, 
+                      width: 'auto',
+                      filter: 'drop-shadow(0 10px 30px rgba(8, 145, 178, 0.3))'
+                    }} 
+                  />
+                </Box>
+                <Typography 
+                  variant="h4" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: '#4b5563',
+                    mb: 1,
+                    fontSize: { xs: '1.5rem', sm: '1.875rem' }
+                  }}
+                >
+                  Login
+                </Typography>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: 'rgba(75, 85, 99, 0.7)',
+                    fontWeight: 400,
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }}
+                >
+                  Sign in to your account to continue
+                </Typography>
+              </Box>
+            </Slide>
+
+            {error && (
+              <Fade in={!!error} timeout={300}>
+                <Alert 
+                  severity="error" 
+                  sx={{ 
+                    mb: 3,
+                    borderRadius: 2,
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    '& .MuiAlert-icon': {
+                      color: '#ef4444'
+                    }
+                  }}
+                >
+                  {error}
+                </Alert>
+              </Fade>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <Stack spacing={5}>
+                <Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mb: 1, 
+                      fontWeight: 500, 
+                      color: '#4b5563',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Email Address
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        height: { xs: '3rem', sm: '3.5rem' },
+                        paddingLeft: { xs: '2.5rem', sm: '3rem' },
+                        borderRadius: { xs: 2, sm: 3 },
+                        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        transition: 'all 0.3s ease',
+                        '& fieldset': {
+                          border: 'none'
+                        },
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                          border: '1px solid rgba(8, 145, 178, 0.5)',
+                          boxShadow: '0 0 0 2px rgba(8, 145, 178, 0.2)'
+                        },
+                        '&.Mui-focused': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                          border: '1px solid rgba(8, 145, 178, 0.5)',
+                          boxShadow: '0 0 0 2px rgba(8, 145, 178, 0.2)'
+                        }
+                      },
+                      '& .MuiInputBase-input': {
+                        color: '#4b5563',
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        '&::placeholder': {
+                          color: 'rgba(75, 85, 99, 0.5)',
+                          opacity: 1
+                        }
+                      }
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ position: 'absolute', left: '1rem' }}>
+                          <Email sx={{ color: 'rgba(75, 85, 99, 0.6)', fontSize: '1.25rem' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                <Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mb: 1, 
+                      fontWeight: 500, 
+                      color: '#4b5563',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Password
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        height: '3.5rem',
+                        paddingLeft: '3rem',
+                        paddingRight: '3rem',
+                        borderRadius: 3,
+                        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        transition: 'all 0.3s ease',
+                        '& fieldset': {
+                          border: 'none'
+                        },
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                          border: '1px solid rgba(8, 145, 178, 0.5)',
+                          boxShadow: '0 0 0 2px rgba(8, 145, 178, 0.2)'
+                        },
+                        '&.Mui-focused': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                          border: '1px solid rgba(8, 145, 178, 0.5)',
+                          boxShadow: '0 0 0 2px rgba(8, 145, 178, 0.2)'
+                        }
+                      },
+                      '& .MuiInputBase-input': {
+                        color: '#4b5563',
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        '&::placeholder': {
+                          color: 'rgba(75, 85, 99, 0.5)',
+                          opacity: 1
+                        }
+                      }
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ position: 'absolute', left: '1rem' }}>
+                          <Lock sx={{ color: 'rgba(75, 85, 99, 0.6)', fontSize: '1.25rem' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end" sx={{ position: 'absolute', right: '1rem' }}>
+                          <IconButton
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                            sx={{ 
+                              color: 'rgba(75, 85, 99, 0.6)',
+                              '&:hover': { color: '#4b5563' }
+                            }}
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                {/* Remember Me and Forgot Password */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      style={{
+                        width: '1rem',
+                        height: '1rem',
+                        borderRadius: '4px',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <Typography 
+                      component="label" 
+                      htmlFor="remember"
+                      sx={{ 
+                        color: 'rgba(75, 85, 99, 0.7)', 
+                        fontSize: '0.875rem',
+                        cursor: 'pointer'
+                      }}
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+                      Remember me
+                    </Typography>
+                  </Box>
+                  <Typography
+                    component="button"
+                    type="button"
+                    sx={{
+                      color: '#0891b2',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      '&:hover': {
+                        color: 'rgba(8, 145, 178, 0.8)',
+                        textDecoration: 'underline'
+                      }
+                    }}
+                  >
+                    Forgot password?
+                  </Typography>
+                </Box>
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disabled={loading}
+                  sx={{
+                    height: { xs: '3rem', sm: '3.5rem' },
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    borderRadius: { xs: 2, sm: 3 },
+                    background: '#0891b2',
+                    color: '#ffffff',
+                    boxShadow: '0 10px 25px rgba(8, 145, 178, 0.3)',
+                    transition: 'all 0.3s ease',
+                    mt: 3,
+                    '&:hover': {
+                      background: 'rgba(8, 145, 178, 0.9)',
+                      boxShadow: '0 15px 35px rgba(8, 145, 178, 0.4)',
+                      transform: 'translateY(-2px) scale(1.02)'
+                    },
+                    '&:active': {
+                      transform: 'translateY(0) scale(0.98)'
+                    },
+                    '&:disabled': {
+                      background: 'rgba(156, 163, 175, 0.5)',
+                      boxShadow: 'none',
+                      color: 'rgba(255, 255, 255, 0.7)'
+                    }
+                  }}
+                >
+                  {loading ? 'Signing In...' : 'Sign In'}
+                </Button>
+              </Stack>
+            </form>
+
+            {/* Divider */}
+            <Box sx={{ position: 'relative', py: 4 }}>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <Box sx={{ width: '100%', borderTop: '1px solid rgba(255, 255, 255, 0.2)' }} />
+              </Box>
+              <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+                <Typography
+                  sx={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                    backdropFilter: 'blur(8px)',
+                    px: 2,
+                    py: 0.5,
+                    borderRadius: 2,
+                    color: 'rgba(75, 85, 99, 0.6)',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  Or continue with
+                </Typography>
+              </Box>
+            </Box>
 
             <Button
-              type="submit"
               fullWidth
-              variant="contained"
+              variant="outlined"
               size="large"
+              startIcon={
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+              }
+              onClick={handleGoogleSignIn}
               disabled={loading}
               sx={{
-                py: 1.5,
+                height: '3.5rem',
                 fontWeight: 600,
                 textTransform: 'none',
-                fontSize: '1.1rem',
-                background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+                fontSize: '1rem',
+                borderRadius: 3,
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                backdropFilter: 'blur(8px)',
+                color: '#4b5563',
+                transition: 'all 0.3s ease',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #0d47a1 0%, #01579b 100%)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.4)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)'
                 }
               }}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              Continue with Google
             </Button>
-          </Stack>
-        </form>
 
-        <Divider sx={{ my: 3 }}>
-          <Typography variant="body2" color="text.secondary">
-            OR
-          </Typography>
-        </Divider>
-
-        <Button
-          fullWidth
-          variant="outlined"
-          size="large"
-          startIcon={<Google />}
-          onClick={handleGoogleSignIn}
-          disabled={loading}
-          sx={{
-            py: 1.5,
-            fontWeight: 600,
-            textTransform: 'none',
-            fontSize: '1.1rem',
-            borderColor: '#db4437',
-            color: '#db4437',
-            '&:hover': {
-              borderColor: '#db4437',
-              backgroundColor: 'rgba(219, 68, 55, 0.04)'
-            }
-          }}
-        >
-          Continue with Google
-        </Button>
-
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <Typography variant="body2" color="text.secondary">
-            Don't have an account?{' '}
-            <Link
-              component={RouterLink}
-              to="/register"
-              sx={{ fontWeight: 600, textDecoration: 'none' }}
+            <Typography 
+              sx={{ 
+                textAlign: 'center', 
+                color: 'rgba(75, 85, 99, 0.7)', 
+                fontSize: '0.875rem',
+                pt: 4
+              }}
             >
-              Sign up here
-            </Link>
-          </Typography>
-        </Box>
-
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Link
-            href="#"
-            sx={{ 
-              fontSize: '0.875rem',
-              color: 'text.secondary',
-              textDecoration: 'none',
-              '&:hover': { color: 'primary.main' }
-            }}
-          >
-            Forgot your password?
-          </Link>
-        </Box>
-      </Paper>
-    </Container>
+              Don't have an account?{' '}
+              <Link
+                component={RouterLink}
+                to="/register"
+                sx={{ 
+                  color: '#0891b2',
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  '&:hover': {
+                    color: 'rgba(8, 145, 178, 0.8)',
+                    textDecoration: 'underline'
+                  }
+                }}
+              >
+                Sign up
+              </Link>
+            </Typography>
+          </Paper>
+        </Fade>
+      </Container>
+    </Box>
   );
 };
 

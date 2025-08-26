@@ -38,7 +38,9 @@ import {
   Person,
   Info,
   BugReport,
-  ArrowBack
+  ArrowBack,
+  Delete,
+  Warning
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase/config';
@@ -46,6 +48,7 @@ import {
   collection, 
   onSnapshot, 
   updateDoc,
+  deleteDoc,
   doc, 
   query, 
   orderBy,
@@ -64,6 +67,8 @@ const ManageTickets = () => {
   const [replyMessage, setReplyMessage] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [tabValue, setTabValue] = useState(0);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [ticketToDelete, setTicketToDelete] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -165,6 +170,44 @@ const ManageTickets = () => {
     setReplyDialogOpen(true);
   };
 
+  const handleDeleteClick = (ticket) => {
+    setTicketToDelete(ticket);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!ticketToDelete) return;
+
+    try {
+      await deleteDoc(doc(db, 'tickets', ticketToDelete.id));
+      
+      setSnackbar({
+        open: true,
+        message: 'Ticket deleted successfully!',
+        severity: 'success'
+      });
+      
+      setDeleteConfirmOpen(false);
+      setTicketToDelete(null);
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete ticket.',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setTicketToDelete(null);
+  };
+
+  const handleRowClick = (ticket) => {
+    handleViewDetails(ticket);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'open': return '#ed6c02';
@@ -218,7 +261,7 @@ const ManageTickets = () => {
   const filteredTickets = getFilteredTickets();
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Box>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -240,7 +283,7 @@ const ManageTickets = () => {
             <ArrowBack />
           </IconButton>
           <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', mb: 0 }}>
-            🎫 Manage Support Tickets
+            Manage Support Tickets
           </Typography>
         </Box>
 
@@ -328,7 +371,17 @@ const ManageTickets = () => {
               </TableHead>
               <TableBody>
                 {filteredTickets.map((ticket) => (
-                  <TableRow key={ticket.id} hover>
+                  <TableRow 
+                    key={ticket.id} 
+                    hover 
+                    onClick={() => handleRowClick(ticket)}
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                      }
+                    }}
+                  >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Avatar sx={{ width: 32, height: 32, fontSize: '0.9rem' }}>
@@ -400,42 +453,69 @@ const ManageTickets = () => {
                         Last: {ticket.lastUpdated?.toDate?.()?.toLocaleTimeString() || ticket.createdAt?.toDate?.()?.toLocaleTimeString() || ''}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <IconButton
-                          onClick={() => handleViewDetails(ticket)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetails(ticket);
+                          }}
                           color="primary"
                           size="small"
+                          title="View Details"
                         >
                           <Visibility />
                         </IconButton>
                         {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
                           <IconButton
-                            onClick={() => handleReply(ticket)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReply(ticket);
+                            }}
                             color="secondary"
                             size="small"
+                            title="Reply"
                           >
                             <Reply />
                           </IconButton>
                         )}
                         {ticket.status === 'open' && (
                           <IconButton
-                            onClick={() => handleStatusChange(ticket.id, 'in-progress')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusChange(ticket.id, 'in-progress');
+                            }}
                             sx={{ color: '#1976d2' }}
                             size="small"
+                            title="Mark In Progress"
                           >
                             <Schedule />
                           </IconButton>
                         )}
                         {ticket.status !== 'resolved' && (
                           <IconButton
-                            onClick={() => handleStatusChange(ticket.id, 'resolved')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusChange(ticket.id, 'resolved');
+                            }}
                             sx={{ color: '#2e7d32' }}
                             size="small"
+                            title="Mark Resolved"
                           >
                             <CheckCircle />
                           </IconButton>
                         )}
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(ticket);
+                          }}
+                          sx={{ color: '#d32f2f' }}
+                          size="small"
+                          title="Delete Ticket"
+                        >
+                          <Delete />
+                        </IconButton>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -679,6 +759,62 @@ const ManageTickets = () => {
           </DialogActions>
         </Dialog>
 
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteConfirmOpen}
+          onClose={handleDeleteCancel}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Warning sx={{ color: '#d32f2f' }} />
+            Confirm Delete
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              Are you sure you want to delete this support ticket?
+            </Typography>
+            {ticketToDelete && (
+              <Box sx={{ 
+                bgcolor: '#f5f5f5', 
+                p: 2, 
+                borderRadius: 1,
+                border: '1px solid #e0e0e0'
+              }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>
+                  Ticket: {ticketToDelete.subject}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Customer: {ticketToDelete.userName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Status: {ticketToDelete.status}
+                </Typography>
+              </Box>
+            )}
+            <Typography variant="body2" sx={{ mt: 2, color: '#d32f2f', fontWeight: 500 }}>
+              ⚠️ This action cannot be undone. All messages and data associated with this ticket will be permanently deleted.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 3 }}>
+            <Button 
+              onClick={handleDeleteCancel}
+              variant="outlined"
+              color="inherit"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleDeleteConfirm}
+              variant="contained"
+              color="error"
+              startIcon={<Delete />}
+            >
+              Delete Ticket
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         {/* Snackbar for notifications */}
         <Snackbar
           open={snackbar.open}
@@ -690,7 +826,7 @@ const ManageTickets = () => {
           </Alert>
         </Snackbar>
       </motion.div>
-    </Container>
+    </Box>
   );
 };
 

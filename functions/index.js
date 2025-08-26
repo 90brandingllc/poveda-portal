@@ -605,6 +605,281 @@ function getReminderEmailTemplate(appointment, timeFrame, timeDescription) {
   `;
 }
 
+// Sync appointment to admin's connected Google Calendar (OAuth-based)
+exports.syncToAdminCalendar = functions.firestore
+  .document('appointments/{appointmentId}')
+  .onCreate(async (snap, context) => {
+    const appointment = snap.data();
+    const appointmentId = context.params.appointmentId;
+    
+    try {
+      // Get admin user with calendar sync enabled
+      const adminQuery = await admin.firestore()
+        .collection('users')
+        .where('role', '==', 'admin')
+        .where('adminCalendarSync.isConnected', '==', true)
+        .where('adminCalendarSync.autoSync', '==', true)
+        .limit(1)
+        .get();
+      
+      if (adminQuery.empty) {
+        console.log('No admin with calendar sync enabled found');
+        return null;
+      }
+      
+      const adminDoc = adminQuery.docs[0];
+      const adminData = adminDoc.data();
+      const calendarSync = adminData.adminCalendarSync;
+      
+      if (!calendarSync.googleAccessToken) {
+        console.log('No valid access token found for admin calendar sync');
+        return null;
+      }
+      
+      // Create OAuth2 client with stored access token
+      const oauth2Client = new google.auth.OAuth2();
+      oauth2Client.setCredentials({
+        access_token: calendarSync.googleAccessToken
+      });
+      
+      // Create calendar API instance
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+      
+      // Calculate appointment start and end times
+      const appointmentDate = appointment.date.toDate();
+      const timeString = appointment.timeSlot || appointment.time || '09:00 AM';
+      
+      // Parse time string (handles both "9:00 AM" and "09:00" formats)
+      let hours, minutes;
+      if (timeString.includes('AM') || timeString.includes('PM')) {
+        const time = timeString.replace(/\s/g, '');
+        const isPM = time.includes('PM');
+        const [hourStr, minuteStr] = time.replace(/[AP]M/, '').split(':');
+        hours = parseInt(hourStr);
+        minutes = parseInt(minuteStr) || 0;
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+      } else {
+        [hours, minutes] = timeString.split(':').map(num => parseInt(num));
+      }
+      
+      const startDateTime = new Date(appointmentDate);
+      startDateTime.setHours(hours, minutes, 0, 0);
+      
+      // Default 2-hour duration for car detailing
+      const endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+      
+      // Create event object with custom color
+      const event = {
+        summary: `🚗 ${appointment.service || 'Car Detailing'}`,
+        description: `
+POVEDA Premium Auto Care - Client Appointment
+
+👤 Customer: ${appointment.userName}
+📧 Email: ${appointment.userEmail}
+📞 Phone: ${appointment.phoneNumber || 'Not provided'}
+🚗 Service: ${appointment.service || appointment.servicePackage}
+📦 Package: ${appointment.category || 'Standard'}
+📍 Location: ${appointment.address ? `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 'Mobile Service'}
+💰 Price: $${appointment.finalPrice || appointment.estimatedPrice || appointment.totalAmount}
+📋 Status: ${appointment.status}
+📝 Notes: ${appointment.notes || 'No additional notes'}
+
+💳 Payment: ${appointment.paymentStatus || 'Pending'}
+${appointment.paymentId ? `💳 Payment ID: ${appointment.paymentId}` : ''}
+
+Created via POVEDA Admin Portal
+        `.trim(),
+        location: appointment.address ? `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 'Mobile Service',
+        start: {
+          dateTime: startDateTime.toISOString(),
+          timeZone: 'America/New_York',
+        },
+        end: {
+          dateTime: endDateTime.toISOString(),
+          timeZone: 'America/New_York',
+        },
+        attendees: [
+          {
+            email: appointment.userEmail,
+            displayName: appointment.userName,
+            responseStatus: 'needsAction'
+          }
+        ],
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'email', minutes: 24 * 60 }, // 24 hours
+            { method: 'popup', minutes: 120 }, // 2 hours
+            { method: 'popup', minutes: 30 }, // 30 minutes
+          ],
+        },
+        colorId: getColorIdFromHex(calendarSync.syncColor || '#4285f4'),
+        source: {
+          title: 'POVEDA Premium Auto Care',
+          url: 'https://povedaautocare.com'
+        }
+      };
+      
+      // Insert the event
+      const response = await calendar.events.insert({
+        calendarId: 'primary',
+        resource: event,
+        sendUpdates: 'all' // Send email to attendees
+      });
+      
+      // Store calendar event info in the appointment
+      await snap.ref.update({
+        calendarEventId: response.data.id,
+        calendarEventUrl: response.data.htmlLink,
+        syncedToAdminCalendar: true,
+        syncedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      
+      console.log(`✅ Calendar event created: ${response.data.htmlLink} for appointment ${appointmentId}`);
+      return response.data;
+      
+    } catch (error) {
+      console.error(`❌ Error syncing appointment ${appointmentId} to calendar:`, error);
+      
+      // Store sync error info
+      await snap.ref.update({
+        calendarSyncError: error.message,
+        lastSyncAttempt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      
+      return null;
+    }
+  });
+
+// Update calendar event when appointment status changes
+exports.updateAdminCalendarEvent = functions.firestore
+  .document('appointments/{appointmentId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const appointmentId = context.params.appointmentId;
+    
+    // Only process if there's a calendar event and status/important details changed
+    if (!after.calendarEventId || 
+        (before.status === after.status && 
+         before.timeSlot === after.timeSlot && 
+         before.service === after.service)) {
+      return null;
+    }
+    
+    try {
+      // Get admin with calendar sync
+      const adminQuery = await admin.firestore()
+        .collection('users')
+        .where('role', '==', 'admin')
+        .where('adminCalendarSync.isConnected', '==', true)
+        .limit(1)
+        .get();
+      
+      if (adminQuery.empty) {
+        console.log('No admin with calendar sync found for update');
+        return null;
+      }
+      
+      const adminData = adminQuery.docs[0].data();
+      const calendarSync = adminData.adminCalendarSync;
+      
+      // Create OAuth2 client
+      const oauth2Client = new google.auth.OAuth2();
+      oauth2Client.setCredentials({
+        access_token: calendarSync.googleAccessToken
+      });
+      
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+      
+      if (after.status === 'cancelled' || after.status === 'rejected') {
+        // Delete the calendar event
+        await calendar.events.delete({
+          calendarId: 'primary',
+          eventId: after.calendarEventId,
+          sendUpdates: 'all'
+        });
+        
+        // Clear calendar references
+        await change.after.ref.update({
+          calendarEventId: admin.firestore.FieldValue.delete(),
+          calendarEventUrl: admin.firestore.FieldValue.delete(),
+          syncedToAdminCalendar: false,
+          deletedFromCalendar: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        console.log(`🗑️ Calendar event deleted for ${after.status} appointment ${appointmentId}`);
+        
+      } else {
+        // Update the calendar event
+        const statusEmoji = {
+          'pending': '⏳',
+          'approved': '✅',
+          'confirmed': '🎯',
+          'completed': '🏆',
+          'in-progress': '🔄'
+        };
+        
+        const updatedEvent = {
+          summary: `${statusEmoji[after.status] || '🚗'} ${after.service || 'Car Detailing'} [${after.status.toUpperCase()}]`,
+          description: `
+POVEDA Premium Auto Care - Client Appointment
+
+👤 Customer: ${after.userName}
+📧 Email: ${after.userEmail}
+📞 Phone: ${after.phoneNumber || 'Not provided'}
+🚗 Service: ${after.service || after.servicePackage}
+📦 Package: ${after.category || 'Standard'}
+📍 Location: ${after.address ? `${after.address.street}, ${after.address.city}, ${after.address.state} ${after.address.zipCode}` : 'Mobile Service'}
+💰 Price: $${after.finalPrice || after.estimatedPrice || after.totalAmount}
+📋 Status: ${after.status}
+📝 Notes: ${after.notes || 'No additional notes'}
+
+💳 Payment: ${after.paymentStatus || 'Pending'}
+${after.paymentId ? `💳 Payment ID: ${after.paymentId}` : ''}
+
+Last Updated: ${new Date().toLocaleString()}
+Created via POVEDA Admin Portal
+          `.trim(),
+          colorId: getColorIdFromHex(calendarSync.syncColor || '#4285f4')
+        };
+        
+        await calendar.events.patch({
+          calendarId: 'primary',
+          eventId: after.calendarEventId,
+          resource: updatedEvent,
+          sendUpdates: 'all'
+        });
+        
+        console.log(`📅 Calendar event updated for ${after.status} appointment ${appointmentId}`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error updating calendar event for appointment ${appointmentId}:`, error);
+      
+      await change.after.ref.update({
+        calendarSyncError: error.message,
+        lastSyncAttempt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    
+    return null;
+  });
+
+// Helper function to convert hex color to Google Calendar color ID
+function getColorIdFromHex(hexColor) {
+  const colorMap = {
+    '#4285f4': '1', // Google Blue
+    '#34a853': '2', // Success Green  
+    '#fbbc04': '5', // Business Orange
+    '#ea4335': '4', // Alert Red
+    '#9c27b0': '3', // Premium Purple
+    '#009688': '6', // Professional Teal
+  };
+  return colorMap[hexColor] || '1'; // Default to blue
+}
+
 // Clean up reminder flags for past appointments (runs daily)
 exports.cleanupReminderFlags = functions.pubsub
   .schedule('every 24 hours')

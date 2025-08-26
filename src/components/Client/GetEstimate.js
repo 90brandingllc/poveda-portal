@@ -43,6 +43,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, arrayUnion, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '../../firebase/config';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import ClientLayout from '../Layout/ClientLayout';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
@@ -463,7 +464,7 @@ const GetEstimate = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <ClientLayout>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
         Get Custom Estimate
       </Typography>
@@ -1080,8 +1081,7 @@ const GetEstimate = () => {
         </DialogActions>
       </Dialog>
 
-
-    </Container>
+    </ClientLayout>
   );
 };
 
