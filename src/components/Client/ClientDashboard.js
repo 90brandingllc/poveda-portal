@@ -48,22 +48,47 @@ const ClientDashboard = () => {
   });
   const [notificationsAnchor, setNotificationsAnchor] = useState(null);
   const notificationsOpen = Boolean(notificationsAnchor);
-  const [notifications] = useState([
-    {
-      id: 1,
-      title: 'Appointment Confirmed',
-      message: 'Your appointment on Dec 28 has been confirmed',
-      time: '2 hours ago',
-      type: 'success'
-    },
-    {
-      id: 2,
-      title: 'Estimate Ready',
-      message: 'Your ceramic coating estimate is ready for review',
-      time: '1 day ago',
-      type: 'info'
+  const [notifications, setNotifications] = useState([]);
+
+  // Fetch real-time notifications
+  useEffect(() => {
+    if (currentUser) {
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('userId', '==', currentUser.uid),
+        where('read', '==', false),
+        limit(5)
+      );
+
+      const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+        const unreadNotifications = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          time: formatTimeAgo(doc.data().createdAt?.toDate() || new Date())
+        }));
+        setNotifications(unreadNotifications);
+      }, (error) => {
+        console.error('Error fetching notifications:', error);
+      });
+
+      return () => unsubscribe();
     }
-  ]);
+  }, [currentUser]);
+
+  // Helper function to format time ago
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -77,20 +102,7 @@ const ClientDashboard = () => {
     setNotificationsAnchor(null);
   };
 
-  const handleGenerateSampleData = async () => {
-    try {
-      console.log('Generating sample data...');
-      const result = await generateSampleData(
-        currentUser.uid,
-        currentUser.email,
-        currentUser.displayName || currentUser.email
-      );
-      alert(`✅ Sample data generated successfully!\n\n📊 Created:\n• ${result.estimates} Estimates\n• ${result.appointments} Appointments\n• ${result.tickets} Support Tickets\n\nRefresh the page to see the new data!`);
-    } catch (error) {
-      console.error('Error generating sample data:', error);
-      alert('❌ Error generating sample data. Check console for details.');
-    }
-  };
+
 
   const handleLogout = async () => {
     try {
@@ -200,7 +212,17 @@ const ClientDashboard = () => {
           </Box>
 
           <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2 }}>
-            <IconButton sx={{ color: '#6b7280' }}>
+            <IconButton 
+              onClick={() => navigate('/appointments')}
+              sx={{ 
+                color: '#6b7280',
+                '&:hover': {
+                  color: '#0891b2',
+                  background: 'rgba(8, 145, 178, 0.1)'
+                }
+              }}
+              title="Search Appointments"
+            >
               <Search />
             </IconButton>
             <IconButton 
@@ -247,27 +269,7 @@ const ClientDashboard = () => {
               {currentUser?.displayName || 'User'}
             </Typography>
             
-            {/* Temporary Demo Data Button */}
-            <Button
-              onClick={handleGenerateSampleData}
-              variant="outlined"
-              size="small"
-              sx={{
-                ml: 2,
-                borderColor: '#22c55e',
-                color: '#22c55e',
-                fontSize: '0.75rem',
-                px: 2,
-                py: 0.5,
-                '&:hover': {
-                  borderColor: '#16a34a',
-                  color: '#16a34a',
-                  background: 'rgba(34, 197, 94, 0.1)'
-                }
-              }}
-            >
-              📊 Generate Demo Data
-            </Button>
+
         </Box>
         </Box>
 

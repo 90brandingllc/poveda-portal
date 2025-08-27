@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { CircularProgress, Box } from '@mui/material';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Auth Components
 import Login from './components/Auth/Login';
@@ -13,6 +14,8 @@ import ForgotPassword from './components/Auth/ForgotPassword';
 // Client Components
 import ClientDashboard from './components/Client/ClientDashboard';
 import ClientProfile from './components/Client/ClientProfile';
+import MyGarage from './components/Client/MyGarage';
+import VehicleDetails from './components/Client/VehicleDetails';
 import BookAppointment from './components/Client/BookAppointment';
 import AppointmentsList from './components/Client/AppointmentsList';
 import ContactUs from './components/Client/ContactUs';
@@ -28,7 +31,7 @@ import Services from './components/Public/Services';
 import About from './components/Public/About';
 
 // Layout Components
-import Navbar from './components/Layout/Navbar';
+// import Navbar from './components/Layout/Navbar';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -59,9 +62,7 @@ const PublicRoute = ({ children }) => {
 function App() {
   const { currentUser, userRole } = useAuth();
   
-  // Debug logging
-  console.log('App.js - Current User:', currentUser?.email);
-  console.log('App.js - User Role:', userRole);
+
 
   // Show loading spinner while checking auth state
   if (currentUser === undefined) {
@@ -77,24 +78,10 @@ function App() {
     );
   }
 
-  const isAuthPage = window.location.pathname === '/login' || 
-                      window.location.pathname === '/register' || 
-                      window.location.pathname === '/setup-admin' ||
-                      window.location.pathname === '/forgot-password' ||
-                      window.location.pathname === '/dashboard' ||
-                      window.location.pathname === '/profile' ||
-                      window.location.pathname === '/book-appointment' ||
-                      window.location.pathname === '/appointments' ||
-                      window.location.pathname === '/contact' ||
-                      window.location.pathname === '/get-estimate' ||
-                      window.location.pathname === '/my-estimates' ||
-                      window.location.pathname === '/notifications' ||
-                      window.location.pathname.startsWith('/admin');
-
   return (
-    <div className="App">
-      {!isAuthPage && <Navbar />}
-      <Routes>
+    <ErrorBoundary>
+      <div className="App">
+        <Routes>
         {/* Public Routes */}
         <Route path="/services" element={<Services />} />
         <Route path="/about" element={<About />} />
@@ -154,6 +141,22 @@ function App() {
           } 
         />
         <Route 
+          path="/my-garage" 
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <MyGarage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/vehicle/:vehicleId" 
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <VehicleDetails />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/book-appointment" 
           element={
             <ProtectedRoute allowedRoles={['client']}>
@@ -176,14 +179,6 @@ function App() {
               <ContactUs />
             </ProtectedRoute>
           } 
-        />
-                <Route 
-          path="/estimate" 
-          element={
-            <ProtectedRoute allowedRoles={['client']}>
-              <GetEstimate />
-            </ProtectedRoute>
-          }
         />
         <Route 
           path="/get-estimate" 
@@ -220,7 +215,8 @@ function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </div>
-  );
+  </ErrorBoundary>
+);
 }
 
 export default App;

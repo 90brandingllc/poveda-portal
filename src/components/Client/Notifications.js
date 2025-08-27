@@ -28,6 +28,18 @@ import {
   MarkEmailRead
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  onSnapshot,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp 
+} from 'firebase/firestore';
+import { db } from '../../firebase/config';
 import ClientLayout from '../Layout/ClientLayout';
 
 const Notifications = () => {
@@ -37,69 +49,51 @@ const Notifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [expandedNotifications, setExpandedNotifications] = useState(new Set());
 
-  // Sample notifications data - in real app this would come from Firestore
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'Appointment Confirmed',
-      message: 'Your Full Detailing appointment on December 28, 2024 at 2:00 PM has been confirmed. Our team will arrive at your location.',
-      type: 'success',
-      time: '2 hours ago',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      read: false,
-      icon: 'success'
-    },
-    {
-      id: 2,
-      title: 'Estimate Ready',
-      message: 'Your estimate for Premium Wash Package is ready for review. Total estimated cost: $89.99.',
-      type: 'info',
-      time: '5 hours ago',
-      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      read: false,
-      icon: 'info'
-    },
-    {
-      id: 3,
-      title: 'Payment Received',
-      message: 'We have received your deposit payment of $45.00 for your upcoming appointment. Remaining balance: $44.99.',
-      type: 'success',
-      time: '1 day ago',
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      read: true,
-      icon: 'success'
-    },
-    {
-      id: 4,
-      title: 'Appointment Reminder',
-      message: 'Reminder: Your appointment is scheduled for tomorrow at 2:00 PM. Please ensure your vehicle is accessible.',
-      type: 'warning',
-      time: '1 day ago',
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      read: true,
-      icon: 'warning'
-    },
-    {
-      id: 5,
-      title: 'Service Completed',
-      message: 'Your Full Detailing service has been completed! Thank you for choosing POVEDA PREMIUM AUTO CARE. Please leave us a review.',
-      type: 'success',
-      time: '3 days ago',
-      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      read: true,
-      icon: 'success'
-    },
-    {
-      id: 6,
-      title: 'Welcome to POVEDA',
-      message: 'Welcome to POVEDA PREMIUM AUTO CARE! Your account has been created successfully. Explore our services and book your first appointment.',
-      type: 'info',
-      time: '1 week ago',
-      timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      read: true,
-      icon: 'info'
+  // Real notifications from Firestore
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch notifications from Firestore
+  useEffect(() => {
+    if (currentUser) {
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('userId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+        const userNotifications = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().createdAt?.toDate() || new Date(),
+          time: formatTimeAgo(doc.data().createdAt?.toDate() || new Date())
+        }));
+        setNotifications(userNotifications);
+        setLoading(false);
+      }, (error) => {
+        console.error('Error fetching notifications:', error);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
     }
-  ]);
+  }, [currentUser]);
+
+  // Helper function to format time ago
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
 
   const handleMenuOpen = (event, notification) => {
     setAnchorEl(event.currentTarget);
@@ -111,33 +105,37 @@ const Notifications = () => {
     setSelectedNotification(null);
   };
 
-  const markAsRead = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: true }
-          : notification
-      )
-    );
-    handleMenuClose();
+  const markAsRead = async (notificationId) => {
+    try {
+      await updateDoc(doc(db, 'notifications', notificationId), {
+        read: true,
+        readAt: serverTimestamp()
+      });
+      handleMenuClose();
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAsUnread = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: false }
-          : notification
-      )
-    );
-    handleMenuClose();
+  const markAsUnread = async (notificationId) => {
+    try {
+      await updateDoc(doc(db, 'notifications', notificationId), {
+        read: false,
+        readAt: null
+      });
+      handleMenuClose();
+    } catch (error) {
+      console.error('Error marking notification as unread:', error);
+    }
   };
 
-  const deleteNotification = (notificationId) => {
-    setNotifications(prev => 
-      prev.filter(notification => notification.id !== notificationId)
-    );
-    handleMenuClose();
+  const deleteNotification = async (notificationId) => {
+    try {
+      await deleteDoc(doc(db, 'notifications', notificationId));
+      handleMenuClose();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
   const getIconComponent = (type) => {

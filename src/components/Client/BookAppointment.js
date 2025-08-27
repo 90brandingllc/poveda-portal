@@ -22,15 +22,19 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import {
   CheckCircle,
   Schedule,
-  Block
+  Block,
+  DirectionsCar
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import DepositPayment from '../Payment/DepositPayment';
 import { calculateDepositAmount, formatCurrency } from '../../services/stripeService';
+import { createAppointmentConfirmedNotification, createPaymentReceivedNotification } from '../../utils/notificationService';
+import { handleError, withRetry } from '../../utils/errorHandler';
+import { LoadingSpinner, FormLoadingOverlay } from '../LoadingState';
 import ClientLayout from '../Layout/ClientLayout';
 
 const BookAppointment = () => {
@@ -44,10 +48,12 @@ const BookAppointment = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
 
   const [formData, setFormData] = useState({
     serviceCategory: '',
     servicePackage: '',
+    vehicleId: '',
     date: null,
     timeSlot: null,
     address: {
@@ -61,7 +67,7 @@ const BookAppointment = () => {
     estimatedPrice: 0
   });
 
-  const steps = ['Select Service', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
+  const steps = ['Select Service', 'Select Vehicle', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
 
   // Generate time slots for business hours (9 AM - 5 PM, Monday to Friday)
   const generateTimeSlots = (selectedDate) => {
@@ -100,6 +106,7 @@ const BookAppointment = () => {
     
     setLoadingSlots(true);
     try {
+      await withRetry(async () => {
       const dayStart = dayjs(selectedDate).startOf('day').toDate();
       const dayEnd = dayjs(selectedDate).endOf('day').toDate();
       
@@ -141,8 +148,7 @@ const BookAppointment = () => {
         }
       });
       
-      console.log('Booked slots:', bookedSlots);
-      console.log('Blocked slots:', blockedSlots);
+
       
       // Generate slots and mark availability
       const slots = generateTimeSlots(selectedDate);
@@ -153,13 +159,39 @@ const BookAppointment = () => {
                   !blockedSlots.includes(slot.label)
       }));
       
-      setAvailableSlots(availableSlots);
+        setAvailableSlots(availableSlots);
+      });
     } catch (error) {
-      console.error('Error checking slot availability:', error);
-      setError('Failed to load available time slots. Please try again.');
+      const errorInfo = await handleError(error, {
+        action: 'checking_slot_availability',
+        date: selectedDate?.toISOString()
+      });
+      setError(errorInfo.message);
     }
     setLoadingSlots(false);
   };
+
+  // Fetch user's vehicles
+  useEffect(() => {
+    if (currentUser) {
+      const vehiclesQuery = query(
+        collection(db, 'vehicles'),
+        where('userId', '==', currentUser.uid)
+      );
+
+      const unsubscribe = onSnapshot(vehiclesQuery, (snapshot) => {
+        const userVehicles = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setVehicles(userVehicles);
+      }, (error) => {
+        console.error('Error fetching vehicles:', error);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [currentUser]);
 
   // Effect to check availability when date changes
   useEffect(() => {
@@ -276,6 +308,7 @@ const BookAppointment = () => {
         userName: currentUser.displayName || currentUser.email,
         service: formData.servicePackage,
         category: formData.serviceCategory,
+        vehicleId: formData.vehicleId,
         date: formData.date.toDate(),
         timeSlot: formData.timeSlot,
         time: formData.time ? formData.time.format('HH:mm') : formData.timeSlot,
@@ -292,9 +325,27 @@ const BookAppointment = () => {
         createdAt: serverTimestamp()
       };
 
-      console.log('Auto-booking appointment after payment:', appointmentData);
       const docRef = await addDoc(collection(db, 'appointments'), appointmentData);
-      console.log('Appointment booked with ID:', docRef.id);
+      
+      // Create notifications for the appointment
+      try {
+        await createAppointmentConfirmedNotification(currentUser.uid, {
+          ...appointmentData,
+          id: docRef.id
+        });
+        
+        if (paymentResult) {
+          await createPaymentReceivedNotification(currentUser.uid, {
+            id: paymentResult.id,
+            amount: depositAmount,
+            remaining: remainingBalance,
+            service: formData.servicePackage
+          });
+        }
+      } catch (notificationError) {
+        console.error('Error creating notifications:', notificationError);
+        // Don't fail the whole process if notifications fail
+      }
       
       setSuccess(true);
       setTimeout(() => {
@@ -302,8 +353,16 @@ const BookAppointment = () => {
       }, 2000);
       
     } catch (error) {
-      setError(`Failed to book appointment: ${error.message}`);
-      console.error('Auto-booking error:', error);
+      const errorInfo = await handleError(error, {
+        action: 'booking_appointment',
+        step: 'payment_processing',
+        userId: currentUser.uid
+      }, {
+        showNotification: true,
+        userId: currentUser.uid
+      });
+      
+      setError(errorInfo.message);
     }
     
     setLoading(false);
@@ -367,6 +426,70 @@ const BookAppointment = () => {
         );
 
       case 1:
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+                Select Vehicle for Service
+              </Typography>
+              
+              {vehicles.length === 0 ? (
+                <Alert severity="info" sx={{ mb: 3 }}>
+                  You haven't added any vehicles yet. 
+                  <Button 
+                    variant="outlined" 
+                    size="small" 
+                    onClick={() => navigate('/my-garage')}
+                    sx={{ ml: 2 }}
+                  >
+                    Add Vehicle
+                  </Button>
+                </Alert>
+              ) : (
+                <Grid container spacing={2}>
+                  {vehicles.map((vehicle) => (
+                    <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
+                      <Card 
+                        sx={{ 
+                          cursor: 'pointer',
+                          border: formData.vehicleId === vehicle.id ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
+                        }}
+                        onClick={() => setFormData(prev => ({ ...prev, vehicleId: vehicle.id }))}
+                      >
+                        <CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <DirectionsCar sx={{ color: '#1976d2', mr: 1 }} />
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                              {vehicle.year} {vehicle.make} {vehicle.model}
+                            </Typography>
+                          </Box>
+                          
+                          {vehicle.nickname && (
+                            <Chip 
+                              label={vehicle.nickname} 
+                              size="small" 
+                              sx={{ mb: 1, backgroundColor: '#e3f2fd' }} 
+                            />
+                          )}
+                          
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Color:</strong> {vehicle.color || 'Not specified'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>License:</strong> {vehicle.licensePlate || 'Not specified'}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </Grid>
+          </Grid>
+        );
+
+      case 2:
         return (
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Grid container spacing={3}>
@@ -445,7 +568,7 @@ const BookAppointment = () => {
           </LocalizationProvider>
         );
 
-      case 2:
+      case 3:
         return (
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -521,7 +644,7 @@ const BookAppointment = () => {
           </Grid>
         );
 
-      case 3:
+      case 4:
         return (
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
@@ -537,6 +660,15 @@ const BookAppointment = () => {
                       <Typography variant="body1">Service:</Typography>
                       <Typography variant="body1" sx={{ fontWeight: 600 }}>
                         {formData.servicePackage}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body1">Vehicle:</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                        {vehicles.find(v => v.id === formData.vehicleId) ? 
+                          `${vehicles.find(v => v.id === formData.vehicleId).year} ${vehicles.find(v => v.id === formData.vehicleId).make} ${vehicles.find(v => v.id === formData.vehicleId).model}` : 
+                          'Not selected'}
                       </Typography>
                     </Box>
                     
@@ -672,25 +804,65 @@ const BookAppointment = () => {
   if (success) {
     return (
       <ClientLayout>
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <CheckCircle sx={{ fontSize: 80, color: 'success.main', mb: 3 }} />
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: 'success.main' }}>
-            Booking Submitted!
+        <Box sx={{ 
+          maxWidth: 600, 
+          mx: 'auto', 
+          mt: 8,
+          p: 6, 
+          textAlign: 'center',
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}>
+          <CheckCircle sx={{ 
+            fontSize: 100, 
+            color: '#22c55e', 
+            mb: 3,
+            filter: 'drop-shadow(0 4px 8px rgba(34, 197, 94, 0.3))'
+          }} />
+          
+          <Typography variant="h3" gutterBottom sx={{ 
+            fontWeight: 700, 
+            color: '#1f2937',
+            mb: 2
+          }}>
+            🎉 Booking Confirmed!
           </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
+          
+          <Typography variant="h6" sx={{ 
+            color: '#6b7280',
+            mb: 3,
+            fontWeight: 500
+          }}>
             Your appointment request has been successfully submitted.
           </Typography>
-          <Typography variant="body1" sx={{ mb: 4 }}>
-            Your deposit has been processed and your appointment is pending approval. Our team will review and confirm your booking shortly. You can track your appointment status in your dashboard.
+          
+          <Typography variant="body1" sx={{ 
+            mb: 4,
+            color: '#374151',
+            lineHeight: 1.6
+          }}>
+            Your deposit has been processed and your appointment is pending approval. Our team will review and confirm your booking shortly. You'll receive a notification once confirmed.
           </Typography>
+          
           <Button
             variant="contained"
             size="large"
             onClick={() => navigate('/appointments')}
+            sx={{
+              background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 4,
+              py: 1.5
+            }}
           >
             View My Appointments
           </Button>
-        </Paper>
+        </Box>
       </ClientLayout>
     );
   }
@@ -795,6 +967,7 @@ const BookAppointment = () => {
 
         {/* Modern Step Content */}
         <Box sx={{ 
+          position: 'relative',
           background: 'rgba(255, 255, 255, 0.9)',
           backdropFilter: 'blur(12px)',
           borderRadius: '24px',
@@ -803,6 +976,9 @@ const BookAppointment = () => {
           mb: 4,
           boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'
         }}>
+
+        {/* Loading overlay */}
+        {loading && <FormLoadingOverlay message="Processing your booking..." />}
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -853,8 +1029,9 @@ const BookAppointment = () => {
               onClick={handleNext}
               disabled={
                 (activeStep === 0 && !formData.servicePackage) ||
-                (activeStep === 1 && (!formData.date || !formData.timeSlot)) ||
-                (activeStep === 2 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
+                (activeStep === 1 && !formData.vehicleId) ||
+                (activeStep === 2 && (!formData.date || !formData.timeSlot)) ||
+                (activeStep === 3 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
               }
               sx={{
                 background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',

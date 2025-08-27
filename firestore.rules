@@ -97,6 +97,39 @@ service cloud.firestore {
                                    getUserRole(request.auth.uid) == 'admin';
     }
     
+    // Vehicles rules
+    match /vehicles/{vehicleId} {
+      // Allow authenticated users to create, read, update, and delete vehicles
+      // For now, we'll be permissive to debug the issue
+      allow read, write: if request.auth != null;
+    }
+    
+    // Notifications rules
+    match /notifications/{notificationId} {
+      // Users can create notifications (for system-generated notifications)
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId;
+      
+      // Users can read their own notifications
+      allow read: if request.auth != null && 
+                 request.auth.uid == resource.data.userId;
+      
+      // Users can update their own notifications (mark as read/unread)
+      allow update: if request.auth != null && 
+                   request.auth.uid == resource.data.userId;
+      
+      // Users can delete their own notifications
+      allow delete: if request.auth != null && 
+                   request.auth.uid == resource.data.userId;
+      
+      // Admins can create notifications for any user
+      allow create: if request.auth != null && 
+                   getUserRole(request.auth.uid) == 'admin';
+      
+      // Admins can read all notifications
+      allow read: if request.auth != null && 
+                 getUserRole(request.auth.uid) == 'admin';
+    }
 
     
     // Helper function to get user role

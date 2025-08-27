@@ -4,7 +4,7 @@ import { db } from '../firebase/config';
 // Generate sample data for demo purposes
 export const generateSampleData = async (userId, userEmail, userName) => {
   try {
-    console.log('Generating sample data for user:', userName);
+
 
     // Sample Estimates
     const sampleEstimates = [
@@ -248,24 +248,24 @@ export const generateSampleData = async (userId, userEmail, userName) => {
     ];
 
     // Add estimates to Firestore
-    console.log('Adding sample estimates...');
+
     for (const estimate of sampleEstimates) {
       await addDoc(collection(db, 'estimates'), estimate);
     }
 
     // Add appointments to Firestore
-    console.log('Adding sample appointments...');
+
     for (const appointment of sampleAppointments) {
       await addDoc(collection(db, 'appointments'), appointment);
     }
 
     // Add support tickets to Firestore
-    console.log('Adding sample support tickets...');
+
     for (const ticket of sampleTickets) {
       await addDoc(collection(db, 'tickets'), ticket);
     }
 
-    console.log('✅ Sample data generated successfully!');
+
     return {
       estimates: sampleEstimates.length,
       appointments: sampleAppointments.length,
@@ -281,8 +281,7 @@ export const generateSampleData = async (userId, userEmail, userName) => {
 // Function to clear existing user data (for demo reset)
 export const clearUserData = async (userId) => {
   try {
-    console.log('Note: Clearing user data requires admin SDK. This is for reference only.');
-    console.log('In production, you would use Firebase Admin SDK to delete documents.');
+
     
     // This would require Firebase Admin SDK to actually delete documents
     // For demo purposes, we'll just log what would be deleted

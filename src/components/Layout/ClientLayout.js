@@ -22,7 +22,8 @@ import {
   Description,
   Notifications,
   Menu,
-  Logout
+  Logout,
+  DirectionsCar
 } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -48,6 +49,7 @@ const ClientLayout = ({ children }) => {
 
   const navigationItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+    { text: 'My Garage', icon: <DirectionsCar />, path: '/my-garage' },
     { text: 'Book Service', icon: <CalendarToday />, path: '/book-appointment' },
     { text: 'My Appointments', icon: <Assignment />, path: '/appointments' },
     { text: 'Contact Us', icon: <Phone />, path: '/contact' },
