@@ -31,6 +31,44 @@ const GOOGLE_CALENDAR_CREDENTIALS = {
 
 const ADMIN_CALENDAR_ID = 'your-admin-calendar@gmail.com'; // Replace with admin's calendar ID
 
+// Helper function to load email template from Firestore
+async function getEmailTemplate(templateId) {
+  try {
+    const templateDoc = await admin.firestore()
+      .collection('emailTemplates')
+      .doc(templateId)
+      .get();
+    
+    if (!templateDoc.exists) {
+      console.warn(`Template ${templateId} not found, using fallback`);
+      return null;
+    }
+    
+    const template = templateDoc.data();
+    if (!template.isActive) {
+      console.warn(`Template ${templateId} is inactive, using fallback`);
+      return null;
+    }
+    
+    return template;
+  } catch (error) {
+    console.error(`Error loading template ${templateId}:`, error);
+    return null;
+  }
+}
+
+// Helper function to replace template variables
+function replaceTemplateVariables(htmlContent, variables) {
+  let processedContent = htmlContent;
+  
+  Object.keys(variables).forEach(key => {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    processedContent = processedContent.replace(regex, variables[key] || '');
+  });
+  
+  return processedContent;
+}
+
 // Helper function to create Google Calendar event
 async function createCalendarEvent(appointment) {
   try {
@@ -123,71 +161,96 @@ exports.sendAppointmentConfirmation = functions.firestore
     
     // Send email if email reminders are enabled
     if (appointment.emailReminders) {
-      const mailOptions = {
-        from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
-        to: appointment.userEmail,
-        subject: 'Appointment Confirmation - POVEDA PREMIUM AUTO CARE',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); color: white; padding: 30px; text-align: center;">
-              <h1 style="margin: 0; font-size: 28px;">POVEDA PREMIUM AUTO CARE</h1>
-              <p style="margin: 10px 0 0 0; font-size: 16px;">Your Appointment is Confirmed!</p>
-            </div>
-            
-            <div style="padding: 30px; background: #f8f9fa;">
-              <h2 style="color: #1976d2; margin-top: 0;">Hello ${appointment.userName}!</h2>
-              <p>Thank you for choosing POVEDA PREMIUM AUTO CARE. Your appointment has been successfully booked and is pending approval.</p>
-              
-              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #1976d2; margin-top: 0;">Appointment Details</h3>
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Service:</td>
-                    <td style="padding: 8px 0;">${appointment.service}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Date:</td>
-                    <td style="padding: 8px 0;">${appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString() : 'TBD'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Time:</td>
-                    <td style="padding: 8px 0;">${appointment.time || 'TBD'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Location:</td>
-                    <td style="padding: 8px 0;">${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Total Price:</td>
-                    <td style="padding: 8px 0; color: #1976d2; font-weight: bold;">$${appointment.finalPrice || appointment.estimatedPrice}</td>
-                  </tr>
-                </table>
-              </div>
-              
-              <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <p style="margin: 0; color: #1976d2;"><strong>What's Next?</strong></p>
-                <p style="margin: 5px 0 0 0;">Our team will review your booking and contact you within 24 hours to confirm the details. You'll receive another email once your appointment is approved.</p>
-              </div>
-              
-              <p>If you have any questions, please don't hesitate to contact us:</p>
-              <ul>
-                <li>Phone: (614) 653-5882</li>
-                <li>Email: support@povedapremiumautocare.com</li>
-                <li>Address: 4529 Parkwick Dr, Columbus, OH 43228</li>
-              </ul>
-              
-              <p>Thank you for choosing POVEDA PREMIUM AUTO CARE!</p>
-              <p><strong>The POVEDA Team</strong></p>
-            </div>
-            
-            <div style="background: #1976d2; color: white; padding: 20px; text-align: center;">
-              <p style="margin: 0; font-size: 14px;">© 2024 POVEDA PREMIUM AUTO CARE. All rights reserved.</p>
-            </div>
-          </div>
-        `
-      };
-
       try {
+        // Load template from Firestore
+        const template = await getEmailTemplate('appointment_confirmation');
+        
+        let emailHtml, emailSubject;
+        
+        if (template) {
+          // Use dynamic template
+          const templateVariables = {
+            userName: appointment.userName,
+            service: appointment.service,
+            date: appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString() : 'TBD',
+            time: appointment.time || 'TBD',
+            address: `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}`,
+            finalPrice: appointment.finalPrice || appointment.estimatedPrice,
+            estimatedPrice: appointment.estimatedPrice
+          };
+          
+          emailHtml = replaceTemplateVariables(template.htmlContent, templateVariables);
+          emailSubject = template.subject;
+        } else {
+          // Fallback to hardcoded template
+          emailSubject = 'Appointment Confirmation - POVEDA PREMIUM AUTO CARE';
+          emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); color: white; padding: 30px; text-align: center;">
+                <h1 style="margin: 0; font-size: 28px;">POVEDA PREMIUM AUTO CARE</h1>
+                <p style="margin: 10px 0 0 0; font-size: 16px;">Your Appointment is Confirmed!</p>
+              </div>
+              
+              <div style="padding: 30px; background: #f8f9fa;">
+                <h2 style="color: #1976d2; margin-top: 0;">Hello ${appointment.userName}!</h2>
+                <p>Thank you for choosing POVEDA PREMIUM AUTO CARE. Your appointment has been successfully booked and is pending approval.</p>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h3 style="color: #1976d2; margin-top: 0;">Appointment Details</h3>
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                      <td style="padding: 8px 0; font-weight: bold;">Service:</td>
+                      <td style="padding: 8px 0;">${appointment.service}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; font-weight: bold;">Date:</td>
+                      <td style="padding: 8px 0;">${appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString() : 'TBD'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; font-weight: bold;">Time:</td>
+                      <td style="padding: 8px 0;">${appointment.time || 'TBD'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; font-weight: bold;">Location:</td>
+                      <td style="padding: 8px 0;">${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; font-weight: bold;">Total Price:</td>
+                      <td style="padding: 8px 0; color: #1976d2; font-weight: bold;">$${appointment.finalPrice || appointment.estimatedPrice}</td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 0; color: #1976d2;"><strong>What's Next?</strong></p>
+                  <p style="margin: 5px 0 0 0;">Our team will review your booking and contact you within 24 hours to confirm the details.</p>
+                </div>
+                
+                <p>If you have any questions, please contact us:</p>
+                <ul>
+                  <li>Phone: (614) 653-5882</li>
+                  <li>Email: support@povedapremiumautocare.com</li>
+                  <li>Address: 4529 Parkwick Dr, Columbus, OH 43228</li>
+                </ul>
+                
+                <p>Thank you for choosing POVEDA PREMIUM AUTO CARE!</p>
+                <p><strong>The POVEDA Team</strong></p>
+              </div>
+              
+              <div style="background: #1976d2; color: white; padding: 20px; text-align: center;">
+                <p style="margin: 0; font-size: 14px;">© 2024 POVEDA PREMIUM AUTO CARE. All rights reserved.</p>
+              </div>
+            </div>
+          `;
+        }
+
+        const mailOptions = {
+          from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
+          to: appointment.userEmail,
+          subject: emailSubject,
+          html: emailHtml
+        };
+
         await transporter.sendMail(mailOptions);
         console.log('Appointment confirmation email sent successfully');
       } catch (error) {
@@ -425,19 +488,51 @@ exports.send24HourReminder = functions.pubsub
           const appointment = doc.data();
           const appointmentDateTime = getAppointmentDateTime(appointment);
           
-          const mailOptions = {
-            from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
-            to: appointment.userEmail,
-            subject: 'Appointment Reminder - Tomorrow - POVEDA PREMIUM AUTO CARE',
-            html: getReminderEmailTemplate(appointment, '24 hours', 'tomorrow')
-          };
+          try {
+            // Load template from Firestore
+            const template = await getEmailTemplate('appointment_reminder_24h');
+            
+            let emailHtml, emailSubject;
+            
+            if (template) {
+              // Use dynamic template
+              const templateVariables = {
+                userName: appointment.userName,
+                service: appointment.service,
+                date: new Date(appointment.date.toDate()).toLocaleDateString('en-US', { 
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                }),
+                time: appointment.time,
+                address: `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}`,
+                finalPrice: appointment.finalPrice || appointment.estimatedPrice,
+                estimatedPrice: appointment.estimatedPrice
+              };
+              
+              emailHtml = replaceTemplateVariables(template.htmlContent, templateVariables);
+              emailSubject = template.subject;
+            } else {
+              // Fallback to existing template function
+              emailSubject = 'Appointment Reminder - Tomorrow - POVEDA PREMIUM AUTO CARE';
+              emailHtml = getReminderEmailTemplate(appointment, '24 hours', 'tomorrow');
+            }
 
-          // Send email and mark as sent
-          await transporter.sendMail(mailOptions);
-          await doc.ref.update({ reminder24hSent: true });
-          
-          console.log(`24h reminder sent for appointment ${doc.id}`);
-          return true;
+            const mailOptions = {
+              from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
+              to: appointment.userEmail,
+              subject: emailSubject,
+              html: emailHtml
+            };
+
+            // Send email and mark as sent
+            await transporter.sendMail(mailOptions);
+            await doc.ref.update({ reminder24hSent: true });
+            
+            console.log(`24h reminder sent for appointment ${doc.id}`);
+            return true;
+          } catch (error) {
+            console.error(`Error sending 24h reminder for appointment ${doc.id}:`, error);
+            return false;
+          }
         });
 
       await Promise.all(promises);
@@ -478,19 +573,51 @@ exports.send2HourReminder = functions.pubsub
         .map(async (doc) => {
           const appointment = doc.data();
           
-          const mailOptions = {
-            from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
-            to: appointment.userEmail,
-            subject: 'Appointment Reminder - In 2 Hours - POVEDA PREMIUM AUTO CARE',
-            html: getReminderEmailTemplate(appointment, '2 hours', 'in about 2 hours')
-          };
+          try {
+            // Load template from Firestore
+            const template = await getEmailTemplate('appointment_reminder_2h');
+            
+            let emailHtml, emailSubject;
+            
+            if (template) {
+              // Use dynamic template
+              const templateVariables = {
+                userName: appointment.userName,
+                service: appointment.service,
+                date: new Date(appointment.date.toDate()).toLocaleDateString('en-US', { 
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                }),
+                time: appointment.time,
+                address: `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}`,
+                finalPrice: appointment.finalPrice || appointment.estimatedPrice,
+                estimatedPrice: appointment.estimatedPrice
+              };
+              
+              emailHtml = replaceTemplateVariables(template.htmlContent, templateVariables);
+              emailSubject = template.subject;
+            } else {
+              // Fallback to existing template function
+              emailSubject = 'Appointment Reminder - In 2 Hours - POVEDA PREMIUM AUTO CARE';
+              emailHtml = getReminderEmailTemplate(appointment, '2 hours', 'in about 2 hours');
+            }
 
-          // Send email and mark as sent
-          await transporter.sendMail(mailOptions);
-          await doc.ref.update({ reminder2hSent: true });
-          
-          console.log(`2h reminder sent for appointment ${doc.id}`);
-          return true;
+            const mailOptions = {
+              from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
+              to: appointment.userEmail,
+              subject: emailSubject,
+              html: emailHtml
+            };
+
+            // Send email and mark as sent
+            await transporter.sendMail(mailOptions);
+            await doc.ref.update({ reminder2hSent: true });
+            
+            console.log(`2h reminder sent for appointment ${doc.id}`);
+            return true;
+          } catch (error) {
+            console.error(`Error sending 2h reminder for appointment ${doc.id}:`, error);
+            return false;
+          }
         });
 
       await Promise.all(promises);

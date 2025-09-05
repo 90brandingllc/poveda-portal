@@ -16,6 +16,7 @@ import ManageUsers from '../Admin/ManageUsers';
 import ManageSlots from '../Admin/ManageSlots';
 import AdminProfile from '../Admin/AdminProfile';
 import Analytics from '../Admin/Analytics';
+import ManageEmailTemplates from '../Admin/ManageEmailTemplates';
 import AdminLayout from '../Admin/AdminLayout';
 
 // Protected Route Component for Admin Portal
@@ -161,6 +162,16 @@ const AdminRouter = () => {
           <AdminProtectedRoute>
             <AdminLayout>
               <Analytics />
+            </AdminLayout>
+          </AdminProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/templates" 
+        element={
+          <AdminProtectedRoute>
+            <AdminLayout>
+              <ManageEmailTemplates />
             </AdminLayout>
           </AdminProtectedRoute>
         } 

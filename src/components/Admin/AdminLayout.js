@@ -37,7 +37,8 @@ import {
   BusinessCenter,
   Schedule,
   Analytics,
-  PersonAdd
+  PersonAdd,
+  Email
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -100,6 +101,12 @@ const AdminLayout = ({ children }) => {
       icon: <Analytics />,
       path: '/admin/analytics',
       description: 'Website Analytics'
+    },
+    {
+      text: 'Email Templates',
+      icon: <Email />,
+      path: '/admin/templates',
+      description: 'Manage Email Templates'
     },
     {
       text: 'Profile',
