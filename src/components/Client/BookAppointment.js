@@ -14,7 +14,9 @@ import {
   Divider,
   Stack,
   Chip,
-  CircularProgress
+  CircularProgress,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -40,6 +42,8 @@ import ClientLayout from '../Layout/ClientLayout';
 const BookAppointment = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -394,25 +398,37 @@ const BookAppointment = () => {
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
                   {category.name}
                 </Typography>
-                <Grid container spacing={2}>
+                <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                   {category.services.map((service, index) => (
-                    <Grid item xs={12} md={4} key={index}>
+                    <Grid item xs={12} sm={6} md={4} key={index}>
                       <Card 
                         sx={{ 
                           cursor: 'pointer',
                           border: formData.servicePackage === service.name ? '2px solid #1976d2' : '1px solid #e0e0e0',
-                          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
+                          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+                          height: '100%',
+                          borderRadius: { xs: '12px', sm: '16px' }
                         }}
                         onClick={() => handleServiceSelect(key, service)}
                       >
-                        <CardContent>
-                          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                          <Typography variant="h6" gutterBottom sx={{ 
+                            fontWeight: 600,
+                            fontSize: { xs: '1rem', sm: '1.25rem' }
+                          }}>
                             {service.name}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ 
+                            mb: 2,
+                            fontSize: { xs: '0.875rem', sm: '0.875rem' },
+                            lineHeight: 1.4
+                          }}>
                             {service.description}
                           </Typography>
-                          <Typography variant="h5" color="primary" sx={{ fontWeight: 700 }}>
+                          <Typography variant="h5" color="primary" sx={{ 
+                            fontWeight: 700,
+                            fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                          }}>
                             ${service.price}
                           </Typography>
                         </CardContent>
@@ -446,21 +462,27 @@ const BookAppointment = () => {
                   </Button>
                 </Alert>
               ) : (
-                <Grid container spacing={2}>
+                <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                   {vehicles.map((vehicle) => (
                     <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
                       <Card 
                         sx={{ 
                           cursor: 'pointer',
                           border: formData.vehicleId === vehicle.id ? '2px solid #1976d2' : '1px solid #e0e0e0',
-                          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
+                          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+                          height: '100%',
+                          borderRadius: { xs: '12px', sm: '16px' }
                         }}
                         onClick={() => setFormData(prev => ({ ...prev, vehicleId: vehicle.id }))}
                       >
-                        <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <DirectionsCar sx={{ color: '#1976d2', mr: 1 }} />
-                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+                            <DirectionsCar sx={{ color: '#1976d2', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                            <Typography variant="h6" sx={{ 
+                              fontWeight: 600,
+                              fontSize: { xs: '0.9rem', sm: '1.25rem' },
+                              lineHeight: 1.2
+                            }}>
                               {vehicle.year} {vehicle.make} {vehicle.model}
                             </Typography>
                           </Box>
@@ -469,14 +491,23 @@ const BookAppointment = () => {
                             <Chip 
                               label={vehicle.nickname} 
                               size="small" 
-                              sx={{ mb: 1, backgroundColor: '#e3f2fd' }} 
+                              sx={{ 
+                                mb: 1, 
+                                backgroundColor: '#e3f2fd',
+                                fontSize: { xs: '0.75rem', sm: '0.8125rem' }
+                              }} 
                             />
                           )}
                           
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" sx={{ 
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                            mb: 0.5
+                          }}>
                             <strong>Color:</strong> {vehicle.color || 'Not specified'}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" sx={{ 
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                          }}>
                             <strong>License:</strong> {vehicle.licensePlate || 'Not specified'}
                           </Typography>
                         </CardContent>
@@ -492,7 +523,7 @@ const BookAppointment = () => {
       case 2:
         return (
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 2, sm: 3 }}>
               {/* Date Selection */}
               <Grid item xs={12} md={6}>
                 <DatePicker
@@ -506,7 +537,16 @@ const BookAppointment = () => {
                     return date.day() === 0 || date.day() === 6;
                   }}
                   renderInput={(params) => (
-                    <TextField {...params} fullWidth required />
+                    <TextField 
+                      {...params} 
+                      fullWidth 
+                      required 
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          fontSize: { xs: '0.875rem', sm: '1rem' }
+                        }
+                      }}
+                    />
                   )}
                 />
               </Grid>
@@ -530,7 +570,7 @@ const BookAppointment = () => {
                       No available slots for this date. Please select a different date.
                     </Alert>
                   ) : (
-                    <Grid container spacing={2}>
+                    <Grid container spacing={{ xs: 1, sm: 2 }}>
                       {availableSlots.map((slot, index) => (
                         <Grid item xs={6} sm={4} md={3} key={index}>
                           <Chip
@@ -542,10 +582,14 @@ const BookAppointment = () => {
                             icon={slot.available ? <Schedule /> : <Block />}
                             sx={{
                               width: '100%',
-                              height: 48,
-                              fontSize: '0.875rem',
+                              height: { xs: 40, sm: 48 },
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
                               cursor: slot.available ? 'pointer' : 'not-allowed',
                               opacity: slot.available ? 1 : 0.5,
+                              borderRadius: { xs: '8px', sm: '16px' },
+                              '& .MuiChip-icon': {
+                                fontSize: { xs: '1rem', sm: '1.25rem' }
+                              },
                               '&:hover': {
                                 backgroundColor: slot.available ? 'primary.light' : 'inherit'
                               }
@@ -570,7 +614,7 @@ const BookAppointment = () => {
 
       case 3:
         return (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -581,9 +625,14 @@ const BookAppointment = () => {
                   address: { ...formData.address, street: e.target.value }
                 })}
                 required
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={6} md={4}>
               <TextField
                 fullWidth
                 label="City"
@@ -593,9 +642,14 @@ const BookAppointment = () => {
                   address: { ...formData.address, city: e.target.value }
                 })}
                 required
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={6} md={4}>
               <TextField
                 fullWidth
                 label="State"
@@ -605,9 +659,14 @@ const BookAppointment = () => {
                   address: { ...formData.address, state: e.target.value }
                 })}
                 required
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={12} md={4}>
               <TextField
                 fullWidth
                 label="Zip Code"
@@ -617,17 +676,27 @@ const BookAppointment = () => {
                   address: { ...formData.address, zipCode: e.target.value }
                 })}
                 required
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth
                 multiline
-                rows={4}
+                rows={{ xs: 3, sm: 4 }}
                 label="Additional Notes"
                 placeholder="Any special instructions or requests..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -636,9 +705,18 @@ const BookAppointment = () => {
                   <Checkbox
                     checked={formData.emailReminders}
                     onChange={(e) => setFormData({ ...formData, emailReminders: e.target.checked })}
+                    sx={{
+                      '& .MuiSvgIcon-root': {
+                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                      }
+                    }}
                   />
                 }
-                label="Send me email reminders about this appointment"
+                label={
+                  <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                    Send me email reminders about this appointment
+                  </Typography>
+                }
               />
             </Grid>
           </Grid>
@@ -646,49 +724,83 @@ const BookAppointment = () => {
 
       case 4:
         return (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+              <Card sx={{ borderRadius: { xs: '12px', sm: '16px' } }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" gutterBottom sx={{ 
+                    fontWeight: 600,
+                    fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                  }}>
                     📋 Booking Summary
                   </Typography>
                   <Divider sx={{ my: 2 }} />
                   
                   <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body1">Service:</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                        Service:
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        textAlign: 'right',
+                        maxWidth: '60%'
+                      }}>
                         {formData.servicePackage}
                       </Typography>
                     </Box>
                     
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body1">Vehicle:</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                        Vehicle:
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        textAlign: 'right',
+                        maxWidth: '60%'
+                      }}>
                         {vehicles.find(v => v.id === formData.vehicleId) ? 
                           `${vehicles.find(v => v.id === formData.vehicleId).year} ${vehicles.find(v => v.id === formData.vehicleId).make} ${vehicles.find(v => v.id === formData.vehicleId).model}` : 
                           'Not selected'}
                       </Typography>
                     </Box>
                     
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body1">Date:</Typography>
-                      <Typography variant="body1">
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                        Date:
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        textAlign: 'right'
+                      }}>
                         {formData.date?.format('MMMM DD, YYYY')}
                       </Typography>
                     </Box>
                     
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body1">Time:</Typography>
-                      <Typography variant="body1">
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                        Time:
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        textAlign: 'right'
+                      }}>
                         {formData.timeSlot || 'Not selected'}
                       </Typography>
                     </Box>
                     
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body1">Location:</Typography>
-                      <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                        Location:
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        textAlign: 'right',
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        maxWidth: '60%',
+                        lineHeight: 1.4
+                      }}>
                         {formData.address.street}<br />
                         {formData.address.city}, {formData.address.state} {formData.address.zipCode}
                       </Typography>
@@ -696,36 +808,56 @@ const BookAppointment = () => {
                     
                     <Divider />
                     
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body1">Total Service Price:</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                        Total Service Price:
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }}>
                         ${formData.estimatedPrice}
                       </Typography>
                     </Box>
                     
                     {/* Payment Structure Information */}
                     <Box sx={{ mt: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', mb: 2 }}>
+                      <Typography variant="h6" sx={{ 
+                        fontWeight: 600, 
+                        color: '#1976d2', 
+                        mb: 2,
+                        fontSize: { xs: '1rem', sm: '1.25rem' }
+                      }}>
                         💳 Payment Structure
                       </Typography>
                       
                       {/* Online Deposit */}
                       <Box sx={{ 
                         bgcolor: '#e3f2fd', 
-                        p: 2, 
-                        borderRadius: 1,
+                        p: { xs: 1.5, sm: 2 }, 
+                        borderRadius: { xs: '8px', sm: '12px' },
                         border: '1px solid #bbdefb',
                         mb: 2
                       }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                          <Typography variant="body1" sx={{ 
+                            fontWeight: 600, 
+                            color: '#1976d2',
+                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                          }}>
                             Step 1: Online Deposit (50%)
                           </Typography>
                         </Box>
-                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                        <Typography variant="h5" sx={{ 
+                          fontWeight: 'bold', 
+                          color: '#1976d2',
+                          fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                        }}>
                           ${formatCurrency(calculateDepositAmount(formData.estimatedPrice))}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                        }}>
                           Secure payment processed through Stripe
                         </Typography>
                       </Box>
@@ -733,19 +865,29 @@ const BookAppointment = () => {
                       {/* Remaining Payment */}
                       <Box sx={{ 
                         bgcolor: '#fff3e0', 
-                        p: 2, 
-                        borderRadius: 1,
+                        p: { xs: 1.5, sm: 2 }, 
+                        borderRadius: { xs: '8px', sm: '12px' },
                         border: '1px solid #ffcc02'
                       }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#f57c00' }}>
+                          <Typography variant="body1" sx={{ 
+                            fontWeight: 600, 
+                            color: '#f57c00',
+                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                          }}>
                             Step 2: Final Payment (50%)
                           </Typography>
                         </Box>
-                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
+                        <Typography variant="h5" sx={{ 
+                          fontWeight: 'bold', 
+                          color: '#f57c00',
+                          fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                        }}>
                           ${(formData.estimatedPrice - parseFloat(formatCurrency(calculateDepositAmount(formData.estimatedPrice)))).toFixed(2)}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                        }}>
                           Pay directly to our technician upon service completion
                         </Typography>
                       </Box>
@@ -907,15 +1049,22 @@ const BookAppointment = () => {
             Premium car care at your location
           </Typography>
 
-          {/* Modern Progress Steps */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+          {/* Modern Progress Steps - Mobile Responsive */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            gap: { xs: 1, sm: 2 },
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
+            px: { xs: 1, sm: 0 }
+          }}>
             {steps.map((label, index) => (
               <Box key={label} sx={{ display: 'flex', alignItems: 'center' }}>
                 <Box 
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '12px',
+                    width: { xs: 32, sm: 40 },
+                    height: { xs: 32, sm: 40 },
+                    borderRadius: { xs: '8px', sm: '12px' },
                     background: index <= activeStep 
                       ? 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)'
                       : 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
@@ -924,7 +1073,7 @@ const BookAppointment = () => {
                     justifyContent: 'center',
                     fontWeight: 600,
                     color: index <= activeStep ? '#1e293b' : '#94a3b8',
-                    fontSize: '0.875rem',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
                     transition: 'all 0.3s',
                     boxShadow: index <= activeStep ? '0 4px 12px rgba(234, 179, 8, 0.3)' : 'none'
                   }}
@@ -934,12 +1083,12 @@ const BookAppointment = () => {
                 {index < steps.length - 1 && (
                   <Box 
                     sx={{
-                      width: { xs: 24, md: 48 },
+                      width: { xs: 16, sm: 24, md: 48 },
                       height: 2,
                       background: index < activeStep 
                         ? 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)'
                         : '#e2e8f0',
-                      mx: 1,
+                      mx: { xs: 0.5, sm: 1 },
                       borderRadius: 1
                     }}
                   />
@@ -948,7 +1097,13 @@ const BookAppointment = () => {
             ))}
           </Box>
           
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, mt: 2 }}>
+          {/* Step Labels - Hidden on mobile for space */}
+          <Box sx={{ 
+            display: { xs: 'none', sm: 'flex' }, 
+            justifyContent: 'center', 
+            gap: 4, 
+            mt: 2 
+          }}>
             {steps.map((label, index) => (
               <Typography 
                 key={label}
@@ -962,6 +1117,20 @@ const BookAppointment = () => {
                 {label}
               </Typography>
             ))}
+          </Box>
+          
+          {/* Current Step Label - Visible on mobile */}
+          <Box sx={{ display: { xs: 'block', sm: 'none' }, textAlign: 'center', mt: 2 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: '#1e293b',
+                fontWeight: 600,
+                fontSize: '0.875rem'
+              }}
+            >
+              Step {activeStep + 1}: {steps[activeStep]}
+            </Typography>
           </Box>
         </Box>
 
@@ -988,10 +1157,22 @@ const BookAppointment = () => {
 
         {renderStepContent(activeStep)}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          mt: 4,
+          gap: { xs: 2, sm: 0 },
+          flexDirection: { xs: 'column', sm: 'row' }
+        }}>
           <Button
             onClick={handleBack}
             variant="outlined"
+            size={window.innerWidth < 600 ? 'medium' : 'large'}
+            sx={{
+              order: { xs: 2, sm: 1 },
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              py: { xs: 1, sm: 1.5 }
+            }}
           >
             {activeStep === 0 ? 'Back to Dashboard' : 'Back'}
           </Button>
@@ -1001,10 +1182,13 @@ const BookAppointment = () => {
               <Button
                 variant="contained"
                 disabled={true}
-                size="large"
+                size={window.innerWidth < 600 ? 'medium' : 'large'}
                 sx={{
                   background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
-                  opacity: 0.8
+                  opacity: 0.8,
+                  order: { xs: 1, sm: 2 },
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  py: { xs: 1, sm: 1.5 }
                 }}
               >
                 {loading ? '🔄 Booking Appointment...' : '✅ Appointment Booked!'}
@@ -1013,11 +1197,14 @@ const BookAppointment = () => {
               <Button
                 variant="outlined"
                 disabled={true}
-                size="large"
+                size={window.innerWidth < 600 ? 'medium' : 'large'}
                 sx={{
                   borderColor: '#1565c0',
                   color: '#1565c0',
-                  opacity: 0.6
+                  opacity: 0.6,
+                  order: { xs: 1, sm: 2 },
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  py: { xs: 1, sm: 1.5 }
                 }}
               >
                 💳 Complete Payment to Book
@@ -1027,6 +1214,7 @@ const BookAppointment = () => {
             <Button
               variant="contained"
               onClick={handleNext}
+              size={window.innerWidth < 600 ? 'medium' : 'large'}
               disabled={
                 (activeStep === 0 && !formData.servicePackage) ||
                 (activeStep === 1 && !formData.vehicleId) ||
@@ -1037,7 +1225,10 @@ const BookAppointment = () => {
                 background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
                 '&:hover': {
                   background: 'linear-gradient(135deg, #0d47a1 0%, #01579b 100%)'
-                }
+                },
+                order: { xs: 1, sm: 2 },
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+                py: { xs: 1, sm: 1.5 }
               }}
             >
               Next

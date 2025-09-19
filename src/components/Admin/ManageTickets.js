@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Typography,
   Paper,
   Table,
@@ -26,7 +25,10 @@ import {
   Tabs,
   Tab,
   Divider,
-  Avatar
+  Avatar,
+  useMediaQuery,
+  useTheme,
+  Stack
 } from '@mui/material';
 import {
   Visibility,
@@ -59,6 +61,10 @@ import { useNavigate } from 'react-router-dom';
 
 const ManageTickets = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const [tickets, setTickets] = useState([]);
   const [, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -261,77 +267,157 @@ const ManageTickets = () => {
   const filteredTickets = getFilteredTickets();
 
   return (
-    <Box>
+    <Box sx={{ px: isMobile ? 1 : 0 }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <IconButton 
-            onClick={() => navigate('/admin/dashboard')}
-            sx={{ 
-              mr: 2,
-              bgcolor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                bgcolor: 'primary.dark',
-              }
-            }}
-          >
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', mb: 0 }}>
-            Manage Support Tickets
-          </Typography>
+        {/* Header - Mobile Responsive */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          mb: isMobile ? 2 : 4,
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 1 : 0
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
+            <IconButton 
+              onClick={() => navigate('/admin/dashboard')}
+              sx={{ 
+                mr: 2,
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                }
+              }}
+            >
+              <ArrowBack />
+            </IconButton>
+            <Typography 
+              variant={isMobile ? "h5" : "h3"} 
+              gutterBottom 
+              sx={{ 
+                fontWeight: 'bold', 
+                mb: 0,
+                fontSize: isMobile ? '1.5rem' : '3rem'
+              }}
+            >
+              {isMobile ? '🎫 Support Tickets' : 'Manage Support Tickets'}
+            </Typography>
+          </Box>
         </Box>
 
-        {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+        {/* Stats Cards - Mobile Responsive */}
+        <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mb: isMobile ? 2 : 4 }}>
+          <Grid item xs={6} sm={6} md={3}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#1976d2',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {counts.all}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Tickets
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
+                  {isSmallMobile ? 'Total' : 'Total Tickets'}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#ed6c02' }}>
+          <Grid item xs={6} sm={6} md={3}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#ed6c02',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {counts.open}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Open Tickets
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
+                  {isSmallMobile ? 'Open' : 'Open Tickets'}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+          <Grid item xs={6} sm={6} md={3}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#1976d2',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {counts.inProgress}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  In Progress
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
+                  {isSmallMobile ? 'Progress' : 'In Progress'}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
+          <Grid item xs={6} sm={6} md={3}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#2e7d32',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {counts.resolved}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
                   Resolved
                 </Typography>
               </CardContent>
@@ -339,210 +425,494 @@ const ManageTickets = () => {
           </Grid>
         </Grid>
 
-        {/* Filter Tabs */}
-        <Paper sx={{ mb: 3 }}>
+        {/* Filter Tabs - Mobile Responsive */}
+        <Paper sx={{ mb: isMobile ? 2 : 3, overflow: 'hidden' }}>
           <Tabs 
             value={tabValue} 
             onChange={(e, newValue) => setTabValue(newValue)}
-            variant="fullWidth"
+            variant={isMobile ? "scrollable" : "fullWidth"}
+            scrollButtons={isMobile ? "auto" : false}
+            allowScrollButtonsMobile={isMobile}
+            sx={{
+              '& .MuiTab-root': {
+                fontSize: isSmallMobile ? '0.65rem' : isMobile ? '0.75rem' : '0.875rem',
+                minWidth: isSmallMobile ? 70 : isMobile ? 90 : 'auto',
+                padding: isSmallMobile ? '4px 6px' : isMobile ? '6px 8px' : '12px 16px',
+                minHeight: isSmallMobile ? 36 : 48
+              },
+              '& .MuiTabs-scrollButtons': {
+                '&.Mui-disabled': {
+                  opacity: 0.3
+                }
+              }
+            }}
           >
-            <Tab label={`All (${counts.all})`} />
-            <Tab label={`Open (${counts.open})`} />
-            <Tab label={`In Progress (${counts.inProgress})`} />
-            <Tab label={`Resolved (${counts.resolved})`} />
-            <Tab label={`Closed (${counts.closed})`} />
+            <Tab label={isSmallMobile ? `All (${counts.all})` : `All (${counts.all})`} />
+            <Tab label={isSmallMobile ? `Open (${counts.open})` : `Open (${counts.open})`} />
+            <Tab label={isSmallMobile ? `Prog (${counts.inProgress})` : isMobile ? `Progress (${counts.inProgress})` : `In Progress (${counts.inProgress})`} />
+            <Tab label={isSmallMobile ? `Done (${counts.resolved})` : `Resolved (${counts.resolved})`} />
+            <Tab label={isSmallMobile ? `Closed (${counts.closed})` : `Closed (${counts.closed})`} />
           </Tabs>
         </Paper>
 
-        {/* Tickets Table */}
+        {/* Tickets Display - Mobile Responsive */}
         <Paper>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Customer</TableCell>
-                  <TableCell>Subject</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Priority</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Created</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredTickets.map((ticket) => (
-                  <TableRow 
-                    key={ticket.id} 
-                    hover 
-                    onClick={() => handleRowClick(ticket)}
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
-                      }
-                    }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 32, height: 32, fontSize: '0.9rem' }}>
-                          {ticket.userName?.charAt(0)?.toUpperCase() || 'U'}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                            {ticket.userName || 'Unknown User'}
+          {isMobile ? (
+            // Mobile Card View
+            <Box sx={{ p: 2 }}>
+              {filteredTickets.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="h6" sx={{ color: '#666', mb: 1 }}>
+                    No tickets found
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#999' }}>
+                    {tabValue === 0 ? 'No support tickets have been created yet.' : 'No tickets match the selected filter.'}
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack spacing={2}>
+                  {filteredTickets.map((ticket) => (
+                    <Card 
+                      key={ticket.id} 
+                      variant="outlined" 
+                      sx={{ 
+                        border: '1px solid #e0e0e0',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                          borderColor: '#1976d2'
+                        }
+                      }}
+                      onClick={() => handleRowClick(ticket)}
+                    >
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                        {/* Customer Info */}
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
+                          <Avatar sx={{ 
+                            bgcolor: 'primary.main', 
+                            mr: isSmallMobile ? 1 : 1.5, 
+                            width: isSmallMobile ? 28 : 32, 
+                            height: isSmallMobile ? 28 : 32,
+                            fontSize: isSmallMobile ? '0.75rem' : '0.875rem'
+                          }}>
+                            {ticket.userName?.charAt(0)?.toUpperCase() || 'U'}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography 
+                              variant={isSmallMobile ? "body2" : "subtitle2"} 
+                              sx={{ 
+                                fontWeight: 'bold', 
+                                mb: 0.25,
+                                fontSize: isSmallMobile ? '0.8rem' : '0.875rem',
+                                lineHeight: 1.2
+                              }}
+                            >
+                              {ticket.userName || 'Unknown User'}
+                            </Typography>
+                            <Typography 
+                              variant="caption"
+                              color="text.secondary" 
+                              sx={{ 
+                                fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                                wordBreak: 'break-word',
+                                display: 'block'
+                              }}
+                            >
+                              {ticket.userEmail}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-end' }}>
+                            <Chip 
+                              label={ticket.status || 'open'} 
+                              size="small"
+                              sx={{
+                                bgcolor: getStatusColor(ticket.status),
+                                color: 'white',
+                                textTransform: 'capitalize',
+                                fontWeight: 'bold',
+                                fontSize: isSmallMobile ? '0.6rem' : '0.7rem',
+                                height: isSmallMobile ? 18 : 20
+                              }}
+                            />
+                            <Chip 
+                              label={ticket.priority || 'Medium'} 
+                              size="small"
+                              sx={{
+                                bgcolor: getPriorityColor(ticket.priority),
+                                color: 'white',
+                                textTransform: 'capitalize',
+                                fontWeight: 'bold',
+                                fontSize: isSmallMobile ? '0.6rem' : '0.7rem',
+                                height: isSmallMobile ? 18 : 20
+                              }}
+                            />
+                          </Box>
+                        </Box>
+
+                        <Divider sx={{ my: 1 }} />
+
+                        {/* Ticket Info */}
+                        <Box sx={{ mb: 1.5 }}>
+                          <Typography 
+                            variant={isSmallMobile ? "body2" : "subtitle2"} 
+                            sx={{ 
+                              fontWeight: 'bold', 
+                              mb: 0.5,
+                              fontSize: isSmallMobile ? '0.8rem' : '0.875rem'
+                            }}
+                          >
+                            {ticket.subject}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {ticket.userEmail}
+                          <Typography 
+                            variant="caption"
+                            color="text.secondary" 
+                            sx={{ 
+                              mb: 1,
+                              fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              lineHeight: 1.3
+                            }}
+                          >
+                            {ticket.message}
+                          </Typography>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 1
+                          }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              {getCategoryIcon(ticket.category)}
+                              <Typography 
+                                variant="caption"
+                                sx={{ 
+                                  textTransform: 'capitalize',
+                                  fontSize: isSmallMobile ? '0.65rem' : '0.75rem'
+                                }}
+                              >
+                                {ticket.category}
+                              </Typography>
+                            </Box>
+                            <Typography 
+                              variant="caption" 
+                              color="primary" 
+                              sx={{ fontSize: isSmallMobile ? '0.65rem' : '0.75rem' }}
+                            >
+                              💬 {ticket.messages?.length || 1} msg{(ticket.messages?.length || 1) !== 1 ? 's' : ''}
+                            </Typography>
+                          </Box>
+                          <Typography 
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ 
+                              fontSize: isSmallMobile ? '0.6rem' : '0.7rem',
+                              display: 'block',
+                              mt: 0.5
+                            }}
+                          >
+                            {ticket.lastUpdated?.toDate?.()?.toLocaleDateString() || ticket.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
                           </Typography>
                         </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                        {ticket.subject}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ 
-                        display: '-webkit-box',
-                        WebkitLineClamp: 1,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
-                        {ticket.message}
-                      </Typography>
-                      <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 0.5 }}>
-                        💬 {ticket.messages?.length || 1} message{(ticket.messages?.length || 1) !== 1 ? 's' : ''}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {getCategoryIcon(ticket.category)}
-                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                          {ticket.category}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={ticket.priority || 'Medium'} 
-                        size="small"
-                        sx={{
-                          bgcolor: getPriorityColor(ticket.priority),
-                          color: 'white',
-                          textTransform: 'capitalize',
-                          fontWeight: 'bold'
+
+                        {/* Action Buttons */}
+                        <Box sx={{ 
+                          display: 'flex', 
+                          gap: isSmallMobile ? 0.5 : 1, 
+                          justifyContent: 'flex-end', 
+                          flexWrap: 'wrap',
+                          mt: 1
                         }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={ticket.status || 'open'} 
-                        size="small"
-                        sx={{
-                          bgcolor: getStatusColor(ticket.status),
-                          color: 'white',
-                          textTransform: 'capitalize',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {ticket.lastUpdated?.toDate?.()?.toLocaleDateString() || ticket.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Last: {ticket.lastUpdated?.toDate?.()?.toLocaleTimeString() || ticket.createdAt?.toDate?.()?.toLocaleTimeString() || ''}
-                      </Typography>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewDetails(ticket);
-                          }}
-                          color="primary"
-                          size="small"
-                          title="View Details"
+                        onClick={(e) => e.stopPropagation()}
                         >
-                          <Visibility />
-                        </IconButton>
-                        {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
-                          <IconButton
+                          <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleReply(ticket);
+                              handleViewDetails(ticket);
                             }}
-                            color="secondary"
+                            variant="outlined"
                             size="small"
-                            title="Reply"
-                          >
-                            <Reply />
-                          </IconButton>
-                        )}
-                        {ticket.status === 'open' && (
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusChange(ticket.id, 'in-progress');
+                            startIcon={!isSmallMobile && <Visibility />}
+                            sx={{
+                              fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                              minWidth: isSmallMobile ? 45 : 'auto',
+                              px: isSmallMobile ? 1 : 1.5,
+                              py: isSmallMobile ? 0.25 : 0.5
                             }}
-                            sx={{ color: '#1976d2' }}
-                            size="small"
-                            title="Mark In Progress"
                           >
-                            <Schedule />
-                          </IconButton>
-                        )}
-                        {ticket.status !== 'resolved' && (
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusChange(ticket.id, 'resolved');
-                            }}
-                            sx={{ color: '#2e7d32' }}
-                            size="small"
-                            title="Mark Resolved"
-                          >
-                            <CheckCircle />
-                          </IconButton>
-                        )}
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(ticket);
-                          }}
-                          sx={{ color: '#d32f2f' }}
-                          size="small"
-                          title="Delete Ticket"
-                        >
-                          <Delete />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredTickets.length === 0 && (
+                            View
+                          </Button>
+                          {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReply(ticket);
+                              }}
+                              variant="contained"
+                              size="small"
+                              sx={{ 
+                                bgcolor: '#9c27b0', 
+                                '&:hover': { bgcolor: '#7b1fa2' },
+                                fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                                minWidth: isSmallMobile ? 50 : 'auto',
+                                px: isSmallMobile ? 1 : 1.5,
+                                py: isSmallMobile ? 0.25 : 0.5
+                              }}
+                              startIcon={!isSmallMobile && <Reply />}
+                            >
+                              Reply
+                            </Button>
+                          )}
+                          {ticket.status === 'open' && (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(ticket.id, 'in-progress');
+                              }}
+                              variant="contained"
+                              size="small"
+                              sx={{ 
+                                bgcolor: '#1976d2', 
+                                '&:hover': { bgcolor: '#1565c0' },
+                                fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                                minWidth: isSmallMobile ? 50 : 'auto',
+                                px: isSmallMobile ? 1 : 1.5,
+                                py: isSmallMobile ? 0.25 : 0.5
+                              }}
+                              startIcon={!isSmallMobile && <Schedule />}
+                            >
+                              {isSmallMobile ? 'Start' : 'Progress'}
+                            </Button>
+                          )}
+                          {ticket.status !== 'resolved' && (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(ticket.id, 'resolved');
+                              }}
+                              variant="contained"
+                              size="small"
+                              sx={{ 
+                                bgcolor: '#2e7d32', 
+                                '&:hover': { bgcolor: '#1b5e20' },
+                                fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                                minWidth: isSmallMobile ? 55 : 'auto',
+                                px: isSmallMobile ? 1 : 1.5,
+                                py: isSmallMobile ? 0.25 : 0.5
+                              }}
+                              startIcon={!isSmallMobile && <CheckCircle />}
+                            >
+                              {isSmallMobile ? 'Done' : 'Resolve'}
+                            </Button>
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          ) : (
+            // Desktop Table View
+            <TableContainer>
+              <Table>
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                      <Typography variant="h6" sx={{ color: '#666', mb: 1 }}>
-                        No tickets found
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#999' }}>
-                        {tabValue === 0 ? 'No support tickets have been created yet.' : 'No tickets match the selected filter.'}
-                      </Typography>
-                    </TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Subject</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>Priority</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Created</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {filteredTickets.map((ticket) => (
+                    <TableRow 
+                      key={ticket.id} 
+                      hover 
+                      onClick={() => handleRowClick(ticket)}
+                      sx={{ 
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                        }
+                      }}
+                    >
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar sx={{ width: 32, height: 32, fontSize: '0.9rem' }}>
+                            {ticket.userName?.charAt(0)?.toUpperCase() || 'U'}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                              {ticket.userName || 'Unknown User'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {ticket.userEmail}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          {ticket.subject}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ 
+                          display: '-webkit-box',
+                          WebkitLineClamp: 1,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}>
+                          {ticket.message}
+                        </Typography>
+                        <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 0.5 }}>
+                          💬 {ticket.messages?.length || 1} message{(ticket.messages?.length || 1) !== 1 ? 's' : ''}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {getCategoryIcon(ticket.category)}
+                          <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                            {ticket.category}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={ticket.priority || 'Medium'} 
+                          size="small"
+                          sx={{
+                            bgcolor: getPriorityColor(ticket.priority),
+                            color: 'white',
+                            textTransform: 'capitalize',
+                            fontWeight: 'bold'
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={ticket.status || 'open'} 
+                          size="small"
+                          sx={{
+                            bgcolor: getStatusColor(ticket.status),
+                            color: 'white',
+                            textTransform: 'capitalize',
+                            fontWeight: 'bold'
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {ticket.lastUpdated?.toDate?.()?.toLocaleDateString() || ticket.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Last: {ticket.lastUpdated?.toDate?.()?.toLocaleTimeString() || ticket.createdAt?.toDate?.()?.toLocaleTimeString() || ''}
+                        </Typography>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewDetails(ticket);
+                            }}
+                            color="primary"
+                            size="small"
+                            title="View Details"
+                          >
+                            <Visibility />
+                          </IconButton>
+                          {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReply(ticket);
+                              }}
+                              color="secondary"
+                              size="small"
+                              title="Reply"
+                            >
+                              <Reply />
+                            </IconButton>
+                          )}
+                          {ticket.status === 'open' && (
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(ticket.id, 'in-progress');
+                              }}
+                              sx={{ color: '#1976d2' }}
+                              size="small"
+                              title="Mark In Progress"
+                            >
+                              <Schedule />
+                            </IconButton>
+                          )}
+                          {ticket.status !== 'resolved' && (
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(ticket.id, 'resolved');
+                              }}
+                              sx={{ color: '#2e7d32' }}
+                              size="small"
+                              title="Mark Resolved"
+                            >
+                              <CheckCircle />
+                            </IconButton>
+                          )}
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(ticket);
+                            }}
+                            sx={{ color: '#d32f2f' }}
+                            size="small"
+                            title="Delete Ticket"
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredTickets.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        <Typography variant="h6" sx={{ color: '#666', mb: 1 }}>
+                          No tickets found
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#999' }}>
+                          {tabValue === 0 ? 'No support tickets have been created yet.' : 'No tickets match the selected filter.'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </Paper>
 
-        {/* Ticket Details Dialog */}
+        {/* Ticket Details Dialog - Mobile Responsive */}
         <Dialog 
           open={detailsDialogOpen} 
           onClose={() => setDetailsDialogOpen(false)} 
           maxWidth="md" 
           fullWidth
+          fullScreen={isMobile}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: isMobile ? 0 : '32px',
+              width: isMobile ? '100%' : 'auto',
+              maxHeight: isMobile ? '100%' : 'calc(100% - 64px)'
+            }
+          }}
         >
           <DialogTitle>
             Ticket Details - #{selectedTicket?.id?.slice(-8)}
@@ -725,12 +1095,20 @@ const ManageTickets = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Reply Dialog */}
+        {/* Reply Dialog - Mobile Responsive */}
         <Dialog 
           open={replyDialogOpen} 
           onClose={() => setReplyDialogOpen(false)} 
           maxWidth="sm" 
           fullWidth
+          fullScreen={isMobile}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: isMobile ? 0 : '32px',
+              width: isMobile ? '100%' : 'auto',
+              maxHeight: isMobile ? '100%' : 'calc(100% - 64px)'
+            }
+          }}
         >
           <DialogTitle>
             Reply to Ticket - {selectedTicket?.subject}

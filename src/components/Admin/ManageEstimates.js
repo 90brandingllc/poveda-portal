@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Typography,
   Paper,
   Table,
@@ -30,7 +29,10 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  useMediaQuery,
+  useTheme,
+  Stack
 } from '@mui/material';
 import {
   Visibility,
@@ -65,6 +67,10 @@ const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 
 const ManageEstimates = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const [estimates, setEstimates] = useState([]);
   const [selectedEstimate, setSelectedEstimate] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -290,89 +296,185 @@ const ManageEstimates = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ px: isMobile ? 1 : 0 }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <IconButton 
-            onClick={() => navigate('/admin/dashboard')}
-            sx={{ 
-              mr: 2,
-              bgcolor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                bgcolor: 'primary.dark',
-              }
-            }}
-          >
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', mb: 0 }}>
-            💰 Manage Estimates
-          </Typography>
+        {/* Header - Mobile Responsive */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          mb: isMobile ? 2 : 4,
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 1 : 0
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
+            <IconButton 
+              onClick={() => navigate('/admin/dashboard')}
+              sx={{ 
+                mr: 2,
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                }
+              }}
+            >
+              <ArrowBack />
+            </IconButton>
+            <Typography 
+              variant={isMobile ? "h5" : "h3"} 
+              gutterBottom 
+              sx={{ 
+                fontWeight: 'bold', 
+                mb: 0,
+                fontSize: isMobile ? '1.5rem' : '3rem'
+              }}
+            >
+              {isMobile ? '💰 Estimates' : '💰 Manage Estimates'}
+            </Typography>
+          </Box>
         </Box>
 
-        {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+        {/* Stats Cards - Mobile Responsive */}
+        <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mb: isMobile ? 2 : 4 }}>
+          <Grid item xs={6} sm={4} md={2.4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#1976d2',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {stats.total}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Estimates
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
+                  {isSmallMobile ? 'Total' : 'Total Estimates'}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#ed6c02' }}>
+          <Grid item xs={6} sm={4} md={2.4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#ed6c02',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {stats.pending}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Pending Review
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
+                  {isSmallMobile ? 'Pending' : 'Pending Review'}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+          <Grid item xs={6} sm={4} md={2.4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#1976d2',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {stats.inProgress}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  In Progress
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
+                  {isSmallMobile ? 'Progress' : 'In Progress'}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
+          <Grid item xs={6} sm={4} md={2.4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#2e7d32',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {stats.quoted}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
                   Quoted
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#9c27b0' }}>
+          <Grid item xs={8} sm={4} md={2.4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ 
+                textAlign: 'center', 
+                py: isMobile ? 1 : 2,
+                px: isMobile ? 1 : 2,
+                '&:last-child': { pb: isMobile ? 1 : 2 }
+              }}>
+                <Typography 
+                  variant={isSmallMobile ? "h6" : isMobile ? "h5" : "h4"} 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#9c27b0',
+                    fontSize: isSmallMobile ? '1.25rem' : isMobile ? '1.5rem' : '2.125rem'
+                  }}
+                >
                   {stats.completed}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant={isSmallMobile ? "caption" : isMobile ? "body2" : "body2"} 
+                  color="text.secondary"
+                  sx={{ fontSize: isSmallMobile ? '0.7rem' : 'inherit' }}
+                >
                   Completed
                 </Typography>
               </CardContent>
@@ -380,136 +482,364 @@ const ManageEstimates = () => {
           </Grid>
         </Grid>
 
-        {/* Filter Tabs */}
-        <Paper sx={{ mb: 3 }}>
+        {/* Filter Tabs - Mobile Responsive */}
+        <Paper sx={{ mb: isMobile ? 2 : 3, overflow: 'hidden' }}>
           <Tabs 
             value={tabValue} 
             onChange={(e, newValue) => setTabValue(newValue)}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+            variant={isMobile ? "scrollable" : "fullWidth"}
+            scrollButtons={isMobile ? "auto" : false}
+            allowScrollButtonsMobile={isMobile}
+            sx={{
+              borderBottom: 1, 
+              borderColor: 'divider',
+              '& .MuiTab-root': {
+                fontSize: isSmallMobile ? '0.65rem' : isMobile ? '0.75rem' : '0.875rem',
+                minWidth: isSmallMobile ? 70 : isMobile ? 90 : 'auto',
+                padding: isSmallMobile ? '4px 6px' : isMobile ? '6px 8px' : '12px 16px',
+                minHeight: isSmallMobile ? 36 : 48
+              },
+              '& .MuiTabs-scrollButtons': {
+                '&.Mui-disabled': {
+                  opacity: 0.3
+                }
+              }
+            }}
           >
-            <Tab label={`All (${stats.total})`} />
-            <Tab label={`Pending (${stats.pending})`} />
-            <Tab label={`In Progress (${stats.inProgress})`} />
-            <Tab label={`Quoted (${stats.quoted})`} />
-            <Tab label={`Completed (${stats.completed})`} />
+            <Tab label={isSmallMobile ? `All (${stats.total})` : `All (${stats.total})`} />
+            <Tab label={isSmallMobile ? `Pend (${stats.pending})` : isMobile ? `Pending (${stats.pending})` : `Pending (${stats.pending})`} />
+            <Tab label={isSmallMobile ? `Prog (${stats.inProgress})` : isMobile ? `Progress (${stats.inProgress})` : `In Progress (${stats.inProgress})`} />
+            <Tab label={isSmallMobile ? `Quote (${stats.quoted})` : `Quoted (${stats.quoted})`} />
+            <Tab label={isSmallMobile ? `Done (${stats.completed})` : `Completed (${stats.completed})`} />
           </Tabs>
         </Paper>
 
-        {/* Estimates Table */}
+        {/* Estimates Display - Mobile Responsive */}
         <Paper>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Client & Project</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Budget/Quote</TableCell>
-                  <TableCell>Timeline</TableCell>
-                  <TableCell>Last Updated</TableCell>
-                  <TableCell>Messages</TableCell>
-                  <TableCell align="center">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {getFilteredEstimates().map((estimate) => (
-                  <TableRow key={estimate.id} hover>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                          {estimate.subject || estimate.projectTitle}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {estimate.userName} • {estimate.userEmail}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={`${getStatusIcon(estimate.status)} ${estimate.status}`}
-                        size="small"
-                        sx={{
-                          bgcolor: getStatusColor(estimate.status),
-                          color: 'white',
-                          textTransform: 'capitalize'
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {estimate.quotedPrice ? (
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'green' }}>
-                          ${estimate.quotedPrice}
-                        </Typography>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Not quoted yet
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        On request
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {estimate.lastUpdated ? 
-                          new Date(estimate.lastUpdated.seconds ? estimate.lastUpdated.seconds * 1000 : estimate.lastUpdated).toLocaleDateString() : 
-                          'Recently'
+          {isMobile ? (
+            // Mobile Card View
+            <Box sx={{ p: 2 }}>
+              {getFilteredEstimates().length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="h6" sx={{ color: '#666', mb: 1 }}>
+                    No estimates found
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#999' }}>
+                    {tabValue === 0 ? 'No estimates have been submitted yet.' : 'No estimates match the current filter.'}
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack spacing={2}>
+                  {getFilteredEstimates().map((estimate) => (
+                    <Card 
+                      key={estimate.id} 
+                      variant="outlined" 
+                      sx={{ 
+                        border: '1px solid #e0e0e0',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                          borderColor: '#1976d2'
                         }
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {estimate.messages?.length ? estimate.messages.length - 1 : 0} messages
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        color="primary"
-                        onClick={() => {
-                          setSelectedEstimate(estimate);
-                          setDetailsDialogOpen(true);
-                        }}
-                      >
-                        <Visibility />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          {getFilteredEstimates().length === 0 && (
-            <Box sx={{ p: 6, textAlign: 'center' }}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No estimates found
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {tabValue === 0 ? 'No estimates have been submitted yet.' : 'No estimates match the current filter.'}
-              </Typography>
+                      }}
+                      onClick={() => {
+                        setSelectedEstimate(estimate);
+                        setDetailsDialogOpen(true);
+                      }}
+                    >
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                        {/* Project & Client Info */}
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
+                          <Avatar sx={{ 
+                            bgcolor: 'primary.main', 
+                            mr: isSmallMobile ? 1 : 1.5, 
+                            width: isSmallMobile ? 28 : 32, 
+                            height: isSmallMobile ? 28 : 32,
+                            fontSize: isSmallMobile ? '0.75rem' : '0.875rem'
+                          }}>
+                            {estimate.userName?.charAt(0)?.toUpperCase() || 'U'}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography 
+                              variant={isSmallMobile ? "body2" : "subtitle1"} 
+                              sx={{ 
+                                fontWeight: 'bold', 
+                                mb: 0.25,
+                                fontSize: isSmallMobile ? '0.8rem' : '0.95rem',
+                                lineHeight: 1.2
+                              }}
+                            >
+                              {estimate.subject || estimate.projectTitle}
+                            </Typography>
+                            <Typography 
+                              variant="caption"
+                              color="text.secondary" 
+                              sx={{ 
+                                fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                                wordBreak: 'break-word',
+                                display: 'block'
+                              }}
+                            >
+                              {estimate.userName} • {estimate.userEmail}
+                            </Typography>
+                          </Box>
+                          <Chip 
+                            label={`${getStatusIcon(estimate.status)} ${estimate.status}`}
+                            size="small"
+                            sx={{
+                              bgcolor: getStatusColor(estimate.status),
+                              color: 'white',
+                              textTransform: 'capitalize',
+                              fontWeight: 'bold',
+                              fontSize: isSmallMobile ? '0.6rem' : '0.7rem',
+                              height: isSmallMobile ? 20 : 24,
+                              '& .MuiChip-label': {
+                                px: isSmallMobile ? 0.5 : 1
+                              }
+                            }}
+                          />
+                        </Box>
+
+                        <Divider sx={{ my: 1 }} />
+
+                        {/* Estimate Details */}
+                        <Box sx={{ mb: 1.5 }}>
+                          <Typography 
+                            variant="caption"
+                            color="text.secondary" 
+                            sx={{ 
+                              mb: 1,
+                              fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              lineHeight: 1.3
+                            }}
+                          >
+                            {estimate.description}
+                          </Typography>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            mb: 0.5
+                          }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {estimate.quotedPrice ? (
+                                <Typography 
+                                  variant={isSmallMobile ? "subtitle1" : "h6"} 
+                                  sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#2e7d32',
+                                    fontSize: isSmallMobile ? '0.9rem' : '1.1rem'
+                                  }}
+                                >
+                                  ${estimate.quotedPrice}
+                                </Typography>
+                              ) : (
+                                <Typography 
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontSize: isSmallMobile ? '0.65rem' : '0.75rem' }}
+                                >
+                                  Not quoted yet
+                                </Typography>
+                              )}
+                            </Box>
+                            <Typography 
+                              variant="caption" 
+                              color="primary" 
+                              sx={{ fontSize: isSmallMobile ? '0.65rem' : '0.75rem' }}
+                            >
+                              💬 {estimate.messages?.length ? estimate.messages.length - 1 : 0} msg{(estimate.messages?.length ? estimate.messages.length - 1 : 0) !== 1 ? 's' : ''}
+                            </Typography>
+                          </Box>
+                          <Typography 
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ 
+                              fontSize: isSmallMobile ? '0.6rem' : '0.7rem',
+                              display: 'block'
+                            }}
+                          >
+                            Updated: {estimate.lastUpdated ? 
+                              new Date(estimate.lastUpdated.seconds ? estimate.lastUpdated.seconds * 1000 : estimate.lastUpdated).toLocaleDateString() : 
+                              'Recently'
+                            }
+                          </Typography>
+                        </Box>
+
+                        {/* Action Button */}
+                        <Box sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'flex-end', 
+                          mt: 1
+                        }}>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={!isSmallMobile && <Visibility />}
+                            sx={{
+                              fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                              minWidth: isSmallMobile ? 60 : 'auto',
+                              px: isSmallMobile ? 1 : 1.5,
+                              py: isSmallMobile ? 0.25 : 0.5
+                            }}
+                          >
+                            {isSmallMobile ? 'View' : 'View Details'}
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
             </Box>
+          ) : (
+            // Desktop Table View
+            <>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Client & Project</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Budget/Quote</TableCell>
+                      <TableCell>Timeline</TableCell>
+                      <TableCell>Last Updated</TableCell>
+                      <TableCell>Messages</TableCell>
+                      <TableCell align="center">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {getFilteredEstimates().map((estimate) => (
+                      <TableRow key={estimate.id} hover>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                              {estimate.subject || estimate.projectTitle}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {estimate.userName} • {estimate.userEmail}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={`${getStatusIcon(estimate.status)} ${estimate.status}`}
+                            size="small"
+                            sx={{
+                              bgcolor: getStatusColor(estimate.status),
+                              color: 'white',
+                              textTransform: 'capitalize'
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {estimate.quotedPrice ? (
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'green' }}>
+                              ${estimate.quotedPrice}
+                            </Typography>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              Not quoted yet
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            On request
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {estimate.lastUpdated ? 
+                              new Date(estimate.lastUpdated.seconds ? estimate.lastUpdated.seconds * 1000 : estimate.lastUpdated).toLocaleDateString() : 
+                              'Recently'
+                            }
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {estimate.messages?.length ? estimate.messages.length - 1 : 0} messages
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <IconButton
+                            color="primary"
+                            onClick={() => {
+                              setSelectedEstimate(estimate);
+                              setDetailsDialogOpen(true);
+                            }}
+                          >
+                            <Visibility />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              
+              {getFilteredEstimates().length === 0 && (
+                <Box sx={{ p: 6, textAlign: 'center' }}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No estimates found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {tabValue === 0 ? 'No estimates have been submitted yet.' : 'No estimates match the current filter.'}
+                  </Typography>
+                </Box>
+              )}
+            </>
           )}
         </Paper>
       </motion.div>
 
-      {/* Estimate Details Dialog */}
+      {/* Estimate Details Dialog - Mobile Responsive */}
       <Dialog 
         open={detailsDialogOpen} 
         onClose={() => setDetailsDialogOpen(false)} 
         maxWidth="lg" 
         fullWidth
+        fullScreen={isMobile}
         sx={{
           '& .MuiDialog-paper': {
-            maxHeight: '90vh'
+            maxHeight: isMobile ? '100%' : '90vh',
+            margin: isMobile ? 0 : '32px',
+            width: isMobile ? '100%' : 'auto'
           }
         }}
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">{selectedEstimate?.subject || selectedEstimate?.projectTitle}</Typography>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <FormControl size="small" sx={{ minWidth: 120 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: isMobile ? 'flex-start' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 1 : 0
+          }}>
+            <Typography 
+              variant={isMobile ? "h6" : "h6"}
+              sx={{ 
+                fontSize: isMobile ? '1.1rem' : '1.25rem',
+                lineHeight: 1.2,
+                mb: isMobile ? 1 : 0
+              }}
+            >
+              {selectedEstimate?.subject || selectedEstimate?.projectTitle}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
+              <FormControl 
+                size={isMobile ? "small" : "small"} 
+                sx={{ 
+                  minWidth: isMobile ? 100 : 120,
+                  width: isMobile ? '100%' : 'auto'
+                }}
+              >
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={selectedEstimate?.status || ''}
@@ -531,9 +861,14 @@ const ManageEstimates = () => {
           </Box>
         </DialogTitle>
         
-        <DialogContent dividers sx={{ maxHeight: '70vh', overflow: 'auto' }}>
+        <DialogContent dividers sx={{ 
+          maxHeight: isMobile ? 'calc(100vh - 120px)' : '70vh', 
+          overflow: 'auto',
+          px: isMobile ? 1 : 3,
+          py: isMobile ? 1 : 2
+        }}>
           {selectedEstimate && (
-            <Grid container spacing={3}>
+            <Grid container spacing={isMobile ? 2 : 3}>
               {/* Project Details */}
               <Grid item xs={12} md={6}>
                 <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
@@ -726,7 +1061,7 @@ const ManageEstimates = () => {
                       Admin Reply
                     </Typography>
                     
-                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: 2 }}>
                       <Grid item xs={12} sm={6}>
                         <TextField
                           fullWidth
@@ -734,6 +1069,7 @@ const ManageEstimates = () => {
                           value={quotedPrice}
                           onChange={(e) => setQuotedPrice(e.target.value)}
                           placeholder="e.g., 1500"
+                          size={isMobile ? "small" : "medium"}
                           InputProps={{
                             startAdornment: <AttachMoney />
                           }}
@@ -746,6 +1082,7 @@ const ManageEstimates = () => {
                           value={adminNotes}
                           onChange={(e) => setAdminNotes(e.target.value)}
                           placeholder="Internal notes..."
+                          size={isMobile ? "small" : "medium"}
                         />
                       </Grid>
                     </Grid>
@@ -754,11 +1091,12 @@ const ManageEstimates = () => {
                       <TextField
                         fullWidth
                         multiline
-                        rows={4}
+                        rows={isMobile ? 3 : 4}
                         placeholder="Type your response to the client..."
                         value={replyMessage}
                         onChange={(e) => setReplyMessage(e.target.value)}
                         variant="outlined"
+                        size={isMobile ? "small" : "medium"}
                       />
                       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
                         <Button
@@ -766,18 +1104,25 @@ const ManageEstimates = () => {
                           onClick={() => improveTextWithAI(replyMessage)}
                           disabled={improvingText || !replyMessage.trim()}
                           startIcon={improvingText ? <CircularProgress size={16} /> : <AutoFixHigh />}
+                          sx={{ fontSize: isMobile ? '0.75rem' : 'inherit' }}
                         >
-                          {improvingText ? 'Enhancing...' : 'Enhance Text'}
+                          {improvingText ? 'Enhancing...' : isMobile ? 'Enhance' : 'Enhance Text'}
                         </Button>
                       </Box>
                     </Box>
                     
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: isMobile ? 1 : 2,
+                      flexDirection: isMobile ? 'column' : 'row'
+                    }}>
                       <Button
                         variant="contained"
                         onClick={handleSendReply}
                         disabled={replyLoading || !replyMessage.trim()}
                         startIcon={replyLoading ? <CircularProgress size={20} /> : <Send />}
+                        size={isMobile ? "small" : "medium"}
+                        sx={{ fontSize: isMobile ? '0.75rem' : 'inherit' }}
                       >
                         {replyLoading ? 'Sending...' : 'Send Reply'}
                       </Button>
@@ -787,6 +1132,8 @@ const ManageEstimates = () => {
                         onClick={() => handleStatusChange(selectedEstimate.id, 'quoted')}
                         disabled={!quotedPrice.trim()}
                         startIcon={<AttachMoney />}
+                        size={isMobile ? "small" : "medium"}
+                        sx={{ fontSize: isMobile ? '0.75rem' : 'inherit' }}
                       >
                         Quote Project
                       </Button>

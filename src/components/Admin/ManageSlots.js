@@ -27,7 +27,15 @@ import {
   ButtonGroup,
   Tooltip,
   Avatar,
-  MenuItem
+  MenuItem,
+  useMediaQuery,
+  useTheme,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Collapse
 } from '@mui/material';
 import {
   Schedule,
@@ -45,7 +53,12 @@ import {
   ViewModule,
   Person,
   Event,
-  Add
+  Add,
+  Menu as MenuIcon,
+  ExpandLess,
+  ExpandMore,
+  SwipeLeft,
+  SwipeRight
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -67,13 +80,17 @@ import { weatherService } from '../../services/weatherService';
 
 const ManageSlots = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const [currentWeek, setCurrentWeek] = useState(dayjs().startOf('week'));
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [appointments, setAppointments] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState('week'); // 'week' or 'day'
+  const [viewMode, setViewMode] = useState(isMobile ? 'day' : 'week'); // Default to day view on mobile
   const [deleteDialog, setDeleteDialog] = useState({ open: false, slot: null });
   const [newSlotDialog, setNewSlotDialog] = useState({ open: false, date: null, time: null });
   const [addAppointmentDialog, setAddAppointmentDialog] = useState({ 
@@ -91,6 +108,8 @@ const ManageSlots = () => {
   });
   const [weatherForecast, setWeatherForecast] = useState([]);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [expandedTimeSlot, setExpandedTimeSlot] = useState(null);
 
   // Service options for appointments
   const serviceOptions = [
@@ -352,7 +371,7 @@ const ManageSlots = () => {
     loadWeekData();
   }, [currentWeek]);
 
-  // Render calendar cell content
+  // Render calendar cell content with mobile optimization
   const renderCalendarCell = (date, timeSlot) => {
     const appointment = getAppointmentForSlot(date, timeSlot.label);
     const blockedSlot = getBlockedSlotForTime(date, timeSlot.label);
@@ -362,8 +381,8 @@ const ManageSlots = () => {
         <Box
           sx={{
             height: '100%',
-            minHeight: 60,
-            p: 1,
+            minHeight: isMobile ? 80 : 60,
+            p: isMobile ? 1.5 : 1,
             bgcolor: '#e3f2fd',
             border: '2px solid #2196f3',
             borderRadius: 1,
@@ -371,26 +390,40 @@ const ManageSlots = () => {
             '&:hover': { bgcolor: '#bbdefb' }
           }}
         >
-          <Typography variant="caption" sx={{ fontWeight: 600, color: '#1565c0' }}>
+          <Typography 
+            variant={isMobile ? "body2" : "caption"} 
+            sx={{ fontWeight: 600, color: '#1565c0', fontSize: isMobile ? '0.875rem' : '0.75rem' }}
+          >
             {appointment.userName}
           </Typography>
-          <Typography variant="caption" display="block" sx={{ color: '#1976d2' }}>
+          <Typography 
+            variant={isMobile ? "body2" : "caption"} 
+            display="block" 
+            sx={{ color: '#1976d2', fontSize: isMobile ? '0.8rem' : '0.7rem' }}
+          >
             {appointment.service}
           </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            mt: 0.5,
+            flexWrap: isMobile ? 'wrap' : 'nowrap',
+            gap: isMobile ? 0.5 : 0
+          }}>
             <Chip 
               label="Booked" 
-              size="small" 
+              size={isMobile ? "medium" : "small"} 
               sx={{ 
-                height: 16, 
-                fontSize: '0.65rem',
+                height: isMobile ? 20 : 16, 
+                fontSize: isMobile ? '0.75rem' : '0.65rem',
                 bgcolor: '#2196f3',
                 color: 'white'
               }} 
             />
             {(() => {
               const weather = getWeatherForDate(date);
-              if (weather) {
+              if (weather && !isMobile) {
                 return (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
                     <img 
@@ -405,7 +438,7 @@ const ManageSlots = () => {
                 );
               }
               return null;
-            })()}
+            })()} 
           </Box>
         </Box>
       );
@@ -416,8 +449,8 @@ const ManageSlots = () => {
         <Box
           sx={{
             height: '100%',
-            minHeight: 60,
-            p: 1,
+            minHeight: isMobile ? 80 : 60,
+            p: isMobile ? 1.5 : 1,
             bgcolor: '#fff3e0',
             border: '2px solid #ff9800',
             borderRadius: 1,
@@ -426,18 +459,25 @@ const ManageSlots = () => {
           }}
           onClick={() => unblockSlot(blockedSlot.id)}
         >
-          <Typography variant="caption" sx={{ fontWeight: 600, color: '#ef6c00' }}>
+          <Typography 
+            variant={isMobile ? "body2" : "caption"} 
+            sx={{ fontWeight: 600, color: '#ef6c00', fontSize: isMobile ? '0.875rem' : '0.75rem' }}
+          >
             Blocked
           </Typography>
-          <Typography variant="caption" display="block" sx={{ color: '#f57c00' }}>
+          <Typography 
+            variant={isMobile ? "body2" : "caption"} 
+            display="block" 
+            sx={{ color: '#f57c00', fontSize: isMobile ? '0.8rem' : '0.7rem' }}
+          >
             {blockedSlot.reason}
           </Typography>
           <Chip 
-            label="Click to unblock" 
-            size="small" 
+            label={isMobile ? "Tap to unblock" : "Click to unblock"} 
+            size={isMobile ? "medium" : "small"} 
             sx={{ 
-              height: 16, 
-              fontSize: '0.65rem',
+              height: isMobile ? 20 : 16, 
+              fontSize: isMobile ? '0.75rem' : '0.65rem',
               bgcolor: '#ff9800',
               color: 'white',
               mt: 0.5
@@ -447,51 +487,51 @@ const ManageSlots = () => {
       );
     }
 
-    // Available slot with options
+    // Available slot with options - mobile optimized
     return (
       <Box
         sx={{
           height: '100%',
-          minHeight: 60,
-          p: 1,
+          minHeight: isMobile ? 100 : 60,
+          p: isMobile ? 1.5 : 1,
           bgcolor: '#f1f8e9',
           border: '2px dashed #4caf50',
           borderRadius: 1,
           display: 'flex',
           flexDirection: 'column',
-          gap: 0.5
+          gap: isMobile ? 1 : 0.5
         }}
       >
         <Button
-          size="small"
+          size={isMobile ? "medium" : "small"}
           variant="contained"
           color="primary"
           startIcon={<Add />}
           onClick={() => openAddAppointmentDialog(date, timeSlot.label)}
           sx={{
-            fontSize: '0.7rem',
-            py: 0.5,
-            px: 1,
-            minHeight: 24,
+            fontSize: isMobile ? '0.8rem' : '0.7rem',
+            py: isMobile ? 0.75 : 0.5,
+            px: isMobile ? 1.5 : 1,
+            minHeight: isMobile ? 32 : 24,
             backgroundColor: '#2196f3',
             '&:hover': {
               backgroundColor: '#1976d2'
             }
           }}
         >
-          Add Appointment
+          {isMobile ? 'Add' : 'Add Appointment'}
         </Button>
         <Button
-          size="small"
+          size={isMobile ? "medium" : "small"}
           variant="outlined"
           color="warning"
           startIcon={<Block />}
           onClick={() => blockSlot(date, timeSlot.label)}
           sx={{
-            fontSize: '0.7rem',
-            py: 0.5,
-            px: 1,
-            minHeight: 24,
+            fontSize: isMobile ? '0.8rem' : '0.7rem',
+            py: isMobile ? 0.75 : 0.5,
+            px: isMobile ? 1.5 : 1,
+            minHeight: isMobile ? 32 : 24,
             borderColor: '#ff9800',
             color: '#ef6c00',
             '&:hover': {
@@ -500,17 +540,24 @@ const ManageSlots = () => {
             }
           }}
         >
-          Block Slot
+          {isMobile ? 'Block' : 'Block Slot'}
         </Button>
       </Box>
     );
   };
 
   return (
-    <Box>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <Box sx={{ px: isMobile ? 1 : 0 }}>
+      {/* Header - Mobile Responsive */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        mb: isMobile ? 2 : 4,
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? 2 : 0
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
           <IconButton 
             component={Link}
             to="/admin/dashboard"
@@ -525,24 +572,37 @@ const ManageSlots = () => {
           >
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 600 }}>
-            Appointment Calendar
+          <Typography 
+            variant={isMobile ? "h5" : "h4"} 
+            sx={{ 
+              fontWeight: 600,
+              fontSize: isMobile ? '1.5rem' : '2.125rem'
+            }}
+          >
+            {isMobile ? 'Calendar' : 'Appointment Calendar'}
           </Typography>
         </Box>
 
-        {/* View Controls */}
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <ButtonGroup variant="outlined">
+        {/* View Controls - Mobile Responsive */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          alignItems: 'center',
+          width: isMobile ? '100%' : 'auto',
+          justifyContent: isMobile ? 'center' : 'flex-end'
+        }}>
+          <ButtonGroup variant="outlined" size={isMobile ? "small" : "medium"}>
             <Button
               variant={viewMode === 'week' ? 'contained' : 'outlined'}
-              startIcon={<ViewWeek />}
+              startIcon={!isSmallMobile && <ViewWeek />}
               onClick={() => setViewMode('week')}
+              disabled={isMobile} // Disable week view on mobile for better UX
             >
               Week
             </Button>
             <Button
               variant={viewMode === 'day' ? 'contained' : 'outlined'}
-              startIcon={<ViewModule />}
+              startIcon={!isSmallMobile && <ViewModule />}
               onClick={() => setViewMode('day')}
             >
               Day
@@ -551,175 +611,354 @@ const ManageSlots = () => {
         </Box>
       </Box>
 
-      {/* Calendar Navigation */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton onClick={goToPreviousWeek} sx={{ bgcolor: '#f5f5f5' }}>
+      {/* Calendar Navigation - Mobile Responsive */}
+      <Paper sx={{ p: isMobile ? 2 : 3, mb: isMobile ? 2 : 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          mb: 3,
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 2 : 0
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
+            <IconButton 
+              onClick={goToPreviousWeek} 
+              sx={{ 
+                bgcolor: '#f5f5f5',
+                '&:hover': { bgcolor: '#e0e0e0' }
+              }}
+            >
               <ChevronLeft />
             </IconButton>
-            <Typography variant="h5" sx={{ fontWeight: 600, minWidth: 300, textAlign: 'center' }}>
-              {currentWeek.format('MMMM YYYY')}
+            <Typography 
+              variant={isMobile ? "h6" : "h5"} 
+              sx={{ 
+                fontWeight: 600, 
+                minWidth: isMobile ? 200 : 300, 
+                textAlign: 'center',
+                fontSize: isMobile ? '1.25rem' : '1.5rem'
+              }}
+            >
+              {isMobile ? currentWeek.format('MMM YYYY') : currentWeek.format('MMMM YYYY')}
             </Typography>
-            <IconButton onClick={goToNextWeek} sx={{ bgcolor: '#f5f5f5' }}>
+            <IconButton 
+              onClick={goToNextWeek} 
+              sx={{ 
+                bgcolor: '#f5f5f5',
+                '&:hover': { bgcolor: '#e0e0e0' }
+              }}
+            >
               <ChevronRight />
             </IconButton>
           </Box>
           
           <Button
             variant="outlined"
-            startIcon={<Today />}
+            startIcon={!isSmallMobile && <Today />}
             onClick={goToToday}
-            sx={{ ml: 2 }}
+            size={isMobile ? "small" : "medium"}
+            sx={{ ml: isMobile ? 0 : 2 }}
           >
             Today
           </Button>
         </Box>
 
-        {/* Legend */}
-        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {/* Legend - Mobile Responsive */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: isMobile ? 1.5 : 3, 
+          flexWrap: 'wrap', 
+          justifyContent: 'center',
+          flexDirection: isMobile ? 'column' : 'row'
+        }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ width: 16, height: 16, bgcolor: '#e3f2fd', border: '2px solid #2196f3', borderRadius: 0.5 }} />
-            <Typography variant="body2">Booked Appointment</Typography>
+            <Typography variant={isMobile ? "caption" : "body2"}>Booked Appointment</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ width: 16, height: 16, bgcolor: '#fff3e0', border: '2px solid #ff9800', borderRadius: 0.5 }} />
-            <Typography variant="body2">Blocked Slot</Typography>
+            <Typography variant={isMobile ? "caption" : "body2"}>Blocked Slot</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ width: 16, height: 16, bgcolor: '#f1f8e9', border: '2px dashed #4caf50', borderRadius: 0.5 }} />
-            <Typography variant="body2">Available Slot</Typography>
+            <Typography variant={isMobile ? "caption" : "body2"}>Available Slot</Typography>
           </Box>
         </Box>
       </Paper>
 
-      {/* Business Hours Info */}
-      <Alert severity="info" sx={{ mb: 4 }}>
-        <Typography variant="body2">
-          <strong>Business Hours:</strong> Monday - Friday, 9:00 AM - 5:00 PM (1-hour slots) • 
-          <strong> Weekend Policy:</strong> Closed on Saturdays and Sundays
+      {/* Business Hours Info - Mobile Responsive */}
+      <Alert severity="info" sx={{ mb: isMobile ? 2 : 4 }}>
+        <Typography variant={isMobile ? "caption" : "body2"}>
+          <strong>Business Hours:</strong> Mon-Fri, 9AM-5PM (1hr slots)
+          {!isMobile && ' • '}
+          {isMobile && <br />}
+          <strong>Weekend Policy:</strong> Closed Sat & Sun
         </Typography>
       </Alert>
 
-      {/* Calendar Grid */}
+      {/* Calendar Grid - Mobile Responsive */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress size={60} />
         </Box>
       ) : (
         <Paper sx={{ overflow: 'hidden' }}>
-          <TableContainer sx={{ maxHeight: 600 }}>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell 
-                    sx={{ 
-                      bgcolor: '#f5f5f5', 
-                      fontWeight: 600,
-                      width: 120,
-                      borderRight: '1px solid #e0e0e0'
-                    }}
-                  >
-                    Time
-                  </TableCell>
-                  {getWeekDays().map((day) => (
+          {isMobile ? (
+            // Mobile Day View - Vertical Layout
+            <Box sx={{ p: 2 }}>
+              {/* Day Selector for Mobile */}
+              <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <IconButton 
+                  onClick={() => setSelectedDate(selectedDate.subtract(1, 'day'))}
+                  sx={{ bgcolor: '#f5f5f5' }}
+                >
+                  <SwipeLeft />
+                </IconButton>
+                <Box sx={{ textAlign: 'center', flex: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {selectedDate.format('dddd')}
+                  </Typography>
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 700,
+                    color: selectedDate.isSame(dayjs(), 'day') ? 'primary.main' : 'inherit'
+                  }}>
+                    {selectedDate.format('MMMM D, YYYY')}
+                  </Typography>
+                  {(() => {
+                    const weather = getWeatherForDate(selectedDate);
+                    if (weather) {
+                      return (
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          mt: 1,
+                          gap: 1
+                        }}>
+                          <img 
+                            src={weatherService.getIconUrl(weather.icon)} 
+                            alt={weather.description}
+                            style={{ width: 24, height: 24 }}
+                          />
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                            {weather.temperature}°C - {weather.description}
+                          </Typography>
+                        </Box>
+                      );
+                    }
+                    return null;
+                  })()} 
+                </Box>
+                <IconButton 
+                  onClick={() => setSelectedDate(selectedDate.add(1, 'day'))}
+                  sx={{ bgcolor: '#f5f5f5' }}
+                >
+                  <SwipeRight />
+                </IconButton>
+              </Box>
+
+              {/* Time Slots for Selected Day */}
+              <Stack spacing={2}>
+                {generateTimeSlots().map((timeSlot) => {
+                  // Skip weekends
+                  if (selectedDate.day() === 0 || selectedDate.day() === 6) {
+                    return (
+                      <Alert key={timeSlot.hour} severity="info">
+                        <Typography>Closed on weekends</Typography>
+                      </Alert>
+                    );
+                  }
+
+                  return (
+                    <Card key={timeSlot.hour} sx={{ border: '1px solid #e0e0e0' }}>
+                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                            {timeSlot.label}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            onClick={() => setExpandedTimeSlot(
+                              expandedTimeSlot === timeSlot.hour ? null : timeSlot.hour
+                            )}
+                          >
+                            {expandedTimeSlot === timeSlot.hour ? <ExpandLess /> : <ExpandMore />}
+                          </IconButton>
+                        </Box>
+                        
+                        <Collapse in={expandedTimeSlot === timeSlot.hour} timeout="auto" unmountOnExit>
+                          {renderCalendarCell(selectedDate, timeSlot)}
+                        </Collapse>
+                        
+                        {expandedTimeSlot !== timeSlot.hour && (
+                          <Box>
+                            {(() => {
+                              const appointment = getAppointmentForSlot(selectedDate, timeSlot.label);
+                              const blockedSlot = getBlockedSlotForTime(selectedDate, timeSlot.label);
+                              
+                              if (appointment) {
+                                return (
+                                  <Chip 
+                                    label={`Booked - ${appointment.userName}`} 
+                                    color="primary" 
+                                    variant="filled"
+                                    sx={{ width: '100%' }}
+                                  />
+                                );
+                              }
+                              
+                              if (blockedSlot) {
+                                return (
+                                  <Chip 
+                                    label="Blocked Slot" 
+                                    color="warning" 
+                                    variant="filled"
+                                    sx={{ width: '100%' }}
+                                  />
+                                );
+                              }
+                              
+                              return (
+                                <Chip 
+                                  label="Available" 
+                                  color="success" 
+                                  variant="outlined"
+                                  sx={{ width: '100%' }}
+                                />
+                              );
+                            })()} 
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </Stack>
+            </Box>
+          ) : (
+            // Desktop Week View - Table Layout
+            <TableContainer sx={{ maxHeight: 600 }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
                     <TableCell 
-                      key={day.format('YYYY-MM-DD')}
-                      align="center"
                       sx={{ 
                         bgcolor: '#f5f5f5', 
                         fontWeight: 600,
-                        minWidth: 180,
+                        width: 120,
                         borderRight: '1px solid #e0e0e0'
                       }}
                     >
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {day.format('ddd')}
-                        </Typography>
-                        <Typography variant="h6" sx={{ 
-                          fontWeight: 700,
-                          color: day.isSame(dayjs(), 'day') ? 'primary.main' : 'inherit'
-                        }}>
-                          {day.format('D')}
-                        </Typography>
-                        {(() => {
-                          const weather = getWeatherForDate(day);
-                          if (weather) {
-                            return (
-                              <Box sx={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center', 
-                                mt: 1,
-                                gap: 0.5
-                              }}>
-                                <img 
-                                  src={weatherService.getIconUrl(weather.icon)} 
-                                  alt={weather.description}
-                                  style={{ width: 24, height: 24 }}
-                                />
-                                <Typography variant="caption" sx={{ fontWeight: 600, color: '#1976d2' }}>
-                                  {weather.temperature}°C
-                                </Typography>
-                              </Box>
-                            );
-                          } else if (weatherLoading) {
-                            return (
-                              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
-                                <CircularProgress size={16} />
-                              </Box>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </Box>
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {generateTimeSlots().map((timeSlot) => (
-                  <TableRow key={timeSlot.hour}>
-                    <TableCell 
-                      sx={{ 
-                        fontWeight: 600,
-                        bgcolor: '#fafafa',
-                        borderRight: '1px solid #e0e0e0',
-                        verticalAlign: 'top',
-                        py: 1
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {timeSlot.label}
-                      </Typography>
+                      Time
                     </TableCell>
                     {getWeekDays().map((day) => (
                       <TableCell 
-                        key={`${day.format('YYYY-MM-DD')}-${timeSlot.hour}`}
+                        key={day.format('YYYY-MM-DD')}
+                        align="center"
                         sx={{ 
-                          p: 1, 
-                          borderRight: '1px solid #e0e0e0',
-                          verticalAlign: 'top'
+                          bgcolor: '#f5f5f5', 
+                          fontWeight: 600,
+                          minWidth: 180,
+                          borderRight: '1px solid #e0e0e0'
                         }}
                       >
-                        {renderCalendarCell(day, timeSlot)}
+                        <Box sx={{ textAlign: 'center' }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            {day.format('ddd')}
+                          </Typography>
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: 700,
+                            color: day.isSame(dayjs(), 'day') ? 'primary.main' : 'inherit'
+                          }}>
+                            {day.format('D')}
+                          </Typography>
+                          {(() => {
+                            const weather = getWeatherForDate(day);
+                            if (weather) {
+                              return (
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  mt: 1,
+                                  gap: 0.5
+                                }}>
+                                  <img 
+                                    src={weatherService.getIconUrl(weather.icon)} 
+                                    alt={weather.description}
+                                    style={{ width: 24, height: 24 }}
+                                  />
+                                  <Typography variant="caption" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                                    {weather.temperature}°C
+                                  </Typography>
+                                </Box>
+                              );
+                            } else if (weatherLoading) {
+                              return (
+                                <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+                                  <CircularProgress size={16} />
+                                </Box>
+                              );
+                            }
+                            return null;
+                          })()} 
+                        </Box>
                       </TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {generateTimeSlots().map((timeSlot) => (
+                    <TableRow key={timeSlot.hour}>
+                      <TableCell 
+                        sx={{ 
+                          fontWeight: 600,
+                          bgcolor: '#fafafa',
+                          borderRight: '1px solid #e0e0e0',
+                          verticalAlign: 'top',
+                          py: 1
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {timeSlot.label}
+                        </Typography>
+                      </TableCell>
+                      {getWeekDays().map((day) => (
+                        <TableCell 
+                          key={`${day.format('YYYY-MM-DD')}-${timeSlot.hour}`}
+                          sx={{ 
+                            p: 1, 
+                            borderRight: '1px solid #e0e0e0',
+                            verticalAlign: 'top'
+                          }}
+                        >
+                          {renderCalendarCell(day, timeSlot)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </Paper>
       )}
 
-      {/* Add Appointment Dialog */}
+      {/* Add Appointment Dialog - Mobile Responsive */}
       <Dialog 
         open={addAppointmentDialog.open} 
         onClose={closeAddAppointmentDialog}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
+        sx={{
+          '& .MuiDialog-paper': {
+            margin: isMobile ? 0 : '32px',
+            width: isMobile ? '100%' : 'auto',
+            maxHeight: isMobile ? '100%' : 'calc(100% - 64px)'
+          }
+        }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Event color="primary" />

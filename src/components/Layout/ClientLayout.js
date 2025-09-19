@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Drawer,
@@ -27,12 +27,15 @@ import {
 } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 
 const ClientLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -47,11 +50,43 @@ const ClientLayout = ({ children }) => {
     }
   };
 
+  const handleNotificationClick = () => {
+    navigate('/notifications');
+  };
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (currentUser) {
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('userId', '==', currentUser.uid),
+        where('read', '==', false)
+      );
+
+      const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+        setUnreadCount(snapshot.docs.length);
+      }, (error) => {
+        console.error('Error fetching notification count:', error);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [currentUser]);
+
   const navigationItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'My Garage', icon: <DirectionsCar />, path: '/my-garage' },
     { text: 'Book Service', icon: <CalendarToday />, path: '/book-appointment' },
     { text: 'My Appointments', icon: <Assignment />, path: '/appointments' },
+    { 
+      text: 'Notifications', 
+      icon: unreadCount > 0 ? (
+        <Badge badgeContent={unreadCount} color="error">
+          <Notifications />
+        </Badge>
+      ) : <Notifications />, 
+      path: '/notifications' 
+    },
     { text: 'Contact Us', icon: <Phone />, path: '/contact' },
     { text: 'Get Estimate', icon: <Calculate />, path: '/get-estimate' },
     { text: 'My Estimates', icon: <Description />, path: '/my-estimates' }
@@ -179,8 +214,12 @@ const ClientLayout = ({ children }) => {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
             POVEDA AUTO CARE
           </Typography>
-          <IconButton sx={{ color: '#4b5563' }}>
-            <Badge badgeContent={2} color="error">
+          <IconButton 
+            sx={{ color: '#4b5563' }}
+            onClick={handleNotificationClick}
+            aria-label="notifications"
+          >
+            <Badge badgeContent={unreadCount > 0 ? unreadCount : null} color="error">
               <Notifications />
             </Badge>
           </IconButton>
@@ -221,6 +260,34 @@ const ClientLayout = ({ children }) => {
         </Drawer>
       </Box>
 
+      {/* Desktop Top Bar */}
+      <Box
+        sx={{
+          display: { xs: 'none', sm: 'block' },
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          left: '256px',
+          zIndex: 1000,
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+          p: 2
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <IconButton 
+            sx={{ color: '#4b5563' }}
+            onClick={handleNotificationClick}
+            aria-label="notifications"
+          >
+            <Badge badgeContent={unreadCount > 0 ? unreadCount : null} color="error">
+              <Notifications />
+            </Badge>
+          </IconButton>
+        </Box>
+      </Box>
+
       {/* Main Content */}
       <Box
         component="main"
@@ -228,7 +295,7 @@ const ClientLayout = ({ children }) => {
           flexGrow: 1,
           p: { xs: 2, sm: 4 },
           ml: { sm: '256px' },
-          mt: { xs: '64px', sm: 0 }
+          mt: { xs: '64px', sm: '64px' }
         }}
       >
         {children}

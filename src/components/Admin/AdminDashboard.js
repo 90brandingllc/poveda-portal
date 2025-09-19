@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -30,6 +30,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const AdminDashboard = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalAppointments: 0,
     pendingAppointments: 0,
@@ -45,16 +46,25 @@ const AdminDashboard = () => {
 
     // Load dashboard stats and recent data
     const unsubscribeAppointments = onSnapshot(
-      query(collection(db, 'appointments'), orderBy('createdAt', 'desc'), limit(5)),
+      query(collection(db, 'appointments'), orderBy('createdAt', 'desc')),
       (snapshot) => {
-        const appointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setRecentAppointments(appointments);
+        const allAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const recentAppointments = allAppointments.slice(0, 5);
+        setRecentAppointments(recentAppointments);
         
-        // Calculate stats
+        // Calculate stats from all appointments
+        const totalRevenue = allAppointments
+          .filter(apt => apt.status === 'completed')
+          .reduce((sum, apt) => sum + (parseFloat(apt.finalPrice) || parseFloat(apt.estimatedPrice) || 0), 0);
+        
+        const uniqueClients = new Set(allAppointments.map(apt => apt.userEmail || apt.customerEmail)).size;
+        
         setStats(prev => ({
           ...prev,
-          totalAppointments: appointments.length,
-          pendingAppointments: appointments.filter(apt => apt.status === 'pending').length
+          totalAppointments: allAppointments.length,
+          pendingAppointments: allAppointments.filter(apt => apt.status === 'pending').length,
+          totalRevenue: totalRevenue,
+          activeClients: uniqueClients
         }));
       }
     );
@@ -101,20 +111,25 @@ const AdminDashboard = () => {
       {/* Stats Cards */}
       <Grid container spacing={{ xs: 3, sm: 4 }} sx={{ mb: { xs: 4, sm: 6 } }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.9)', 
-            border: '1px solid rgba(229, 231, 235, 0.8)',
-            borderRadius: 3,
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-            backdropFilter: 'blur(8px)',
-            '&:hover': {
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              transform: 'translateY(-1px)',
-              transition: 'all 0.2s ease'
-            }
-          }}>
+          <Card 
+            onClick={() => navigate('/admin/appointments')}
+            sx={{ 
+              background: 'rgba(255, 255, 255, 0.9)', 
+              border: '1px solid rgba(229, 231, 235, 0.8)',
+              borderRadius: 3,
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s ease',
+                borderColor: '#1976d2'
+              }
+            }}
+          >
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Schedule sx={{ fontSize: 32, color: '#6b7280', mb: 2 }} />
+              <Schedule sx={{ fontSize: 32, color: '#1976d2', mb: 2 }} />
               <Typography variant="h4" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
                 {stats.totalAppointments}
               </Typography>
@@ -126,20 +141,25 @@ const AdminDashboard = () => {
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.9)', 
-            border: '1px solid rgba(229, 231, 235, 0.8)',
-            borderRadius: 3,
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-            backdropFilter: 'blur(8px)',
-            '&:hover': {
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              transform: 'translateY(-1px)',
-              transition: 'all 0.2s ease'
-            }
-          }}>
+          <Card 
+            onClick={() => navigate('/admin/appointments?filter=pending')}
+            sx={{ 
+              background: 'rgba(255, 255, 255, 0.9)', 
+              border: '1px solid rgba(229, 231, 235, 0.8)',
+              borderRadius: 3,
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s ease',
+                borderColor: '#ed6c02'
+              }
+            }}
+          >
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Assignment sx={{ fontSize: 32, color: '#6b7280', mb: 2 }} />
+              <Assignment sx={{ fontSize: 32, color: '#ed6c02', mb: 2 }} />
               <Typography variant="h4" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
                 {stats.pendingAppointments}
               </Typography>
@@ -151,20 +171,25 @@ const AdminDashboard = () => {
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.9)', 
-            border: '1px solid rgba(229, 231, 235, 0.8)',
-            borderRadius: 3,
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-            backdropFilter: 'blur(8px)',
-            '&:hover': {
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              transform: 'translateY(-1px)',
-              transition: 'all 0.2s ease'
-            }
-          }}>
+          <Card 
+            onClick={() => navigate('/admin/appointments?filter=completed')}
+            sx={{ 
+              background: 'rgba(255, 255, 255, 0.9)', 
+              border: '1px solid rgba(229, 231, 235, 0.8)',
+              borderRadius: 3,
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s ease',
+                borderColor: '#2e7d32'
+              }
+            }}
+          >
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <AttachMoney sx={{ fontSize: 32, color: '#6b7280', mb: 2 }} />
+              <AttachMoney sx={{ fontSize: 32, color: '#2e7d32', mb: 2 }} />
               <Typography variant="h4" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
                 ${stats.totalRevenue}
               </Typography>
@@ -176,20 +201,25 @@ const AdminDashboard = () => {
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.9)', 
-            border: '1px solid rgba(229, 231, 235, 0.8)',
-            borderRadius: 3,
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-            backdropFilter: 'blur(8px)',
-            '&:hover': {
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              transform: 'translateY(-1px)',
-              transition: 'all 0.2s ease'
-            }
-          }}>
+          <Card 
+            onClick={() => navigate('/admin/appointments')}
+            sx={{ 
+              background: 'rgba(255, 255, 255, 0.9)', 
+              border: '1px solid rgba(229, 231, 235, 0.8)',
+              borderRadius: 3,
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s ease',
+                borderColor: '#9c27b0'
+              }
+            }}
+          >
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <TrendingUp sx={{ fontSize: 32, color: '#6b7280', mb: 2 }} />
+              <TrendingUp sx={{ fontSize: 32, color: '#9c27b0', mb: 2 }} />
               <Typography variant="h4" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
                 {stats.activeClients}
               </Typography>
