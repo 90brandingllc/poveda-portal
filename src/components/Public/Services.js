@@ -75,52 +75,109 @@ const Services = () => {
 
   const packages = [
     {
-      name: 'Silver Package',
+      name: 'Silver Interior',
       subtitle: 'Interior Maintenance',
-      price: '$89',
+      price: '$75-95',
       duration: '2-3 hours',
-      description: 'Perfect for regular maintenance and basic care',
+      description: 'Perfect for keeping your vehicle clean and presentable on a daily basis',
       features: [
-        'Complete exterior hand wash',
-        'Interior vacuuming',
-        'Dashboard and console wipe down',
-        'Window cleaning (interior & exterior)',
-        'Tire shine application',
-        'Basic interior protection'
+        'Air blow to remove dust and dirt',
+        'Full interior vacuuming',
+        'Plastic shine treatment',
+        'Carpet mat cleaning',
+        'Trunk cleaning',
+        'Interior glass and mirror cleaning'
       ],
-      popular: false
+      popular: false,
+      note: 'Not suitable for vehicles in poor condition or with extreme dirt'
     },
     {
-      name: 'Gold Package',
+      name: 'Gold Interior',
       subtitle: 'Deep Interior Cleaning',
-      price: '$149',
+      price: '$145-185',
       duration: '3-4 hours',
-      description: 'Comprehensive cleaning for optimal results',
+      description: 'A complete cleaning to make your interior look like new',
       features: [
-        'Everything in Silver Package',
-        'Paint decontamination',
-        'Interior deep cleaning',
-        'Carpet and upholstery shampooing',
-        'Leather conditioning',
-        'Paint sealant application',
-        'Wheel and tire deep clean'
+        'Deep cleaning of seats, carpets, headliner, and upholstery',
+        'Cleaning of windows and door edges',
+        'Use of extractor and steam as needed',
+        'Plastic cleaning and conditioning with shine and UV protection',
+        'Complimentary air freshener'
       ],
       popular: true
     },
     {
-      name: 'Diamond Package',
+      name: 'Diamond Interior',
       subtitle: 'Extreme Interior Restoration',
-      price: '$249',
+      price: 'From $182',
       duration: '4-6 hours',
-      description: 'Ultimate care for maximum protection and shine',
+      description: 'Specially designed for vehicles with high level of dirt or challenging conditions',
       features: [
-        'Everything in Gold Package',
-        'Paint correction and polishing',
-        'Ceramic coating application',
-        'Complete interior restoration',
-        'Engine bay cleaning',
-        '6-month protection guarantee',
-        'Premium aftercare kit included'
+        'All services from the Gold Package',
+        'Intensive treatment for stains and odors',
+        'Deep decontamination and surface restoration',
+        'Recommended for 50%+ stains, heavy pet hair, strong odors',
+        'Full-vehicle extractor and/or steam cleaning'
+      ],
+      popular: false,
+      note: 'Customized package - pricing depends on vehicle condition'
+    },
+    {
+      name: 'Gold Exterior',
+      subtitle: 'Exterior Maintenance',
+      price: '$55-75',
+      duration: '1-2 hours',
+      description: 'Ideal for keeping your vehicle exterior clean, protected, and presentable',
+      features: [
+        'Full exterior wash using safe two-bucket method',
+        'Wheel cleaning (good condition wheels)',
+        'Tire cleaning and shine',
+        'Wheel well cleaning',
+        'Exterior glass and mirror cleaning',
+        'Gas cap cleaning',
+        'Hand-dry with premium microfiber towels'
+      ],
+      popular: true,
+      note: 'Not suitable for vehicles with heavy contamination, tar, or stubborn stains'
+    },
+    {
+      name: 'Step Polish',
+      subtitle: 'Light Correction',
+      price: '$200-250',
+      duration: '3-4 hours',
+      description: 'Light cleaning and correction to remove small imperfections and enhance shine',
+      features: [
+        '1 step of polishing with professional polisher',
+        'Shine enhancement and removal of light scratches',
+        'Ideal for maintenance and vehicles with minor surface wear'
+      ],
+      popular: false
+    },
+    {
+      name: 'Gold Step Polish',
+      subtitle: 'Deep Correction',
+      price: '$280-350',
+      duration: '4-5 hours',
+      description: 'Deeper treatment to correct more noticeable defects and restore uniform finish',
+      features: [
+        '2 polishing steps to remove moderate scratches and oxidation',
+        'Preparation for ceramic or sealant protection',
+        'Enhanced shine and refined finish'
+      ],
+      popular: false
+    },
+    {
+      name: 'Diamond Polish + Ceramic',
+      subtitle: 'Maximum Protection & Shine',
+      price: 'From $480',
+      duration: '6-8 hours',
+      description: 'Maximum protection and long-lasting shine with ceramic coating applied after polishing',
+      features: [
+        '2 polishing steps for deep correction',
+        'Application of high-durability ceramic coating',
+        'Protection against scratches, dirt, water, and environmental contaminants',
+        'Intense shine and mirror-like finish',
+        'Coating durability customizable from 1 to 5 years based on preference'
       ],
       popular: false
     }
@@ -128,24 +185,39 @@ const Services = () => {
 
   const additionalServices = [
     {
-      name: 'Ceramic Coating',
-      price: 'From $299',
-      description: '2-5 year paint protection with hydrophobic properties'
+      name: 'Light Pet Hair Removal 🐾',
+      price: '+$25',
+      description: 'Professional removal of light pet hair from interior'
     },
     {
-      name: 'Paint Correction',
-      price: 'From $199',
-      description: 'Professional scratch and swirl mark removal'
+      name: 'Heavy Pet Hair Removal 🐾',
+      price: '+$45',
+      description: 'Intensive removal of heavy pet hair from all surfaces'
+    },
+    {
+      name: 'Baby Car Seat Cleaning 👶',
+      price: '+$25',
+      description: 'Thorough cleaning and sanitizing of baby car seats'
+    },
+    {
+      name: 'Paint Decontamination (Clay Bar)',
+      price: '+$45',
+      description: 'Removes embedded particles and surface contaminants'
     },
     {
       name: 'Headlight Restoration',
-      price: '$79',
+      price: '+$70',
       description: 'Restore clarity and improve night driving safety'
     },
     {
-      name: 'Engine Bay Cleaning',
-      price: '$59',
-      description: 'Deep cleaning and protection for your engine compartment'
+      name: 'Full Exterior Plastic Restoration',
+      price: '+$20',
+      description: 'Restore faded plastic trim to like-new condition'
+    },
+    {
+      name: 'Engine Cleaning',
+      price: '+$35',
+      description: 'Additional service for combined interior & exterior packages only'
     }
   ];
 

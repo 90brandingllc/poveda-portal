@@ -117,7 +117,7 @@ const Footer = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Phone sx={{ color: '#1976d2' }} />
                 <Typography variant="body2" sx={{ color: '#cccccc' }}>
-                  {process.env.REACT_APP_SUPPORT_PHONE || '(614) 653-5882'}
+                  📞 614 653 5882
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

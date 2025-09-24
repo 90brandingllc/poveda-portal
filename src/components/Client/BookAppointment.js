@@ -225,36 +225,113 @@ const BookAppointment = () => {
 
 
   const serviceCategories = {
-    general: {
-      name: 'General Services',
-      services: [
-        { name: 'Mobile Service', price: 89, description: 'Basic mobile wash and clean' },
-        { name: 'Protection Package', price: 149, description: 'Paint protection and preservation' },
-        { name: 'Headlight Restoration', price: 79, description: 'Restore clarity and visibility' }
-      ]
-    },
     interior: {
       name: 'Interior Services',
       services: [
-        { name: 'Steam Cleaning', price: 129, description: 'Deep steam cleaning and decontamination' },
-        { name: 'Thorough Vacuuming', price: 59, description: 'Complete interior vacuuming' },
-        { name: 'Leather Treatment', price: 99, description: 'Premium leather care and conditioning' }
+        { 
+          name: 'Silver Interior Maintenance', 
+          price: 75, 
+          description: 'Perfect for keeping your vehicle clean and presentable on a daily basis',
+          details: 'Air blow, full vacuuming, plastic shine, carpet mat cleaning, trunk cleaning, interior glass cleaning',
+          vehicleTypes: { small: 75, suv: 85, threeRow: 95 }
+        },
+        { 
+          name: 'Gold Deep Interior Cleaning', 
+          price: 145, 
+          description: 'A complete cleaning to make your interior look like new',
+          details: 'Deep cleaning of seats/carpets/headliner, window cleaning, extractor/steam, plastic conditioning, air freshener',
+          vehicleTypes: { small: 145, suv: 165, threeRow: 185 }
+        },
+        { 
+          name: 'Diamond Extreme Interior Restoration', 
+          price: 182, 
+          description: 'For vehicles with high dirt levels or challenging conditions (50%+ stains, heavy pet hair, strong odors)',
+          details: 'All Gold services + intensive stain/odor treatment + deep decontamination + surface restoration',
+          vehicleTypes: { small: 182, suv: 202, threeRow: 222 }
+        }
       ]
     },
     exterior: {
       name: 'Exterior Services',
       services: [
-        { name: 'Hand Wash Premium', price: 79, description: 'Complete hand wash and detailing' },
-        { name: 'Paint Correction', price: 299, description: 'Professional paint restoration' },
-        { name: 'Ceramic Coating', price: 599, description: 'Long-lasting paint protection' }
+        { 
+          name: 'Gold Exterior Maintenance', 
+          price: 55, 
+          description: 'Ideal for keeping your vehicle exterior clean, protected, and presentable',
+          details: 'Two-bucket wash, wheel cleaning, tire shine, wheel well cleaning, exterior glass, gas cap, hand-dry',
+          vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
+        },
+        { 
+          name: 'Complete Exterior Detail', 
+          price: 55, 
+          description: 'More thorough cleaning to enhance appearance and protect paint',
+          details: 'All Gold services + optional add-ons available',
+          vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
+        }
+      ]
+    },
+    polishing: {
+      name: 'Polishing Services',
+      services: [
+        { 
+          name: 'Step Polish (Light Correction)', 
+          price: 200, 
+          description: 'Light cleaning and correction to remove small imperfections and enhance shine',
+          details: '1 step polishing, shine enhancement, light scratch removal',
+          vehicleTypes: { small: 200, suv: 220, threeRow: 250 }
+        },
+        { 
+          name: 'Gold Step Polish (Deep Correction)', 
+          price: 280, 
+          description: 'Deeper treatment to correct noticeable defects and restore uniform, glossy finish',
+          details: '2 polishing steps, moderate scratch/oxidation removal, preparation for ceramic/sealant',
+          vehicleTypes: { small: 280, suv: 300, threeRow: 350 }
+        },
+        { 
+          name: 'Diamond Polish + Ceramic Coating', 
+          price: 480, 
+          description: 'Maximum protection and long-lasting shine with ceramic coating',
+          details: '2 polishing steps + high-durability ceramic coating (1-5 year options)',
+          vehicleTypes: { small: 480, suv: 520, threeRow: 580 }
+        }
       ]
     },
     packages: {
       name: 'Service Packages',
       services: [
-        { name: 'Silver Package', price: 89, description: 'Interior maintenance and basic exterior' },
-        { name: 'Gold Package', price: 149, description: 'Deep cleaning inside and out' },
-        { name: 'Diamond Package', price: 249, description: 'Complete restoration and protection' }
+        { 
+          name: 'Interior Silver + Exterior Gold', 
+          price: 130, 
+          description: 'Basic interior maintenance with exterior cleaning',
+          details: 'Silver interior maintenance + Gold exterior maintenance',
+          vehicleTypes: { small: 130, suv: 150, threeRow: 170 }
+        },
+        { 
+          name: 'Interior Gold + Exterior Gold', 
+          price: 200, 
+          description: 'Deep interior cleaning with exterior maintenance',
+          details: 'Gold deep interior cleaning + Gold exterior maintenance',
+          vehicleTypes: { small: 200, suv: 230, threeRow: 260 }
+        },
+        { 
+          name: 'Interior Diamond + Exterior Gold', 
+          price: 255, 
+          description: 'Extreme interior restoration with exterior maintenance',
+          details: 'Diamond extreme interior restoration + Gold exterior maintenance',
+          vehicleTypes: { small: 255, suv: 265, threeRow: 275 }
+        }
+      ]
+    },
+    addons: {
+      name: 'Add-On Services',
+      services: [
+        { name: 'Light Pet Hair Removal', price: 25, description: 'Professional removal of light pet hair' },
+        { name: 'Heavy Pet Hair Removal', price: 45, description: 'Intensive removal of heavy pet hair' },
+        { name: 'Baby Car Seat Cleaning', price: 25, description: 'Thorough cleaning of baby car seats' },
+        { name: 'Paint Decontamination (Clay Bar)', price: 45, description: 'Removes embedded particles and contaminants' },
+        { name: 'Headlight Restoration', price: 70, description: 'Restore clarity and visibility' },
+        { name: 'Full Exterior Plastic Restoration', price: 20, description: 'Restore faded plastic trim' },
+        { name: 'Engine Cleaning', price: 35, description: 'Additional service for combined packages only' }
       ]
     }
   };
@@ -687,13 +764,21 @@ const BookAppointment = () => {
               <TextField
                 fullWidth
                 multiline
-                rows={{ xs: 3, sm: 4 }}
-                label="Additional Notes"
-                placeholder="Any special instructions or requests..."
+                rows={{ xs: 4, sm: 5 }}
+                label="🐾👶 Special Requests & Notes"
+                placeholder="Please let us know about any special requests:
+• Pet hair cleaning 🐾
+• Baby car seat cleaning 👶
+• Specific stains or odors
+• Access instructions
+• Any other special requirements..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 sx={{
                   '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  },
+                  '& .MuiInputLabel-root': {
                     fontSize: { xs: '0.875rem', sm: '1rem' }
                   }
                 }}
@@ -845,7 +930,7 @@ const BookAppointment = () => {
                             color: '#1976d2',
                             fontSize: { xs: '0.875rem', sm: '1rem' }
                           }}>
-                            Step 1: Online Deposit (50%)
+                            Step 1: Online Deposit ($45)
                           </Typography>
                         </Box>
                         <Typography variant="h5" sx={{ 
@@ -875,7 +960,7 @@ const BookAppointment = () => {
                             color: '#f57c00',
                             fontSize: { xs: '0.875rem', sm: '1rem' }
                           }}>
-                            Step 2: Final Payment (50%)
+                            Step 2: Final Payment (Remaining Balance)
                           </Typography>
                         </Box>
                         <Typography variant="h5" sx={{ 

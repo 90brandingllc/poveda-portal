@@ -228,7 +228,7 @@ exports.sendAppointmentConfirmation = functions.firestore
                 
                 <p>If you have any questions, please contact us:</p>
                 <ul>
-                  <li>Phone: (614) 653-5882</li>
+                  <li>Phone: 📞 614 653 5882</li>
                   <li>Email: support@povedapremiumautocare.com</li>
                   <li>Address: 4529 Parkwick Dr, Columbus, OH 43228</li>
                 </ul>
