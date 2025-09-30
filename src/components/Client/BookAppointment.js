@@ -233,21 +233,24 @@ const BookAppointment = () => {
           price: 75, 
           description: 'Perfect for keeping your vehicle clean and presentable on a daily basis',
           details: 'Air blow, full vacuuming, plastic shine, carpet mat cleaning, trunk cleaning, interior glass cleaning',
-          vehicleTypes: { small: 75, suv: 85, threeRow: 95 }
+          vehicleTypes: { small: 75, suv: 85, threeRow: 95 },
+          priceDisplay: 'Small car: $75 • SUV: $85 • 3-row seating: $95'
         },
         { 
           name: 'Gold Deep Interior Cleaning', 
           price: 145, 
           description: 'A complete cleaning to make your interior look like new',
           details: 'Deep cleaning of seats/carpets/headliner, window cleaning, extractor/steam, plastic conditioning, air freshener',
-          vehicleTypes: { small: 145, suv: 165, threeRow: 185 }
+          vehicleTypes: { small: 145, suv: 165, threeRow: 185 },
+          priceDisplay: 'Small car: $145 • SUV: $165 • 3-row seating: $185'
         },
         { 
           name: 'Diamond Extreme Interior Restoration', 
           price: 182, 
           description: 'For vehicles with high dirt levels or challenging conditions (50%+ stains, heavy pet hair, strong odors)',
           details: 'All Gold services + intensive stain/odor treatment + deep decontamination + surface restoration',
-          vehicleTypes: { small: 182, suv: 202, threeRow: 222 }
+          vehicleTypes: { small: 182, suv: 202, threeRow: 222 },
+          priceDisplay: 'Starting at: Small car: $182 • SUV: $202 • 3-row seating: $222'
         }
       ]
     },
@@ -259,14 +262,16 @@ const BookAppointment = () => {
           price: 55, 
           description: 'Ideal for keeping your vehicle exterior clean, protected, and presentable',
           details: 'Two-bucket wash, wheel cleaning, tire shine, wheel well cleaning, exterior glass, gas cap, hand-dry',
-          vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
+          vehicleTypes: { small: 55, suv: 65, threeRow: 75 },
+          priceDisplay: 'Small car: $55 • SUV: $65 • 3-row SUV: $75'
         },
         { 
           name: 'Complete Exterior Detail', 
           price: 55, 
           description: 'More thorough cleaning to enhance appearance and protect paint',
           details: 'All Gold services + optional add-ons available',
-          vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
+          vehicleTypes: { small: 55, suv: 65, threeRow: 75 },
+          priceDisplay: 'Small car: $55 • SUV: $65 • 3-row SUV: $75'
         }
       ]
     },
@@ -278,21 +283,24 @@ const BookAppointment = () => {
           price: 200, 
           description: 'Light cleaning and correction to remove small imperfections and enhance shine',
           details: '1 step polishing, shine enhancement, light scratch removal',
-          vehicleTypes: { small: 200, suv: 220, threeRow: 250 }
+          vehicleTypes: { small: 200, suv: 220, threeRow: 250 },
+          priceDisplay: 'Small car: $200 • SUV: $220 • 3-row SUV: $250'
         },
         { 
           name: 'Gold Step Polish (Deep Correction)', 
           price: 280, 
           description: 'Deeper treatment to correct noticeable defects and restore uniform, glossy finish',
           details: '2 polishing steps, moderate scratch/oxidation removal, preparation for ceramic/sealant',
-          vehicleTypes: { small: 280, suv: 300, threeRow: 350 }
+          vehicleTypes: { small: 280, suv: 300, threeRow: 350 },
+          priceDisplay: 'Small car: $280 • SUV: $300 • 3-row SUV: $350'
         },
         { 
           name: 'Diamond Polish + Ceramic Coating', 
           price: 480, 
           description: 'Maximum protection and long-lasting shine with ceramic coating',
           details: '2 polishing steps + high-durability ceramic coating (1-5 year options)',
-          vehicleTypes: { small: 480, suv: 520, threeRow: 580 }
+          vehicleTypes: { small: 480, suv: 520, threeRow: 580 },
+          priceDisplay: 'Starting at: Small car: $480 • SUV: $520 • 3-row SUV: $580'
         }
       ]
     },
@@ -304,21 +312,24 @@ const BookAppointment = () => {
           price: 130, 
           description: 'Basic interior maintenance with exterior cleaning',
           details: 'Silver interior maintenance + Gold exterior maintenance',
-          vehicleTypes: { small: 130, suv: 150, threeRow: 170 }
+          vehicleTypes: { small: 130, suv: 150, threeRow: 170 },
+          priceDisplay: 'Small car: $130 • SUV: $150 • 3-row: $170'
         },
         { 
           name: 'Interior Gold + Exterior Gold', 
           price: 200, 
           description: 'Deep interior cleaning with exterior maintenance',
           details: 'Gold deep interior cleaning + Gold exterior maintenance',
-          vehicleTypes: { small: 200, suv: 230, threeRow: 260 }
+          vehicleTypes: { small: 200, suv: 230, threeRow: 260 },
+          priceDisplay: 'Small car: $200 • SUV: $230 • 3-row: $260'
         },
         { 
           name: 'Interior Diamond + Exterior Gold', 
           price: 255, 
           description: 'Extreme interior restoration with exterior maintenance',
           details: 'Diamond extreme interior restoration + Gold exterior maintenance',
-          vehicleTypes: { small: 255, suv: 265, threeRow: 275 }
+          vehicleTypes: { small: 255, suv: 265, threeRow: 275 },
+          priceDisplay: 'From: Small car: $255 • SUV: $265 • 3-row: $275'
         }
       ]
     },
@@ -502,11 +513,12 @@ const BookAppointment = () => {
                           }}>
                             {service.description}
                           </Typography>
-                          <Typography variant="h5" color="primary" sx={{ 
+                          <Typography variant="h6" color="primary" sx={{ 
                             fontWeight: 700,
-                            fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                            fontSize: { xs: '0.9rem', sm: '1rem' },
+                            lineHeight: 1.3
                           }}>
-                            ${service.price}
+                            {service.priceDisplay || `$${service.price}`}
                           </Typography>
                         </CardContent>
                       </Card>
