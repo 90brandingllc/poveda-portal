@@ -89,12 +89,7 @@ const Services = () => {
         'Interior glass and mirror cleaning'
       ],
       popular: false,
-      note: 'Not suitable for vehicles in poor condition or with extreme dirt',
-      pricing: [
-        { type: 'Small car', price: '$75' },
-        { type: 'SUV', price: '$85' },
-        { type: '3-row seating', price: '$95' }
-      ]
+      note: 'Not suitable for vehicles in poor condition or with extreme dirt'
     },
     {
       name: 'Gold Interior',
@@ -109,12 +104,7 @@ const Services = () => {
         'Plastic cleaning and conditioning with shine and UV protection',
         'Complimentary air freshener'
       ],
-      popular: true,
-      pricing: [
-        { type: 'Small car', price: '$145' },
-        { type: 'SUV', price: '$165' },
-        { type: '3-row seating', price: '$185' }
-      ]
+      popular: true
     },
     {
       name: 'Diamond Interior',
@@ -130,12 +120,7 @@ const Services = () => {
         'Full-vehicle extractor and/or steam cleaning'
       ],
       popular: false,
-      note: 'Customized package - pricing depends on vehicle condition',
-      pricing: [
-        { type: 'Small car', price: 'From $182' },
-        { type: 'SUV', price: 'From $202' },
-        { type: '3-row seating', price: 'From $222' }
-      ]
+      note: 'Customized package - pricing depends on vehicle condition'
     },
     {
       name: 'Gold Exterior',
@@ -153,12 +138,7 @@ const Services = () => {
         'Hand-dry with premium microfiber towels'
       ],
       popular: true,
-      note: 'Not suitable for vehicles with heavy contamination, tar, or stubborn stains',
-      pricing: [
-        { type: 'Small car', price: '$55' },
-        { type: 'SUV', price: '$65' },
-        { type: '3-row SUV', price: '$75' }
-      ]
+      note: 'Not suitable for vehicles with heavy contamination, tar, or stubborn stains'
     },
     {
       name: 'Step Polish',
@@ -171,12 +151,7 @@ const Services = () => {
         'Shine enhancement and removal of light scratches',
         'Ideal for maintenance and vehicles with minor surface wear'
       ],
-      popular: false,
-      pricing: [
-        { type: 'Small car', price: '$200' },
-        { type: 'SUV', price: '$220' },
-        { type: '3-row SUV', price: '$250' }
-      ]
+      popular: false
     },
     {
       name: 'Gold Step Polish',
@@ -189,12 +164,7 @@ const Services = () => {
         'Preparation for ceramic or sealant protection',
         'Enhanced shine and refined finish'
       ],
-      popular: false,
-      pricing: [
-        { type: 'Small car', price: '$280' },
-        { type: 'SUV', price: '$300' },
-        { type: '3-row SUV', price: '$350' }
-      ]
+      popular: false
     },
     {
       name: 'Diamond Polish + Ceramic',
@@ -209,12 +179,7 @@ const Services = () => {
         'Intense shine and mirror-like finish',
         'Coating durability customizable from 1 to 5 years based on preference'
       ],
-      popular: false,
-      pricing: [
-        { type: 'Small car', price: 'From $480' },
-        { type: 'SUV', price: 'From $520' },
-        { type: '3-row SUV', price: 'From $580' }
-      ]
+      popular: false
     }
   ];
 
@@ -464,13 +429,13 @@ const Services = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                         <CreditCard sx={{ mr: 1, color: '#4caf50', fontSize: 16 }} />
                         <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                          <strong>$45 deposit</strong> - Paid online when booking
+                          <strong>50% deposit</strong> - Paid online when booking
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Payment sx={{ mr: 1, color: '#ff9800', fontSize: 16 }} />
                         <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                          <strong>Remaining balance</strong> - Paid after service completion
+                          <strong>50% remaining</strong> - Paid after service completion
                         </Typography>
                       </Box>
                     </Box>
@@ -497,26 +462,6 @@ const Services = () => {
                         </ListItem>
                       ))}
                     </List>
-                    
-                    {/* Detailed Pricing */}
-                    {pkg.pricing && (
-                      <Box sx={{ mt: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 2 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: '#1976d2' }}>
-                          Prices:
-                        </Typography>
-                        {pkg.pricing.map((priceItem, idx) => (
-                          <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              {priceItem.type}:
-                            </Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {priceItem.price}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
-                    
                     <Button
                       component={Link}
                       to="/book-appointment"
