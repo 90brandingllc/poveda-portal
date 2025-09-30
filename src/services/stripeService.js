@@ -15,30 +15,43 @@ export const formatCurrency = (amountInCents) => {
   return (amountInCents / 100).toFixed(2);
 };
 
-// Create payment intent for deposit
+// Create payment intent for deposit using Firebase Functions
 export const createPaymentIntent = async (amount, currency = 'usd', metadata = {}) => {
   try {
-    // In a real app, this would be a call to your backend
-    // For now, we'll simulate this with the frontend
-    const response = await fetch('/api/create-payment-intent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        amount,
-        currency,
-        metadata,
-      }),
+    // Import Firebase Functions
+    const { getFunctions, httpsCallable } = await import('firebase/functions');
+    const functions = getFunctions();
+    const createPaymentIntentFn = httpsCallable(functions, 'createPaymentIntent');
+    
+    // Call Firebase Function
+    const result = await createPaymentIntentFn({
+      amount: Math.round(amount), // Ensure integer (cents)
+      currency,
+      metadata
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to create payment intent');
-    }
-
-    return await response.json();
+    return result.data;
   } catch (error) {
     console.error('Error creating payment intent:', error);
+    throw error;
+  }
+};
+
+// Confirm payment using Firebase Functions
+export const confirmPayment = async (paymentIntentId, appointmentId) => {
+  try {
+    const { getFunctions, httpsCallable } = await import('firebase/functions');
+    const functions = getFunctions();
+    const confirmPaymentFn = httpsCallable(functions, 'confirmPayment');
+    
+    const result = await confirmPaymentFn({
+      paymentIntentId,
+      appointmentId
+    });
+
+    return result.data;
+  } catch (error) {
+    console.error('Error confirming payment:', error);
     throw error;
   }
 };
@@ -48,6 +61,7 @@ const stripeService = {
   calculateDepositAmount,
   formatCurrency,
   createPaymentIntent,
+  confirmPayment,
 };
 
 export default stripeService;

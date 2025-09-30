@@ -3,6 +3,13 @@ const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 
+// Initialize Stripe with environment-based key selection
+const stripe = require('stripe')(
+  process.env.NODE_ENV === 'production' 
+    ? functions.config().stripe?.live_secret_key || process.env.STRIPE_LIVE_SECRET_KEY
+    : functions.config().stripe?.test_secret_key || process.env.STRIPE_TEST_SECRET_KEY
+);
+
 admin.initializeApp();
 
 // Email configuration - replace with your SMTP settings
@@ -1072,3 +1079,81 @@ exports.resetReminderFlags = functions.firestore
     
     return null;
   });
+
+// ========== STRIPE PAYMENT FUNCTIONS ==========
+
+// Create payment intent for deposit
+exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
+  try {
+    const { amount, currency = 'usd', metadata = {} } = data;
+    
+    // Validate amount (should be in cents)
+    if (!amount || amount < 50) { // Minimum $0.50
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid amount');
+    }
+
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount), // Ensure integer
+      currency: currency.toLowerCase(),
+      metadata: {
+        ...metadata,
+        source: 'POVEDA_AUTO_CARE',
+        environment: process.env.NODE_ENV || 'development'
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    console.log(`Payment Intent created: ${paymentIntent.id} for $${amount/100}`);
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id
+    };
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    throw new functions.https.HttpsError('internal', 'Unable to create payment intent');
+  }
+});
+
+// Confirm payment and update appointment
+exports.confirmPayment = functions.https.onCall(async (data, context) => {
+  try {
+    const { paymentIntentId, appointmentId } = data;
+    
+    if (!paymentIntentId || !appointmentId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters');
+    }
+
+    // Retrieve payment intent from Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (paymentIntent.status !== 'succeeded') {
+      throw new functions.https.HttpsError('failed-precondition', 'Payment not completed');
+    }
+
+    // Update appointment with payment info
+    const appointmentRef = admin.firestore().collection('appointments').doc(appointmentId);
+    await appointmentRef.update({
+      paymentStatus: 'deposit_paid',
+      paymentId: paymentIntentId,
+      depositAmount: paymentIntent.amount / 100, // Convert cents to dollars
+      remainingBalance: (paymentIntent.metadata.totalAmount || 0) - (paymentIntent.amount / 100),
+      paidAt: admin.firestore.FieldValue.serverTimestamp(),
+      paymentMethod: paymentIntent.payment_method ? 'card' : 'unknown'
+    });
+
+    console.log(`Payment confirmed for appointment ${appointmentId}: ${paymentIntentId}`);
+    
+    return {
+      success: true,
+      paymentId: paymentIntentId,
+      amount: paymentIntent.amount / 100
+    };
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    throw new functions.https.HttpsError('internal', 'Unable to confirm payment');
+  }
+});
