@@ -57,6 +57,8 @@ const BookAppointment = () => {
   const [formData, setFormData] = useState({
     serviceCategory: '',
     servicePackage: '',
+    vehicleType: '', // small, suv, threeRow
+    selectedService: null, // Store the full service object
     vehicleId: '',
     date: null,
     timeSlot: null,
@@ -71,7 +73,7 @@ const BookAppointment = () => {
     estimatedPrice: 0
   });
 
-  const steps = ['Select Service', 'Select Vehicle', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
+  const steps = ['Select Service', 'Select Vehicle Type', 'Select Vehicle', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
 
   // Generate time slots for business hours (9 AM - 5 PM, Monday to Friday)
   const generateTimeSlots = (selectedDate) => {
@@ -343,7 +345,36 @@ const BookAppointment = () => {
       ...formData,
       serviceCategory: category,
       servicePackage: service.name,
-      estimatedPrice: service.price
+      estimatedPrice: service.price, // This will be updated when vehicle type is selected
+      selectedService: service // Store the full service object for price calculation
+    });
+  };
+
+  const handleVehicleTypeSelect = (vehicleType) => {
+    const selectedService = formData.selectedService;
+    let price = selectedService.price; // default price
+    
+    // Calculate price based on vehicle type if vehicleTypes exist
+    if (selectedService.vehicleTypes) {
+      switch(vehicleType) {
+        case 'small':
+          price = selectedService.vehicleTypes.small;
+          break;
+        case 'suv':
+          price = selectedService.vehicleTypes.suv;
+          break;
+        case 'threeRow':
+          price = selectedService.vehicleTypes.threeRow;
+          break;
+        default:
+          price = selectedService.price;
+      }
+    }
+    
+    setFormData({
+      ...formData,
+      vehicleType: vehicleType,
+      estimatedPrice: price
     });
   };
 
@@ -389,6 +420,7 @@ const BookAppointment = () => {
         userName: currentUser.displayName || currentUser.email,
         service: formData.servicePackage,
         category: formData.serviceCategory,
+        vehicleType: formData.vehicleType,
         vehicleId: formData.vehicleId,
         date: formData.date.toDate(),
         timeSlot: formData.timeSlot,
@@ -523,6 +555,79 @@ const BookAppointment = () => {
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+                Select Your Vehicle Type
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+                Choose your vehicle type to see the exact price for your selected service: <strong>{formData.servicePackage}</strong>
+              </Typography>
+              
+              <Grid container spacing={{ xs: 2, sm: 3 }}>
+                {[
+                  { 
+                    type: 'small', 
+                    label: '🚗 Small Car', 
+                    description: 'Compact cars, sedans, coupes',
+                    price: formData.selectedService?.vehicleTypes?.small || formData.selectedService?.price
+                  },
+                  { 
+                    type: 'suv', 
+                    label: '🚙 SUV', 
+                    description: 'Standard SUVs, crossovers',
+                    price: formData.selectedService?.vehicleTypes?.suv || formData.selectedService?.price
+                  },
+                  { 
+                    type: 'threeRow', 
+                    label: '🚐 3-Row Seating', 
+                    description: 'Large SUVs, vans, trucks',
+                    price: formData.selectedService?.vehicleTypes?.threeRow || formData.selectedService?.price
+                  }
+                ].map((vehicleOption) => (
+                  <Grid item xs={12} sm={4} key={vehicleOption.type}>
+                    <Card 
+                      sx={{ 
+                        cursor: 'pointer',
+                        border: formData.vehicleType === vehicleOption.type ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                        '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+                        height: '100%',
+                        borderRadius: { xs: '12px', sm: '16px' }
+                      }}
+                      onClick={() => handleVehicleTypeSelect(vehicleOption.type)}
+                    >
+                      <CardContent sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center' }}>
+                        <Typography variant="h5" gutterBottom sx={{ 
+                          fontWeight: 600,
+                          fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                          mb: 2
+                        }}>
+                          {vehicleOption.label}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ 
+                          mb: 3,
+                          fontSize: { xs: '0.875rem', sm: '0.875rem' },
+                          lineHeight: 1.4
+                        }}>
+                          {vehicleOption.description}
+                        </Typography>
+                        <Typography variant="h4" color="primary" sx={{ 
+                          fontWeight: 700,
+                          fontSize: { xs: '1.5rem', sm: '2rem' }
+                        }}>
+                          ${vehicleOption.price}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Grid>
+          </Grid>
+        );
+
+      case 2:
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
                 Select Vehicle for Service
               </Typography>
               
@@ -597,7 +702,7 @@ const BookAppointment = () => {
           </Grid>
         );
 
-      case 2:
+      case 3:
         return (
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Grid container spacing={{ xs: 2, sm: 3 }}>
@@ -689,7 +794,7 @@ const BookAppointment = () => {
           </LocalizationProvider>
         );
 
-      case 3:
+      case 4:
         return (
           <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12}>
@@ -807,7 +912,7 @@ const BookAppointment = () => {
           </Grid>
         );
 
-      case 4:
+      case 5:
         return (
           <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12} md={6}>
@@ -833,6 +938,23 @@ const BookAppointment = () => {
                         maxWidth: '60%'
                       }}>
                         {formData.servicePackage}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                        Vehicle Type:
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        textAlign: 'right',
+                        maxWidth: '60%'
+                      }}>
+                        {formData.vehicleType === 'small' ? '🚗 Small Car' : 
+                         formData.vehicleType === 'suv' ? '🚙 SUV' : 
+                         formData.vehicleType === 'threeRow' ? '🚐 3-Row Seating' : 
+                         'Not selected'}
                       </Typography>
                     </Box>
                     
@@ -1302,9 +1424,10 @@ const BookAppointment = () => {
               size={window.innerWidth < 600 ? 'medium' : 'large'}
               disabled={
                 (activeStep === 0 && !formData.servicePackage) ||
-                (activeStep === 1 && !formData.vehicleId) ||
-                (activeStep === 2 && (!formData.date || !formData.timeSlot)) ||
-                (activeStep === 3 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
+                (activeStep === 1 && !formData.vehicleType) ||
+                (activeStep === 2 && !formData.vehicleId) ||
+                (activeStep === 3 && (!formData.date || !formData.timeSlot)) ||
+                (activeStep === 4 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
               }
               sx={{
                 background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
