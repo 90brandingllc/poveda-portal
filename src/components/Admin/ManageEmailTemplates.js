@@ -179,7 +179,7 @@ const defaultTemplates = {
             <p style="margin: 0; color: #2e7d32; font-weight: bold;">📞 Need to Reschedule or Have Questions?</p>
             <p style="margin: 5px 0 0 0; color: #2e7d32;">Contact us immediately:</p>
             <ul style="margin: 5px 0 0 0; color: #2e7d32;">
-              <li>📱 Phone: (614) 653-5882</li>
+              <li>📱 Phone: 614 653 5882</li>
               <li>📧 Email: support@povedapremiumautocare.com</li>
               <li>📍 Address: 4529 Parkwick Dr, Columbus, OH 43228</li>
               <li>🕒 Hours: Mon-Sun 7AM-6PM (Summer: 7AM-9PM)</li>
@@ -261,7 +261,7 @@ const defaultTemplates = {
             <p style="margin: 0; color: #2e7d32; font-weight: bold;">📞 Need to Reschedule or Have Questions?</p>
             <p style="margin: 5px 0 0 0; color: #2e7d32;">Contact us immediately:</p>
             <ul style="margin: 5px 0 0 0; color: #2e7d32;">
-              <li>📱 Phone: (614) 653-5882</li>
+              <li>📱 Phone: 614 653 5882</li>
               <li>📧 Email: support@povedapremiumautocare.com</li>
               <li>📍 Address: 4529 Parkwick Dr, Columbus, OH 43228</li>
               <li>🕒 Hours: Mon-Sun 7AM-6PM (Summer: 7AM-9PM)</li>

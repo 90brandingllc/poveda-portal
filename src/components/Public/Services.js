@@ -335,18 +335,18 @@ const Services = () => {
               We've made booking and payment simple and secure
             </Typography>
             <Grid container spacing={4} justifyContent="center">
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={6}>
                 <Box sx={{ textAlign: 'center' }}>
                   <CreditCard sx={{ fontSize: 40, color: '#4caf50', mb: 1 }} />
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                    Step 1: Book & Pay Deposit
+                    Step 1: Book & Pay Online
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Pay <strong>50% deposit</strong> securely online when booking your appointment
+                    Pay <strong>$45 deposit</strong> securely online when booking your appointment
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={6}>
                 <Box sx={{ textAlign: 'center' }}>
                   <DirectionsCar sx={{ fontSize: 40, color: '#1976d2', mb: 1 }} />
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
@@ -354,17 +354,6 @@ const Services = () => {
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Our team arrives at your location and completes the professional service
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Payment sx={{ fontSize: 40, color: '#ff9800', mb: 1 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                    Step 3: Final Payment
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Pay the <strong>remaining 50%</strong> directly to our technician upon completion
                   </Typography>
                 </Box>
               </Grid>
@@ -426,16 +415,10 @@ const Services = () => {
                           Payment Structure
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <CreditCard sx={{ mr: 1, color: '#4caf50', fontSize: 16 }} />
                         <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                          <strong>50% deposit</strong> - Paid online when booking
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Payment sx={{ mr: 1, color: '#ff9800', fontSize: 16 }} />
-                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                          <strong>50% remaining</strong> - Paid after service completion
+                          <strong>$45 deposit</strong> - Paid online when booking
                         </Typography>
                       </Box>
                     </Box>
@@ -594,3 +577,4 @@ const Services = () => {
 };
 
 export default Services;
+

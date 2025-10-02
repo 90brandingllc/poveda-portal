@@ -55,10 +55,8 @@ const BookAppointment = () => {
   const [vehicles, setVehicles] = useState([]);
 
   const [formData, setFormData] = useState({
-    serviceCategory: '',
-    servicePackage: '',
+    selectedServices: [], // Array of selected services
     vehicleType: '', // small, suv, threeRow
-    selectedService: null, // Store the full service object
     vehicleId: '',
     date: null,
     timeSlot: null,
@@ -73,7 +71,7 @@ const BookAppointment = () => {
     estimatedPrice: 0
   });
 
-  const steps = ['Select Service', 'Select Vehicle Type', 'Select Vehicle', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
+  const steps = ['Select Services', 'Select Vehicle Type', 'Select Vehicle', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
 
   // Generate time slots for business hours (9 AM - 5 PM, Monday to Friday)
   const generateTimeSlots = (selectedDate) => {
@@ -341,40 +339,56 @@ const BookAppointment = () => {
 
 
   const handleServiceSelect = (category, service) => {
-    setFormData({
-      ...formData,
-      serviceCategory: category,
-      servicePackage: service.name,
-      estimatedPrice: service.price, // This will be updated when vehicle type is selected
-      selectedService: service // Store the full service object for price calculation
-    });
-  };
-
-  const handleVehicleTypeSelect = (vehicleType) => {
-    const selectedService = formData.selectedService;
-    let price = selectedService.price; // default price
+    const serviceWithCategory = { ...service, category };
+    const isSelected = formData.selectedServices.some(s => s.name === service.name);
     
-    // Calculate price based on vehicle type if vehicleTypes exist
-    if (selectedService.vehicleTypes) {
-      switch(vehicleType) {
-        case 'small':
-          price = selectedService.vehicleTypes.small;
-          break;
-        case 'suv':
-          price = selectedService.vehicleTypes.suv;
-          break;
-        case 'threeRow':
-          price = selectedService.vehicleTypes.threeRow;
-          break;
-        default:
-          price = selectedService.price;
-      }
+    let updatedServices;
+    if (isSelected) {
+      // Remove service if already selected
+      updatedServices = formData.selectedServices.filter(s => s.name !== service.name);
+    } else {
+      // Add service if not selected
+      updatedServices = [...formData.selectedServices, serviceWithCategory];
     }
     
     setFormData({
       ...formData,
+      selectedServices: updatedServices,
+      estimatedPrice: 0 // Will be calculated when vehicle type is selected
+    });
+  };
+
+  const handleVehicleTypeSelect = (vehicleType) => {
+    // Calculate total price for all selected services based on vehicle type
+    let totalPrice = 0;
+    
+    formData.selectedServices.forEach(service => {
+      let servicePrice = service.price; // default price
+      
+      // Calculate price based on vehicle type if vehicleTypes exist
+      if (service.vehicleTypes) {
+        switch(vehicleType) {
+          case 'small':
+            servicePrice = service.vehicleTypes.small;
+            break;
+          case 'suv':
+            servicePrice = service.vehicleTypes.suv;
+            break;
+          case 'threeRow':
+            servicePrice = service.vehicleTypes.threeRow;
+            break;
+          default:
+            servicePrice = service.price;
+        }
+      }
+      
+      totalPrice += servicePrice;
+    });
+    
+    setFormData({
+      ...formData,
       vehicleType: vehicleType,
-      estimatedPrice: price
+      estimatedPrice: totalPrice
     });
   };
 
@@ -418,8 +432,8 @@ const BookAppointment = () => {
         userId: currentUser.uid,
         userEmail: currentUser.email,
         userName: currentUser.displayName || currentUser.email,
-        service: formData.servicePackage,
-        category: formData.serviceCategory,
+        services: formData.selectedServices.map(service => service.name), // Array of service names
+        servicesDetails: formData.selectedServices, // Full service objects for reference
         vehicleType: formData.vehicleType,
         vehicleId: formData.vehicleId,
         date: formData.date.toDate(),
@@ -452,7 +466,7 @@ const BookAppointment = () => {
             id: paymentResult.id,
             amount: depositAmount,
             remaining: remainingBalance,
-            service: formData.servicePackage
+            service: formData.selectedServices.map(s => s.name).join(', ')
           });
         }
       } catch (notificationError) {
@@ -502,51 +516,105 @@ const BookAppointment = () => {
       case 0:
         return (
           <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
+                Select one or more services for your vehicle. You can choose multiple services to combine them.
+              </Typography>
+            </Grid>
             {Object.entries(serviceCategories).map(([key, category]) => (
               <Grid item xs={12} key={key}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
                   {category.name}
                 </Typography>
                 <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-                  {category.services.map((service, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                      <Card 
-                        sx={{ 
-                          cursor: 'pointer',
-                          border: formData.servicePackage === service.name ? '2px solid #1976d2' : '1px solid #e0e0e0',
-                          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
-                          height: '100%',
-                          borderRadius: { xs: '12px', sm: '16px' }
-                        }}
-                        onClick={() => handleServiceSelect(key, service)}
-                      >
-                        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                          <Typography variant="h6" gutterBottom sx={{ 
-                            fontWeight: 600,
-                            fontSize: { xs: '1rem', sm: '1.25rem' }
-                          }}>
-                            {service.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ 
-                            mb: 2,
-                            fontSize: { xs: '0.875rem', sm: '0.875rem' },
-                            lineHeight: 1.4
-                          }}>
-                            {service.description}
-                          </Typography>
-                          <Typography variant="h5" color="primary" sx={{ 
-                            fontWeight: 700,
-                            fontSize: { xs: '1.25rem', sm: '1.5rem' }
-                          }}>
-                            ${service.price}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
+                  {category.services.map((service, index) => {
+                    const isSelected = formData.selectedServices.some(s => s.name === service.name);
+                    return (
+                      <Grid item xs={12} sm={6} md={4} key={index}>
+                        <Card 
+                          sx={{ 
+                            cursor: 'pointer',
+                            border: isSelected ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                            backgroundColor: isSelected ? '#e3f2fd' : 'white',
+                            '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+                            height: '100%',
+                            borderRadius: { xs: '12px', sm: '16px' },
+                            position: 'relative'
+                          }}
+                          onClick={() => handleServiceSelect(key, service)}
+                        >
+                          {isSelected && (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                backgroundColor: '#1976d2',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: 24,
+                                height: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.75rem',
+                                fontWeight: 600
+                              }}
+                            >
+                              ✓
+                            </Box>
+                          )}
+                          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                            <Typography variant="h6" gutterBottom sx={{ 
+                              fontWeight: 600,
+                              fontSize: { xs: '1rem', sm: '1.25rem' },
+                              pr: 2
+                            }}>
+                              {service.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ 
+                              mb: 2,
+                              fontSize: { xs: '0.875rem', sm: '0.875rem' },
+                              lineHeight: 1.4
+                            }}>
+                              {service.description}
+                            </Typography>
+                            <Typography variant="body2" color="primary" sx={{ 
+                              fontWeight: 500,
+                              fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                            }}>
+                              💰 Pricing shown after vehicle type selection
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
                 </Grid>
               </Grid>
             ))}
+            
+            {formData.selectedServices.length > 0 && (
+              <Grid item xs={12}>
+                <Box sx={{ mt: 3, p: 3, bgcolor: '#f8f9fa', borderRadius: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#1976d2' }}>
+                    Selected Services ({formData.selectedServices.length})
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {formData.selectedServices.map((service, idx) => (
+                      <Chip 
+                        key={idx}
+                        label={service.name}
+                        onDelete={() => handleServiceSelect(service.category, service)}
+                        color="primary"
+                        variant="outlined"
+                        sx={{ mb: 1 }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              </Grid>
+            )}
           </Grid>
         );
 
@@ -558,8 +626,25 @@ const BookAppointment = () => {
                 Select Your Vehicle Type
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                Choose your vehicle type to see the exact price for your selected service: <strong>{formData.servicePackage}</strong>
+                Choose your vehicle type to see the exact pricing for your selected services:
               </Typography>
+              
+              {/* Show selected services */}
+              <Box sx={{ mb: 4, p: 2, bgcolor: '#f8f9fa', borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                  Selected Services:
+                </Typography>
+                {formData.selectedServices.map((service, idx) => (
+                  <Chip 
+                    key={idx}
+                    label={service.name}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{ mr: 1, mb: 1 }}
+                  />
+                ))}
+              </Box>
               
               <Grid container spacing={{ xs: 2, sm: 3 }}>
                 {[
@@ -567,19 +652,25 @@ const BookAppointment = () => {
                     type: 'small', 
                     label: '🚗 Small Car', 
                     description: 'Compact cars, sedans, coupes',
-                    price: formData.selectedService?.vehicleTypes?.small || formData.selectedService?.price
+                    price: formData.selectedServices.reduce((total, service) => {
+                      return total + (service.vehicleTypes?.small || service.price);
+                    }, 0)
                   },
                   { 
                     type: 'suv', 
                     label: '🚙 SUV', 
                     description: 'Standard SUVs, crossovers',
-                    price: formData.selectedService?.vehicleTypes?.suv || formData.selectedService?.price
+                    price: formData.selectedServices.reduce((total, service) => {
+                      return total + (service.vehicleTypes?.suv || service.price);
+                    }, 0)
                   },
                   { 
                     type: 'threeRow', 
                     label: '🚐 3-Row Seating', 
                     description: 'Large SUVs, vans, trucks',
-                    price: formData.selectedService?.vehicleTypes?.threeRow || formData.selectedService?.price
+                    price: formData.selectedServices.reduce((total, service) => {
+                      return total + (service.vehicleTypes?.threeRow || service.price);
+                    }, 0)
                   }
                 ].map((vehicleOption) => (
                   <Grid item xs={12} sm={4} key={vehicleOption.type}>
@@ -613,6 +704,12 @@ const BookAppointment = () => {
                           fontSize: { xs: '1.5rem', sm: '2rem' }
                         }}>
                           ${vehicleOption.price}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ 
+                          mt: 1,
+                          fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                        }}>
+                          Total for {formData.selectedServices.length} service{formData.selectedServices.length !== 1 ? 's' : ''}
                         </Typography>
                       </CardContent>
                     </Card>
@@ -669,28 +766,10 @@ const BookAppointment = () => {
                             </Typography>
                           </Box>
                           
-                          {vehicle.nickname && (
-                            <Chip 
-                              label={vehicle.nickname} 
-                              size="small" 
-                              sx={{ 
-                                mb: 1, 
-                                backgroundColor: '#e3f2fd',
-                                fontSize: { xs: '0.75rem', sm: '0.8125rem' }
-                              }} 
-                            />
-                          )}
-                          
-                          <Typography variant="body2" color="text.secondary" sx={{ 
-                            fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                            mb: 0.5
-                          }}>
-                            <strong>Color:</strong> {vehicle.color || 'Not specified'}
-                          </Typography>
                           <Typography variant="body2" color="text.secondary" sx={{ 
                             fontSize: { xs: '0.8rem', sm: '0.875rem' }
                           }}>
-                            <strong>License:</strong> {vehicle.licensePlate || 'Not specified'}
+                            <strong>Color:</strong> {vehicle.color || 'Not specified'}
                           </Typography>
                         </CardContent>
                       </Card>
@@ -929,16 +1008,19 @@ const BookAppointment = () => {
                   <Stack spacing={2}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                        Service:
+                        Services:
                       </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 600,
-                        fontSize: { xs: '0.875rem', sm: '1rem' },
-                        textAlign: 'right',
-                        maxWidth: '60%'
-                      }}>
-                        {formData.servicePackage}
-                      </Typography>
+                      <Box sx={{ textAlign: 'right', maxWidth: '60%' }}>
+                        {formData.selectedServices.map((service, idx) => (
+                          <Typography key={idx} variant="body1" sx={{ 
+                            fontWeight: 600,
+                            fontSize: { xs: '0.875rem', sm: '1rem' },
+                            mb: idx < formData.selectedServices.length - 1 ? 0.5 : 0
+                          }}>
+                            {service.name}
+                          </Typography>
+                        ))}
+                      </Box>
                     </Box>
                     
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -1035,7 +1117,7 @@ const BookAppointment = () => {
                         mb: 2,
                         fontSize: { xs: '1rem', sm: '1.25rem' }
                       }}>
-                        💳 Payment Structure
+                        💳 Payment Required
                       </Typography>
                       
                       {/* Online Deposit */}
@@ -1052,7 +1134,7 @@ const BookAppointment = () => {
                             color: '#1976d2',
                             fontSize: { xs: '0.875rem', sm: '1rem' }
                           }}>
-                            Step 1: Online Deposit ($45)
+                            Online Deposit ($45)
                           </Typography>
                         </Box>
                         <Typography variant="h5" sx={{ 
@@ -1069,42 +1151,6 @@ const BookAppointment = () => {
                         </Typography>
                       </Box>
 
-                      {/* Remaining Payment */}
-                      <Box sx={{ 
-                        bgcolor: '#fff3e0', 
-                        p: { xs: 1.5, sm: 2 }, 
-                        borderRadius: { xs: '8px', sm: '12px' },
-                        border: '1px solid #ffcc02'
-                      }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Typography variant="body1" sx={{ 
-                            fontWeight: 600, 
-                            color: '#f57c00',
-                            fontSize: { xs: '0.875rem', sm: '1rem' }
-                          }}>
-                            Step 2: Final Payment (Remaining Balance)
-                          </Typography>
-                        </Box>
-                        <Typography variant="h5" sx={{ 
-                          fontWeight: 'bold', 
-                          color: '#f57c00',
-                          fontSize: { xs: '1.25rem', sm: '1.5rem' }
-                        }}>
-                          ${(formData.estimatedPrice - parseFloat(formatCurrency(calculateDepositAmount(formData.estimatedPrice)))).toFixed(2)}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                        }}>
-                          Pay directly to our technician upon service completion
-                        </Typography>
-                      </Box>
-
-                      {/* Info Alert */}
-                      <Alert severity="info" sx={{ mt: 2 }}>
-                        <Typography variant="body2">
-                          <strong>Why split payments?</strong> The deposit secures your booking, while the final payment ensures you're 100% satisfied before completing the transaction.
-                        </Typography>
-                      </Alert>
                     </Box>
                     
                     {paymentResult && (
@@ -1423,7 +1469,7 @@ const BookAppointment = () => {
               onClick={handleNext}
               size={window.innerWidth < 600 ? 'medium' : 'large'}
               disabled={
-                (activeStep === 0 && !formData.servicePackage) ||
+                (activeStep === 0 && formData.selectedServices.length === 0) ||
                 (activeStep === 1 && !formData.vehicleType) ||
                 (activeStep === 2 && !formData.vehicleId) ||
                 (activeStep === 3 && (!formData.date || !formData.timeSlot)) ||
