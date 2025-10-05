@@ -52,7 +52,8 @@ const ContactUs = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [replyMessage, setReplyMessage] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
-
+  const phoneNumber = '6146535882'; // sin paréntesis ni espacios
+  const whatsappLink = `https://wa.me/${phoneNumber}`;
   useEffect(() => {
     if (currentUser) {
       console.log('ContactUs - Setting up tickets listener for user:', currentUser.uid);
@@ -215,17 +216,21 @@ const ContactUs = () => {
               <Divider sx={{ mb: 2 }} />
               
               <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Phone sx={{ mr: 2, color: '#1976d2' }} />
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                      Phone Support
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      (555) 123-4567
-                    </Typography>
-                  </Box>
-                </Box>
+             
+  <a href={whatsappLink} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <Phone sx={{ mr: 2, color: '#1976d2' }} />
+      <Box>
+        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+          Phone Support
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          (614) 653 5882
+        </Typography>
+      </Box>
+    </Box>
+  </a>
+
 
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <Email sx={{ mr: 2, color: '#1976d2' }} />
