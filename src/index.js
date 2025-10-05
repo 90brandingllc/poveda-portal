@@ -6,6 +6,12 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './contexts/AuthContext';
+import { setupEmulators } from './firebase/emulators';
+
+// Configurar emuladores para desarrollo local
+if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
+  setupEmulators();
+}
 
 const theme = createTheme({
   palette: {

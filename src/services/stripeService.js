@@ -1,7 +1,12 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+// Initialize Stripe only if we have a key
+const stripePromise = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ? 
+  loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY) : 
+  new Promise((resolve) => {
+    console.warn('No Stripe publishable key found. Stripe functionality will be disabled.');
+    resolve(null);
+  });
 
 export const getStripe = () => stripePromise;
 
