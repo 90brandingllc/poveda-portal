@@ -75,7 +75,7 @@ const AdminLayout = ({ children }) => {
       icon: <Assignment />,
       path: '/admin/appointments',
       description: 'Booking Management',
-      badge: 3 // Example notification count
+     
     },
     {
       text: 'Customers',
@@ -88,7 +88,7 @@ const AdminLayout = ({ children }) => {
       icon: <SupportAgent />,
       path: '/admin/tickets',
       description: 'Customer Support',
-      badge: 2
+     
     },
     {
       text: 'Estimates',
@@ -130,20 +130,20 @@ const AdminLayout = ({ children }) => {
     handleProfileMenuClose();
   };
 
-  const handleNotificationsClick = (event) => {
-    setNotificationsAnchor(event.currentTarget);
-  };
-
-  const handleNotificationsClose = () => {
-    setNotificationsAnchor(null);
-  };
-
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
   const handleProfileMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNotificationsClick = (event) => {
+    setNotificationsAnchor(event.currentTarget);
+  };
+  
+  const handleNotificationsClose = () => {
+    setNotificationsAnchor(null);
   };
 
   const handleNavigate = (path) => {
@@ -169,17 +169,16 @@ const AdminLayout = ({ children }) => {
       flexDirection: 'column',
       background: 'rgba(255, 255, 255, 0.8)', 
       backdropFilter: 'blur(8px)',
-      borderTopRightRadius: { xs: 0, sm: '24px' },
-      borderBottomRightRadius: { xs: 0, sm: '24px' },
+    
       overflow: 'hidden'
     }}>
       {/* Logo Section */}
-      <Box sx={{ p: 3, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box sx={{ p: 5, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <img 
           src="/POVEDA PREMIUM AUTO CARE - LOGO.svg" 
           alt="POVEDA AUTO CARE" 
           style={{ 
-            height: '60px', 
+            height: '120px', 
             width: 'auto',
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
           }} 
@@ -295,48 +294,92 @@ const AdminLayout = ({ children }) => {
       {/* Top App Bar */}
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           width: { lg: `calc(100% - ${drawerWidth}px)` },
           ml: { lg: `${drawerWidth}px` },
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(20px)',
-          color: '#333',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          borderBottom: '1px solid #e0e0e0'
+          background: 'rgba(255, 255, 255, 0.8)', 
+         
+         
+          borderRadius: 0,
+         
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ px: { xs: 2, sm: 3 }, py: 1, minHeight: { xs: '64px', sm: '70px' } }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { lg: 'none' } }}
+            sx={{ 
+              mr: 2, 
+              display: { lg: 'none' },
+              color: '#555',
+              '&:hover': {
+                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                transform: 'scale(1.05)',
+                transition: 'all 0.2s'
+              }
+            }}
           >
             <MenuIcon />
           </IconButton>
           
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            {getPageTitle()}
-          </Typography>
-
-          {/* Notifications */}
-          <IconButton 
+          <Box sx={{ flexGrow: 1 }}></Box>
+          
+          <IconButton
+            color="inherit"
             onClick={handleNotificationsClick}
-            sx={{ mr: 1 }}
+            sx={{ 
+              mr: { xs: 1, sm: 2 },
+              backgroundColor: 'rgba(25, 118, 210, 0.08)',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+              p: { xs: 0.8, sm: 1 },
+              borderRadius: '12px',
+              transition: 'all 0.2s ease',
+              color: '#555',
+              '&:hover': {
+                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                transform: 'scale(1.05)',
+                transition: 'all 0.2s'
+              }
+            }}
           >
-            <Badge badgeContent={5} color="error">
-              <NotificationsNone />
+            <Badge 
+              badgeContent={0} 
+              color="error"
+              sx={{ 
+                '& .MuiBadge-badge': { 
+                  fontSize: '0.6rem',
+                  minWidth: '16px',
+                  height: '16px',
+                  padding: '0 4px'
+                } 
+              }}
+            >
+              <NotificationsNone sx={{ fontSize: '1.4rem', color: '#555' }} />
             </Badge>
           </IconButton>
-
-          {/* Profile Menu */}
-          <IconButton onClick={handleProfileMenuOpen}>
+          
+          <IconButton 
+            onClick={handleProfileMenuOpen}
+            sx={{ 
+              p: 0.2,
+              ml: { xs: 1, sm: 1.5 },
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                transform: 'scale(1.05)',
+                boxShadow: '0 3px 12px rgba(0,0,0,0.12)'
+              }
+            }}
+          >
             <Avatar 
               sx={{ 
-                width: 32, 
-                height: 32,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                width: { xs: 34, sm: 38 }, 
+                height: { xs: 34, sm: 38 },
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                border: '2px solid #fff',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
               }}
             >
               {currentUser?.displayName?.charAt(0) || 'A'}
@@ -371,126 +414,86 @@ const AdminLayout = ({ children }) => {
             </MenuItem>
           </Menu>
 
-          {/* Notifications Menu */}
+          {/* Notifications Menu - Empty but structure preserved */}
           <Menu
             anchorEl={notificationsAnchor}
             open={Boolean(notificationsAnchor)}
             onClose={handleNotificationsClose}
             sx={{
               '& .MuiPaper-root': {
-                borderRadius: 3,
-                background: 'rgba(255, 255, 255, 0.9)',
+                borderRadius: '16px',
+                background: 'rgba(255, 255, 255, 0.97)',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(8, 145, 178, 0.1)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                border: '1px solid rgba(231, 235, 240, 0.9)',
+                boxShadow: '0 15px 40px -12px rgba(0, 0, 0, 0.18)',
                 mt: 1.5,
-                minWidth: 320,
-                maxHeight: 400
+                minWidth: { xs: 280, sm: 340 },
+                maxHeight: 450,
+                overflow: 'hidden'
               }
             }}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           >
-            <Box sx={{ p: 2, borderBottom: '1px solid rgba(8, 145, 178, 0.1)' }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#4b5563' }}>
-                Notifications
+            <Box 
+              sx={{ 
+                p: 2.5, 
+                borderBottom: '1px solid rgba(231, 235, 240, 0.9)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 600, 
+                  color: '#111827',
+                  fontSize: { xs: '1rem', sm: '1.1rem' }
+                }}
+              >
+                Notificaciones
               </Typography>
+              <Chip 
+                label="0 nuevas" 
+                size="small"
+                sx={{
+                  background: 'rgba(243, 244, 246, 0.8)',
+                  color: '#6b7280',
+                  fontWeight: 500,
+                  fontSize: '0.7rem',
+                  height: 24
+                }}
+              />
             </Box>
             
-            {/* Sample notifications */}
-            <MenuItem 
-              onClick={handleNotificationsClose}
-              sx={{
-                p: 2,
-                borderBottom: '1px solid rgba(8, 145, 178, 0.05)',
-                '&:hover': {
-                  background: 'rgba(8, 145, 178, 0.05)'
-                }
+            <Box 
+              sx={{ 
+                p: 4, 
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 200
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mb: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  New Appointment
-                </Typography>
-                <Chip 
-                  size="small" 
-                  label="new"
-                  sx={{ 
-                    background: '#dcfce7',
-                    color: '#166534',
-                    fontSize: '0.75rem'
-                  }}
-                />
-              </Box>
-              <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
-                John Doe booked a car detailing appointment
+              <NotificationsNone 
+                sx={{ 
+                  fontSize: '3rem', 
+                  color: '#d1d5db', 
+                  mb: 2 
+                }} 
+              />
+              <Typography variant="body1" sx={{ color: '#6b7280', fontWeight: 500 }}>
+                No hay notificaciones nuevas
               </Typography>
-              <Typography variant="caption" sx={{ color: '#9ca3af' }}>
-                5 minutes ago
+              <Typography variant="body2" sx={{ color: '#9ca3af', mt: 0.5 }}>
+                Las actualizaciones aparecerán aquí
               </Typography>
-            </MenuItem>
-
-            <MenuItem 
-              onClick={handleNotificationsClose}
-              sx={{
-                p: 2,
-                borderBottom: '1px solid rgba(8, 145, 178, 0.05)',
-                '&:hover': {
-                  background: 'rgba(8, 145, 178, 0.05)'
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mb: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Payment Received
-                </Typography>
-                <Chip 
-                  size="small" 
-                  label="info"
-                  sx={{ 
-                    background: '#dbeafe',
-                    color: '#1e40af',
-                    fontSize: '0.75rem'
-                  }}
-                />
-              </Box>
-              <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
-                Payment of $150 received for appointment #001
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#9ca3af' }}>
-                1 hour ago
-              </Typography>
-            </MenuItem>
-
-            <MenuItem 
-              onClick={handleNotificationsClose}
-              sx={{
-                p: 2,
-                '&:hover': {
-                  background: 'rgba(8, 145, 178, 0.05)'
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mb: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  System Update
-                </Typography>
-                <Chip 
-                  size="small" 
-                  label="system"
-                  sx={{ 
-                    background: '#f3e8ff',
-                    color: '#7c3aed',
-                    fontSize: '0.75rem'
-                  }}
-                />
-              </Box>
-              <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
-                System maintenance completed successfully
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#9ca3af' }}>
-                2 hours ago
-              </Typography>
-            </MenuItem>
+            </Box>
           </Menu>
+
         </Toolbar>
       </AppBar>
 
