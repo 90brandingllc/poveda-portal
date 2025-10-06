@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Typography,
   Grid,
@@ -14,7 +14,8 @@ import {
   Avatar,
   Button,
   Menu,
-  MenuItem
+  MenuItem,
+  CircularProgress
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -56,27 +57,48 @@ const Notifications = () => {
   // Fetch notifications from Firestore
   useEffect(() => {
     if (currentUser) {
+      // Agregamos un console.log para debug
+      console.log('Buscando notificaciones para el usuario:', currentUser.uid);
+
+      // Consulta temporal sin orderBy para evitar necesidad de índice compuesto
       const notificationsQuery = query(
         collection(db, 'notifications'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', currentUser.uid)
+        // Se eliminó orderBy('createdAt', 'desc') temporalmente para evitar error de índice
       );
 
       const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-        const userNotifications = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().createdAt?.toDate() || new Date(),
-          time: formatTimeAgo(doc.data().createdAt?.toDate() || new Date())
-        }));
+        let userNotifications = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            timestamp: data.createdAt?.toDate() || new Date(),
+            time: formatTimeAgo(data.createdAt?.toDate() || new Date()),
+            // Asegurarnos de que read esté definido
+            read: data.read === undefined ? false : data.read
+          };
+        });
+        
+        // Ordenar manualmente las notificaciones por fecha (más recientes primero)
+        userNotifications.sort((a, b) => {
+          const dateA = a.timestamp || new Date(0);
+          const dateB = b.timestamp || new Date(0);
+          return dateB - dateA;
+        });
+
+        console.log('Notificaciones encontradas:', userNotifications.length, userNotifications);
         setNotifications(userNotifications);
         setLoading(false);
       }, (error) => {
         console.error('Error fetching notifications:', error);
+        setError(`Error cargando notificaciones: ${error.message}`);
         setLoading(false);
       });
 
       return () => unsubscribe();
+    } else {
+      setLoading(false); // También manejar el caso de que no haya usuario
     }
   }, [currentUser]);
 
@@ -107,34 +129,93 @@ const Notifications = () => {
 
   const markAsRead = async (notificationId) => {
     try {
+      // Actualización optimista del estado local
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notif => 
+          notif.id === notificationId 
+            ? { ...notif, read: true } 
+            : notif
+        )
+      );
+      
+      // Actualizar en Firestore
       await updateDoc(doc(db, 'notifications', notificationId), {
         read: true,
         readAt: serverTimestamp()
       });
+      
+      // Cambiar a la vista "all" si estás viendo "unread"
+      if (filter === 'unread') {
+        setFilter('all');
+      }
+      
       handleMenuClose();
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      
+      // Revertir el cambio local si falla
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notif => 
+          notif.id === notificationId && notif.read 
+            ? { ...notif, read: false } 
+            : notif
+        )
+      );
     }
   };
 
   const markAsUnread = async (notificationId) => {
     try {
+      // Actualización optimista del estado local
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notif => 
+          notif.id === notificationId 
+            ? { ...notif, read: false } 
+            : notif
+        )
+      );
+      
+      // Actualizar en Firestore
       await updateDoc(doc(db, 'notifications', notificationId), {
         read: false,
         readAt: null
       });
+      
       handleMenuClose();
     } catch (error) {
       console.error('Error marking notification as unread:', error);
+      
+      // Revertir el cambio local si falla
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notif => 
+          notif.id === notificationId && !notif.read 
+            ? { ...notif, read: true } 
+            : notif
+        )
+      );
     }
   };
 
   const deleteNotification = async (notificationId) => {
+    // Guardar una copia de la notificación antes de eliminarla para posible restauración
+    const notificationToDelete = notifications.find(n => n.id === notificationId);
+    
     try {
+      // Actualización optimista - eliminar del estado local
+      setNotifications(prevNotifications => 
+        prevNotifications.filter(notif => notif.id !== notificationId)
+      );
+      
+      // Eliminar de Firestore
       await deleteDoc(doc(db, 'notifications', notificationId));
       handleMenuClose();
     } catch (error) {
       console.error('Error deleting notification:', error);
+      
+      // Restaurar la notificación si falla
+      if (notificationToDelete) {
+        setNotifications(prev => [...prev, notificationToDelete]);
+      }
     }
   };
 
@@ -164,13 +245,67 @@ const Notifications = () => {
     }
   };
 
-  const filteredNotifications = notifications.filter(notification => {
-    if (filter === 'unread') return !notification.read;
-    if (filter === 'read') return notification.read;
-    return true;
-  });
+  // Filtrado más robusto de notificaciones
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter(notification => {
+      // Asegurarse de que notification.read esté definido
+      const isRead = notification.read === true;
+      
+      if (filter === 'unread') return !isRead;
+      if (filter === 'read') return isRead;
+      return true;
+    });
+  }, [notifications, filter]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Contador de no leídas
+  const unreadCount = useMemo(() => {
+    return notifications.filter(n => n.read !== true).length;
+  }, [notifications]);
+  
+  // Añadimos un estado para controlar errores
+  const [error, setError] = useState(null);
+
+  // Función para marcar todas las notificaciones como leídas
+  const markAllAsRead = async () => {
+    // Solo proceder si hay notificaciones no leídas
+    const unreadNotifications = notifications.filter(n => !n.read);
+    if (unreadNotifications.length === 0) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Actualiza el estado local optimistamente
+      setNotifications(prevNotifications => 
+        prevNotifications.map(n => ({ ...n, read: true }))
+      );
+      
+      // Actualizar cada notificación en Firebase
+      const updatePromises = unreadNotifications.map(notification => 
+        updateDoc(doc(db, 'notifications', notification.id), {
+          read: true,
+          readAt: serverTimestamp()
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // Si estamos en vista de no leídas, cambiar a todas
+      if (filter === 'unread') {
+        setFilter('all');
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      setError(`Error marking all as read: ${error.message}`);
+      setLoading(false);
+      
+      // Revertir cambios en caso de error
+      // La suscripción a Firestore actualizará el estado
+    }
+  };
 
   const toggleExpanded = (notificationId) => {
     setExpandedNotifications(prev => {
@@ -215,9 +350,21 @@ const Notifications = () => {
         </Typography>
       </Box>
 
-      {/* Filter Buttons */}
+      {/* Error message */}
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ mb: 4, borderRadius: 2 }}
+          onClose={() => setError(null)}
+        >
+          {error}
+        </Alert>
+      )}
+
+      {/* Filter Buttons and Actions */}
       <Box sx={{ mb: 4 }}>
-        <Stack direction="row" spacing={1}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Stack direction="row" spacing={1}>
           <Button
             variant={filter === 'all' ? 'contained' : 'outlined'}
             onClick={() => setFilter('all')}
@@ -264,12 +411,51 @@ const Notifications = () => {
             Read ({notifications.length - unreadCount})
           </Button>
         </Stack>
+        
+        {/* Botón para marcar todas como leídas */}
+        {unreadCount > 0 && (
+          <Button
+            variant="outlined"
+            onClick={markAllAsRead}
+            startIcon={<MarkEmailRead />}
+            disabled={loading}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#0891b2',
+              color: '#0891b2',
+              '&:hover': {
+                borderColor: '#0e7490',
+                color: '#0e7490',
+                background: 'rgba(8, 145, 178, 0.1)'
+              }
+            }}
+          >
+            Mark All Read
+          </Button>
+        )}
+        </Box>
       </Box>
 
       {/* Notifications List */}
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          {filteredNotifications.length === 0 ? (
+          {loading ? (
+            <Card sx={{ 
+              background: 'rgba(255, 255, 255, 0.8)', 
+              backdropFilter: 'blur(8px)', 
+              border: 0, 
+              boxShadow: 3,
+              p: 4,
+              textAlign: 'center'
+            }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Cargando notificaciones...
+              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <CircularProgress size={40} sx={{ color: '#0891b2' }} />
+              </Box>
+            </Card>
+          ) : filteredNotifications.length === 0 ? (
             <Card sx={{ 
               background: 'rgba(255, 255, 255, 0.8)', 
               backdropFilter: 'blur(8px)', 
