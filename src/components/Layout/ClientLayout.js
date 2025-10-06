@@ -260,33 +260,7 @@ const ClientLayout = ({ children }) => {
         </Drawer>
       </Box>
 
-      {/* Desktop Top Bar */}
-      <Box
-        sx={{
-          display: { xs: 'none', sm: 'block' },
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          left: '256px',
-          zIndex: 1000,
-          background: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-          p: 2
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <IconButton 
-            sx={{ color: '#4b5563' }}
-            onClick={handleNotificationClick}
-            aria-label="notifications"
-          >
-            <Badge badgeContent={unreadCount > 0 ? unreadCount : null} color="error">
-              <Notifications />
-            </Badge>
-          </IconButton>
-        </Box>
-      </Box>
+      {/* Eliminada la barra superior de desktop para evitar duplicar la campana de notificaciones */}
 
       {/* Main Content */}
       <Box
@@ -295,7 +269,7 @@ const ClientLayout = ({ children }) => {
           flexGrow: 1,
           p: { xs: 2, sm: 4 },
           ml: { sm: '256px' },
-          mt: { xs: '64px', sm: '64px' }
+          mt: { xs: '64px', sm: '20px' } // Reducido el margen superior en desktop
         }}
       >
         {children}

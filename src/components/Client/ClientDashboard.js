@@ -14,7 +14,8 @@ import {
   Menu,
   MenuItem,
   Divider,
-  Chip
+  Chip,
+  Tooltip
 } from '@mui/material';
 import {
   Search,
@@ -23,12 +24,13 @@ import {
   DirectionsCar,
   AccessTime,
   Description,
-  Logout
+  Logout,
+  CheckCircleOutline
 } from '@mui/icons-material';
 
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import ClientLayout from '../Layout/ClientLayout';
 import { generateSampleData } from '../../utils/generateSampleData';
@@ -53,20 +55,37 @@ const ClientDashboard = () => {
   // Fetch real-time notifications
   useEffect(() => {
     if (currentUser) {
+      // Consulta temporal sin filtrado por read para evitar necesidad de índice compuesto
       const notificationsQuery = query(
         collection(db, 'notifications'),
-        where('userId', '==', currentUser.uid),
-        where('read', '==', false),
-        limit(5)
+        where('userId', '==', currentUser.uid)
+        // Se eliminaron los filtros adicionales temporalmente
       );
 
       const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-        const unreadNotifications = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          time: formatTimeAgo(doc.data().createdAt?.toDate() || new Date())
-        }));
-        setNotifications(unreadNotifications);
+        let allNotifications = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            time: formatTimeAgo(data.createdAt?.toDate() || new Date())
+          };
+        });
+        
+        // Filtrar manualmente solo las notificaciones no leídas
+        const unreadNotifications = allNotifications.filter(n => n.read !== true);
+        
+        // Ordenar por fecha (más recientes primero)
+        unreadNotifications.sort((a, b) => {
+          const dateA = a.createdAt?.toDate() || new Date(0);
+          const dateB = b.createdAt?.toDate() || new Date(0);
+          return dateB - dateA;
+        });
+        
+        // Limitar a 5 notificaciones
+        const limitedNotifications = unreadNotifications.slice(0, 5);
+        
+        setNotifications(limitedNotifications);
       }, (error) => {
         console.error('Error fetching notifications:', error);
       });
@@ -102,7 +121,25 @@ const ClientDashboard = () => {
     setNotificationsAnchor(null);
   };
 
-
+  // Nueva función para marcar notificaciones como leídas
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      // Actualización optimista en el estado local
+      setNotifications(prevNotifications => 
+        prevNotifications.filter(n => n.id !== notificationId)
+      );
+      
+      // Actualizar en Firestore
+      await updateDoc(doc(db, 'notifications', notificationId), {
+        read: true,
+        readAt: serverTimestamp()
+      });
+      
+      console.log('Notificación marcada como leída:', notificationId);
+    } catch (error) {
+      console.error('Error al marcar notificación como leída:', error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -285,8 +322,8 @@ const ClientDashboard = () => {
               border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: '16px',
               boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
-              width: '350px',
-              maxHeight: '400px'
+              width: '400px', // Aumentado el ancho del modal
+              maxHeight: '450px' // Aumentado la altura máxima
             }
           }}
           anchorOrigin={{
@@ -308,7 +345,7 @@ const ClientDashboard = () => {
               </Typography>
             ) : (
               notifications.map((notification, index) => (
-                <Box key={notification.id}>
+                <Box key={notification.id} sx={{ position: 'relative', mb: 2 }}>
                   <MenuItem 
                     onClick={handleNotificationsClose}
                     sx={{ 
@@ -318,31 +355,66 @@ const ClientDashboard = () => {
                       borderRadius: '8px',
                       '&:hover': {
                         background: 'rgba(8, 145, 178, 0.1)'
-                      }
+                      },
+                      pr: 12, // Más espacio para el botón
+                      position: 'relative', // Para posicionar elementos dentro
+                      overflow: 'visible' // Permitir que el botón se vea aunque esté fuera del área
                     }}
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mb: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, pr: 2 }}>
                         {notification.title}
-                  </Typography>
+                      </Typography>
                       <Chip 
                         size="small" 
                         label={notification.type}
-                    sx={{ 
+                        sx={{ 
                           background: notification.type === 'success' ? '#dcfce7' : '#dbeafe',
                           color: notification.type === 'success' ? '#166534' : '#1e40af',
                           fontSize: '0.75rem'
                         }}
                       />
                     </Box>
-                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 1, pr: 8, maxWidth: '100%', wordBreak: 'break-word' }}>
                       {notification.message}
                     </Typography>
                     <Typography variant="caption" sx={{ color: '#9ca3af' }}>
                       {notification.time}
                     </Typography>
                   </MenuItem>
-                  {index < notifications.length - 1 && <Divider />}
+                  
+                  {/* Botón para marcar como leído */}
+                  <Tooltip title="Marcar como leída" placement="left">
+                    <IconButton
+                      size="medium" // Tamaño más grande para mejor visibilidad
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markNotificationAsRead(notification.id);
+                      }}
+                      sx={{
+                        position: 'absolute',
+                        right: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        bgcolor: 'white',
+                        border: '1px solid #e5e7eb',
+                        color: '#0891b2',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        width: 36, // Tamaño fijo más grande
+                        height: 36, // Tamaño fijo más grande
+                        '&:hover': {
+                          bgcolor: '#f0f9ff',
+                          boxShadow: '0 3px 6px rgba(0,0,0,0.15)',
+                          color: '#0e7490',
+                        },
+                        zIndex: 10 // Mayor valor para asegurar que esté por encima de todo
+                      }}
+                    >
+                      <CheckCircleOutline fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  
+                  {index < notifications.length - 1 && <Divider sx={{ mt: 1 }} />}
                 </Box>
               ))
             )}
