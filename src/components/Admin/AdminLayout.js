@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Drawer,
@@ -19,7 +19,9 @@ import {
   Badge,
   useTheme,
   useMediaQuery,
-  Paper
+  Paper,
+  ListItemAvatar,
+  Button
 } from '@mui/material';
 import {
   Dashboard,
@@ -42,6 +44,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const drawerWidth = 280;
 
@@ -55,6 +58,9 @@ const AdminLayout = ({ children }) => {
   const location = useLocation();
   const { currentUser, logout } = useAuth();
   const [notificationsAnchor, setNotificationsAnchor] = useState(null);
+  
+  // Usar el contexto de notificaciones
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   // Navigation menu items
   const menuItems = [
@@ -346,7 +352,7 @@ const AdminLayout = ({ children }) => {
             }}
           >
             <Badge 
-              badgeContent={0} 
+              badgeContent={unreadCount} 
               color="error"
               sx={{ 
                 '& .MuiBadge-badge': { 
@@ -455,11 +461,11 @@ const AdminLayout = ({ children }) => {
                 Notificaciones
               </Typography>
               <Chip 
-                label="0 nuevas" 
+                label={`${unreadCount} nueva${unreadCount !== 1 ? 's' : ''}`}
                 size="small"
                 sx={{
-                  background: 'rgba(243, 244, 246, 0.8)',
-                  color: '#6b7280',
+                  background: unreadCount > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(243, 244, 246, 0.8)',
+                  color: unreadCount > 0 ? '#ef4444' : '#6b7280',
                   fontWeight: 500,
                   fontSize: '0.7rem',
                   height: 24
@@ -469,29 +475,134 @@ const AdminLayout = ({ children }) => {
             
             <Box 
               sx={{ 
-                p: 4, 
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 200
+                overflowY: 'auto',
+                maxHeight: 320,
+                minHeight: 100
               }}
             >
-              <NotificationsNone 
-                sx={{ 
-                  fontSize: '3rem', 
-                  color: '#d1d5db', 
-                  mb: 2 
-                }} 
-              />
-              <Typography variant="body1" sx={{ color: '#6b7280', fontWeight: 500 }}>
-                No hay notificaciones nuevas
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#9ca3af', mt: 0.5 }}>
-                Las actualizaciones aparecerán aquí
-              </Typography>
+              {notifications && notifications.length > 0 ? (
+                <List sx={{ py: 0 }}>
+                  {notifications.map(notification => (
+                    <ListItem 
+                      key={notification.id} 
+                      sx={{
+                        backgroundColor: notification.read ? 'transparent' : 'rgba(59, 130, 246, 0.05)',
+                        borderBottom: '1px solid rgba(231, 235, 240, 0.6)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                        }
+                      }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar 
+                          sx={{ 
+                            bgcolor: 
+                              notification.type === 'appointment' ? 'rgba(79, 70, 229, 0.1)' :
+                              notification.type === 'ticket' ? 'rgba(239, 68, 68, 0.1)' : 
+                              'rgba(16, 185, 129, 0.1)',
+                            color: 
+                              notification.type === 'appointment' ? '#4f46e5' :
+                              notification.type === 'ticket' ? '#ef4444' : 
+                              '#10b981'
+                          }}
+                        >
+                          {notification.type === 'appointment' ? <Schedule /> : 
+                           notification.type === 'ticket' ? <SupportAgent /> : 
+                           <RequestQuote />}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              fontWeight: notification.read ? 500 : 700,
+                              color: notification.read ? '#4b5563' : '#111827',
+                              fontSize: '0.875rem'
+                            }}
+                          >
+                            {notification.title}
+                          </Typography>
+                        }
+                        secondary={
+                          <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                            {notification.content}
+                            <Box component="span" sx={{ display: 'block', mt: 0.5, color: '#9ca3af', fontSize: '0.7rem' }}>
+                              {new Date(notification.createdAt).toLocaleString()}
+                            </Box>
+                          </Typography>
+                        }
+                        onClick={() => {
+                          if (!notification.read) {
+                            markAsRead(notification.id);
+                          }
+                          
+                          // Navegar a la página correspondiente según el tipo de notificación
+                          if (notification.type === 'appointment') {
+                            navigate('/admin/appointments');
+                          } else if (notification.type === 'ticket') {
+                            navigate('/admin/tickets');
+                          } else if (notification.type === 'estimate') {
+                            navigate('/admin/estimates');
+                          }
+                          
+                          handleNotificationsClose();
+                        }}
+                        sx={{ cursor: 'pointer' }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Box 
+                  sx={{ 
+                    p: 4, 
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 100
+                  }}
+                >
+                  <NotificationsNone 
+                    sx={{ 
+                      fontSize: '3rem', 
+                      color: '#d1d5db', 
+                      mb: 2 
+                    }} 
+                  />
+                  <Typography variant="body1" sx={{ color: '#6b7280', fontWeight: 500 }}>
+                    No hay notificaciones nuevas
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#9ca3af', mt: 0.5 }}>
+                    Las actualizaciones aparecerán aquí
+                  </Typography>
+                </Box>
+              )}
             </Box>
+            
+            {notifications && notifications.length > 0 && (
+              <Box sx={{ p: 2, borderTop: '1px solid rgba(231, 235, 240, 0.9)' }}>
+                <Button 
+                  fullWidth 
+                  variant="text" 
+                  size="small"
+                  onClick={() => {
+                    markAllAsRead();
+                  }}
+                  sx={{ 
+                    textTransform: 'none',
+                    color: '#3b82f6',
+                    '&:hover': {
+                      backgroundColor: 'rgba(59, 130, 246, 0.05)'
+                    }
+                  }}
+                >
+                  Marcar todas como leídas
+                </Button>
+              </Box>
+            )}
           </Menu>
 
         </Toolbar>
