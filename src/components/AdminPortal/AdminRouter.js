@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { CircularProgress, Box } from '@mui/material';
+import { NotificationProvider } from '../../contexts/NotificationContext';
 
 // Admin Portal Components
 import AdminLogin from './AdminLogin';
@@ -66,8 +67,9 @@ const AdminRouter = () => {
   }
 
   return (
-    <Routes>
-      {/* Admin Authentication Routes */}
+    <NotificationProvider>
+      <Routes>
+        {/* Admin Authentication Routes */}
       <Route 
         path="/login" 
         element={
@@ -177,10 +179,11 @@ const AdminRouter = () => {
         } 
       />
 
-      {/* Default admin route */}
-      <Route path="/" element={<Navigate to="/admin/login" replace />} />
-      <Route path="*" element={<Navigate to="/admin/login" replace />} />
-    </Routes>
+        {/* Default admin route */}
+        <Route path="/" element={<Navigate to="/admin/login" replace />} />
+        <Route path="*" element={<Navigate to="/admin/login" replace />} />
+      </Routes>
+    </NotificationProvider>
   );
 };
 
