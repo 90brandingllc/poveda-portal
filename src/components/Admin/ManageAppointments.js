@@ -51,9 +51,11 @@ import {
   query, 
   orderBy,
   serverTimestamp,
-  deleteDoc
+  deleteDoc,
+  getDoc
 } from 'firebase/firestore';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { handleAppointmentStatusChange } from '../../utils/notificationTriggers';
 
 const ManageAppointments = () => {
   const navigate = useNavigate();
@@ -98,10 +100,27 @@ const ManageAppointments = () => {
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
-      await updateDoc(doc(db, 'appointments', appointmentId), {
+      // Get the appointment data first
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      const appointmentSnap = await getDoc(appointmentRef);
+      
+      if (!appointmentSnap.exists()) {
+        throw new Error('Appointment not found');
+      }
+      
+      const appointmentData = { id: appointmentId, ...appointmentSnap.data() };
+      
+      // Update the appointment status
+      await updateDoc(appointmentRef, {
         status: newStatus,
         updatedAt: serverTimestamp()
       });
+      
+      // Use centralized notification service
+      await handleAppointmentStatusChange(appointmentId, newStatus, appointmentData);
+      
+      console.log(`Status change to ${newStatus} processed successfully`);
+      
       
       setSnackbar({
         open: true,

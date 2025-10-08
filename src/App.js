@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { CircularProgress, Box } from '@mui/material';
 import ErrorBoundary from './components/ErrorBoundary';
+import NotificationListener from './components/Notifications/NotificationProvider';
 
 // Auth Components
 import Login from './components/Auth/Login';
@@ -45,7 +46,13 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/dashboard" replace />;
   }
   
-  return children;
+  // Always include NotificationListener for authenticated routes
+  return (
+    <>
+      <NotificationListener />
+      {children}
+    </>
+  );
 };
 
 // Public Route Component (redirect if authenticated)
@@ -62,8 +69,6 @@ const PublicRoute = ({ children }) => {
 function App() {
   const { currentUser, userRole } = useAuth();
   
-
-
   // Show loading spinner while checking auth state
   if (currentUser === undefined) {
     return (
@@ -80,6 +85,7 @@ function App() {
 
   return (
     <ErrorBoundary>
+      {/* NotificationListener is now included in ProtectedRoute */}
       <div className="App">
         <Routes>
         {/* Public Routes */}
