@@ -41,6 +41,7 @@ import { useNavigate } from 'react-router-dom';
 import DepositPayment from '../Payment/DepositPayment';
 import { calculateDepositAmount, formatCurrency } from '../../services/stripeService';
 import { createAppointmentConfirmedNotification, createPaymentReceivedNotification } from '../../utils/notificationService';
+import { sendAppointmentConfirmationEmail } from '../../utils/emailService';
 import { handleError, withRetry } from '../../utils/errorHandler';
 import { LoadingSpinner, FormLoadingOverlay } from '../LoadingState';
 import ClientLayout from '../Layout/ClientLayout';
@@ -476,6 +477,19 @@ const BookAppointment = () => {
             remaining: remainingBalance,
             service: formData.selectedServices.map(s => s.name).join(', ')
           });
+        }
+        
+        // Send confirmation email if email reminders are enabled
+        if (formData.emailReminders) {
+          try {
+            await sendAppointmentConfirmationEmail({
+              ...appointmentData,
+              id: docRef.id
+            });
+          } catch (emailError) {
+            console.error('Error sending confirmation email:', emailError);
+            // Don't fail if email sending fails
+          }
         }
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);
