@@ -15,7 +15,8 @@ import {
   Chip,
   IconButton,
   Menu,
-  MenuItem
+  MenuItem,
+  Divider
 } from '@mui/material';
 import {
   Add,
@@ -274,26 +275,76 @@ const MyGarage = () => {
         {/* Header */}
         <Box sx={{ 
           display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 4 
+          alignItems: { xs: 'flex-start', sm: 'center' }, 
+          gap: { xs: 2, sm: 0 },
+          mb: { xs: 3, sm: 5 },
+          pb: { xs: 2, sm: 3 },
+          borderBottom: '1px solid rgba(203, 213, 225, 0.3)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <Box>
-            <Typography 
-              variant="h4" 
-              sx={{ 
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1
-              }}
-            >
-              My Garage
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Manage your vehicles and track their service history
+          <Box sx={{ position: 'relative', zIndex: 2 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 2, 
+              mb: 1.5 
+            }}>
+              <Box sx={{ 
+                width: 50, 
+                height: 50, 
+                borderRadius: '14px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, rgba(8, 145, 178, 0.1) 0%, rgba(30, 64, 175, 0.1) 100%)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
+                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.06)',
+                position: 'relative'
+              }}>
+                <DirectionsCar sx={{ 
+                  fontSize: '2rem', 
+                  color: '#0891b2',
+                  filter: 'drop-shadow(0 4px 6px rgba(8, 145, 178, 0.3))'
+                }} />
+                <Box sx={{ 
+                  position: 'absolute', 
+                  width: 12, 
+                  height: 12, 
+                  borderRadius: '50%', 
+                  bottom: -4, 
+                  right: -4, 
+                  background: '#0891b2',
+                  boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.8)'
+                }}></Box>
+              </Box>
+              
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontWeight: 800,
+                  background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontSize: { xs: '1.75rem', sm: '2.25rem' },
+                  letterSpacing: '-0.5px',
+                  textShadow: '0 2px 10px rgba(0,0,0,0.05)'
+                }}
+              >
+                My Garage
+              </Typography>
+            </Box>
+            
+            <Typography variant="body1" sx={{ 
+              color: '#475569',
+              maxWidth: '500px',
+              fontWeight: 500
+            }}>
+              Manage your vehicles and track their service history with detailed records
             </Typography>
           </Box>
           
@@ -306,11 +357,42 @@ const MyGarage = () => {
               borderRadius: '12px',
               textTransform: 'none',
               fontWeight: 600,
-              px: 3
+              px: 4,
+              py: 1.5,
+              boxShadow: '0 10px 20px rgba(8, 145, 178, 0.25)',
+              position: 'relative',
+              zIndex: 2,
+              '&:hover': {
+                boxShadow: '0 12px 25px rgba(8, 145, 178, 0.35)',
+                transform: 'translateY(-2px)'
+              },
+              transition: 'all 0.3s ease'
             }}
           >
             Add Vehicle
           </Button>
+          
+          {/* Decorative elements */}
+          <Box sx={{ 
+            position: 'absolute',
+            top: -100,
+            right: -100,
+            width: 300,
+            height: 300,
+            background: 'radial-gradient(circle, rgba(8, 145, 178, 0.03) 0%, rgba(8, 145, 178, 0) 70%)',
+            borderRadius: '50%',
+            zIndex: 1
+          }} />
+          <Box sx={{ 
+            position: 'absolute',
+            bottom: -20,
+            left: '20%',
+            width: 200,
+            height: 200,
+            background: 'radial-gradient(circle, rgba(30, 64, 175, 0.02) 0%, rgba(30, 64, 175, 0) 70%)',
+            borderRadius: '50%',
+            zIndex: 1
+          }} />
         </Box>
 
         {/* Success/Error Messages */}
@@ -327,137 +409,469 @@ const MyGarage = () => {
 
         {/* Vehicles Grid */}
         {loading ? (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography>Loading your vehicles...</Typography>
+          <Box sx={{ 
+            textAlign: 'center', 
+            py: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Box sx={{
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(8, 145, 178, 0.1)',
+              mb: 2
+            }}>
+              <DirectionsCar sx={{ fontSize: '2rem', color: '#0891b2', opacity: 0.7 }} />
+            </Box>
+            <Typography sx={{ color: '#6b7280', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box 
+                component="span" 
+                sx={{ 
+                  width: 12, 
+                  height: 12, 
+                  borderRadius: '50%', 
+                  background: '#0891b2',
+                  display: 'inline-block',
+                  animation: 'pulse 1.5s infinite ease-in-out'
+                }}
+              />
+              Loading your vehicles...
+            </Typography>
           </Box>
         ) : vehicles.length === 0 ? (
           <Card sx={{ 
-            p: 6, 
+            p: { xs: 4, sm: 6 }, 
             textAlign: 'center',
-            background: 'rgba(255, 255, 255, 0.9)',
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.9) 100%)',
             backdropFilter: 'blur(20px)',
-            borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
+            borderRadius: '24px',
+            border: '1px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: '0 20px 30px rgba(0, 0, 0, 0.07)',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
-            <DirectionsCar sx={{ fontSize: 64, color: '#d1d5db', mb: 2 }} />
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#6b7280', mb: 1 }}>
-              No Vehicles Yet
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#9ca3af', mb: 3 }}>
-              Start by adding your first vehicle to track its service history
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={handleAddVehicle}
-              sx={{
-                background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-                borderRadius: '12px',
-                textTransform: 'none',
-                fontWeight: 600
-              }}
-            >
-              Add Your First Vehicle
-            </Button>
+            <Box sx={{
+              position: 'relative',
+              zIndex: 2
+            }}>
+              <Box sx={{
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 3,
+                boxShadow: '0 15px 25px rgba(8, 145, 178, 0.1)',
+                position: 'relative'
+              }}>
+                <DirectionsCar sx={{ 
+                  fontSize: 52, 
+                  color: '#0891b2', 
+                  filter: 'drop-shadow(0 4px 6px rgba(8, 145, 178, 0.3))'
+                }} />
+                <Box sx={{
+                  position: 'absolute',
+                  bottom: 5,
+                  right: 5,
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+                }}>
+                  <Add sx={{ fontSize: '1rem', color: '#0891b2' }} />
+                </Box>
+              </Box>
+              
+              <Typography variant="h4" sx={{ fontWeight: 800, color: '#334155', mb: 2 }}>
+                No Vehicles Yet
+              </Typography>
+              
+              <Typography variant="body1" sx={{ 
+                color: '#64748b', 
+                mb: 4, 
+                maxWidth: '500px', 
+                mx: 'auto',
+                lineHeight: 1.6
+              }}>
+                Start by adding your first vehicle to track its service history. You can add details like make, model, and year to keep everything organized.
+              </Typography>
+              
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={handleAddVehicle}
+                sx={{
+                  background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+                  borderRadius: '14px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  py: 1.5,
+                  px: 4,
+                  boxShadow: '0 10px 20px rgba(8, 145, 178, 0.2)',
+                  '&:hover': {
+                    boxShadow: '0 15px 25px rgba(8, 145, 178, 0.3)',
+                    transform: 'translateY(-2px)'
+                  },
+                  transition: 'all 0.3s ease',
+                  fontSize: '1rem'
+                }}
+              >
+                Add Your First Vehicle
+              </Button>
+            </Box>
+            
+            {/* Decorative Elements */}
+            <Box sx={{ 
+              position: 'absolute',
+              top: -50,
+              left: -50,
+              width: 200,
+              height: 200,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(8, 145, 178, 0.04) 0%, rgba(8, 145, 178, 0) 70%)',
+              zIndex: 1
+            }} />
+            <Box sx={{ 
+              position: 'absolute',
+              bottom: -30,
+              right: -30,
+              width: 180,
+              height: 180,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(30, 64, 175, 0.05) 0%, rgba(30, 64, 175, 0) 70%)',
+              zIndex: 1
+            }} />
+            <Box sx={{ 
+              position: 'absolute',
+              top: '40%',
+              right: '20%',
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: '#0891b2',
+              opacity: 0.5,
+              boxShadow: '0 0 15px 5px rgba(8, 145, 178, 0.2)',
+              zIndex: 1
+            }} />
           </Card>
         ) : (
           <Grid container spacing={3}>
             {vehicles.map((vehicle) => (
               <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
                 <Card sx={{
-                  background: 'rgba(255, 255, 255, 0.9)',
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
                   backdropFilter: 'blur(20px)',
-                  borderRadius: '16px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.8)',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)',
                   transition: 'all 0.3s ease',
+                  overflow: 'hidden',
+                  position: 'relative',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 20px 25px -5px rgb(0, 0, 0, 0.15)'
-                  }
+                    transform: 'translateY(-5px)',
+                    boxShadow: '0 25px 35px rgba(0, 0, 0, 0.1)'
+                  },
+                  height: '100%'
                 }}>
-                  <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ 
+                    position: 'absolute', 
+                    top: 0, 
+                    left: 0, 
+                    right: 0, 
+                    height: '8px', 
+                    background: 'linear-gradient(90deg, #0891b2, #1e40af)',
+                    zIndex: 2
+                  }}></Box>
+                  
+                  <CardContent sx={{ 
+                    p: 0, 
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column' 
+                  }}>
                     {/* Vehicle Header */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <DirectionsCar sx={{ color: '#0891b2', mr: 1 }} />
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {vehicle.year} {vehicle.make} {vehicle.model}
-                        </Typography>
+                    <Box sx={{ 
+                      p: 3, 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      position: 'relative'
+                    }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        width: '80%'
+                      }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1.5, 
+                          mb: 1 
+                        }}>
+                          <Box sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(8, 145, 178, 0.15)'
+                          }}>
+                            <DirectionsCar sx={{ 
+                              color: '#0891b2', 
+                              fontSize: '1.5rem',
+                              filter: 'drop-shadow(0 2px 4px rgba(8, 145, 178, 0.2))'
+                            }} />
+                          </Box>
+                          
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: 700,
+                            color: '#334155',
+                            fontSize: '1.1rem',
+                            lineHeight: 1.2,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '100%'
+                          }}>
+                            {vehicle.year} {vehicle.make} {vehicle.model}
+                          </Typography>
+                        </Box>
+                        
+                        {vehicle.nickname && (
+                          <Chip 
+                            label={vehicle.nickname} 
+                            size="small" 
+                            sx={{ 
+                              alignSelf: 'flex-start',
+                              mb: 1.5,
+                              background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+                              color: 'white',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              borderRadius: '8px',
+                              py: 0.5,
+                              boxShadow: '0 3px 8px rgba(8, 145, 178, 0.2)'
+                            }} 
+                          />
+                        )}
                       </Box>
+                      
                       <IconButton 
                         size="small" 
                         onClick={(e) => handleMenuClick(e, vehicle)}
-                        sx={{ color: '#6b7280' }}
+                        sx={{ 
+                          color: '#64748b',
+                          position: 'absolute',
+                          top: 12,
+                          right: 12,
+                          bgcolor: 'rgba(255,255,255,0.8)',
+                          '&:hover': {
+                            bgcolor: 'rgba(255,255,255,0.95)'
+                          }
+                        }}
                       >
-                        <MoreVert />
+                        <MoreVert fontSize="small" />
                       </IconButton>
                     </Box>
 
                     {/* Vehicle Details */}
-                    <Box sx={{ mb: 3 }}>
-                      {vehicle.nickname && (
-                        <Chip 
-                          label={vehicle.nickname} 
-                          size="small" 
-                          sx={{ 
-                            mb: 1,
-                            background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-                            color: 'white',
-                            fontWeight: 500
-                          }} 
-                        />
-                      )}
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Color:</strong> {vehicle.color}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>License:</strong> {vehicle.licensePlate}
-                      </Typography>
-                      {vehicle.phoneNumber && (
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Phone:</strong> {vehicle.phoneNumber}
-                        </Typography>
-                      )}
+                    <Box sx={{ 
+                      px: 3, 
+                      pb: 2, 
+                      mb: 'auto',
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 2
+                    }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: 1.5 
+                      }}>
+                        <Box>
+                          <Typography sx={{ 
+                            fontSize: '0.7rem', 
+                            color: '#94a3b8', 
+                            fontWeight: 600, 
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            mb: 0.5 
+                          }}>
+                            Color
+                          </Typography>
+                          <Typography sx={{ color: '#334155', fontWeight: 500 }}>
+                            {vehicle.color || 'Not specified'}
+                          </Typography>
+                        </Box>
+                        
+                        {vehicle.phoneNumber && (
+                          <Box>
+                            <Typography sx={{ 
+                              fontSize: '0.7rem', 
+                              color: '#94a3b8', 
+                              fontWeight: 600, 
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              mb: 0.5 
+                            }}>
+                              Phone
+                            </Typography>
+                            <Typography sx={{ color: '#334155', fontWeight: 500 }}>
+                              {vehicle.phoneNumber}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                      
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: 1.5 
+                      }}>
+                        <Box>
+                          <Typography sx={{ 
+                            fontSize: '0.7rem', 
+                            color: '#94a3b8', 
+                            fontWeight: 600, 
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            mb: 0.5 
+                          }}>
+                            License Plate
+                          </Typography>
+                          <Typography sx={{ color: '#334155', fontWeight: 500 }}>
+                            {vehicle.licensePlate || 'Not specified'}
+                          </Typography>
+                        </Box>
+                      </Box>
                     </Box>
 
                     {/* Service Info */}
                     <Box sx={{ 
+                      mx: 3,
                       p: 2, 
-                      background: 'rgba(8, 145, 178, 0.1)', 
+                      background: 'linear-gradient(135deg, rgba(8, 145, 178, 0.08) 0%, rgba(30, 64, 175, 0.05) 100%)', 
                       borderRadius: '12px',
-                      mb: 2
+                      backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(148, 163, 184, 0.1)',
+                      mb: 2,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: 2
                     }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                        Service Summary
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Total Services: {getServiceCount(vehicle.id)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Last Service: {getLastServiceDate(vehicle.id) || 'None yet'}
-                      </Typography>
+                      <Box>
+                        <Typography sx={{ 
+                          fontSize: '0.75rem', 
+                          fontWeight: 600, 
+                          mb: 1, 
+                          color: '#0e7490',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Service History
+                        </Typography>
+                        
+                        <Box sx={{ display: 'flex', gap: 3 }}>
+                          <Box>
+                            <Typography sx={{ 
+                              fontSize: '0.75rem', 
+                              color: '#64748b', 
+                              mb: 0.5 
+                            }}>
+                              Total Services
+                            </Typography>
+                            <Typography sx={{ 
+                              fontSize: '1.125rem', 
+                              fontWeight: 700, 
+                              color: '#0891b2' 
+                            }}>
+                              {getServiceCount(vehicle.id)}
+                            </Typography>
+                          </Box>
+                          
+                          <Box sx={{ 
+                            height: '80%', 
+                            width: '1px', 
+                            background: 'rgba(148, 163, 184, 0.3)', 
+                            alignSelf: 'center' 
+                          }} />
+                          
+                          <Box>
+                            <Typography sx={{ 
+                              fontSize: '0.75rem', 
+                              color: '#64748b', 
+                              mb: 0.5 
+                            }}>
+                              Last Service
+                            </Typography>
+                            <Typography sx={{ 
+                              fontSize: '0.875rem', 
+                              fontWeight: 600, 
+                              color: '#334155' 
+                            }}>
+                              {getLastServiceDate(vehicle.id) || 'None yet'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
                     </Box>
 
                     {/* Actions */}
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<History />}
-                      onClick={() => navigate(`/vehicle/${vehicle.id}`)}
-                      sx={{
-                        borderColor: '#0891b2',
-                        color: '#0891b2',
-                        borderRadius: '8px',
-                        textTransform: 'none',
-                        fontWeight: 500,
-                        '&:hover': {
+                    <Box sx={{ 
+                      px: 3, 
+                      pb: 3, 
+                      pt: 1 
+                    }}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<History />}
+                        onClick={() => navigate(`/vehicle/${vehicle.id}`)}
+                        sx={{
                           borderColor: '#0891b2',
-                          background: 'rgba(8, 145, 178, 0.1)'
-                        }
-                      }}
-                    >
-                      View Service History
-                    </Button>
+                          color: '#0891b2',
+                          borderRadius: '12px',
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          py: 1.2,
+                          '&:hover': {
+                            borderColor: '#0891b2',
+                            background: 'rgba(8, 145, 178, 0.05)',
+                            boxShadow: '0 4px 12px rgba(8, 145, 178, 0.1)',
+                            transform: 'translateY(-2px)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        View Service History
+                      </Button>
+                    </Box>
+                    
+                    {/* Decorative corner */}
+                    <Box sx={{ 
+                      position: 'absolute', 
+                      top: 0, 
+                      right: 0, 
+                      width: '80px', 
+                      height: '80px',
+                      background: 'radial-gradient(circle at top right, rgba(8, 145, 178, 0.03), rgba(255,255,255,0) 70%)',
+                      zIndex: 0
+                    }} />
                   </CardContent>
                 </Card>
               </Grid>
@@ -470,16 +884,93 @@ const MyGarage = () => {
           anchorEl={menuAnchor}
           open={Boolean(menuAnchor)}
           onClose={handleMenuClose}
+          PaperProps={{
+            sx: {
+              borderRadius: '12px',
+              minWidth: 180,
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              mt: 1.5,
+              overflow: 'visible',
+              '&:before': {
+                content: '""',
+                display: 'block',
+                position: 'absolute',
+                top: -6,
+                right: 14,
+                width: 12,
+                height: 12,
+                bgcolor: 'background.paper',
+                transform: 'rotate(45deg)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+                borderLeft: '1px solid rgba(255, 255, 255, 0.8)',
+                zIndex: 0
+              }
+            }
+          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          <MenuItem onClick={() => handleEditVehicle(selectedVehicle)}>
-            <Edit sx={{ mr: 1 }} />
-            Edit Vehicle
+          <MenuItem 
+            onClick={() => handleEditVehicle(selectedVehicle)}
+            sx={{ 
+              borderRadius: '8px',
+              mx: 0.5,
+              my: 0.3,
+              py: 1.2,
+              px: 2,
+              gap: 1.5,
+              color: '#334155',
+              '&:hover': {
+                backgroundColor: 'rgba(8, 145, 178, 0.08)'
+              }
+            }}
+          >
+            <Box sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '8px',
+              backgroundColor: 'rgba(8, 145, 178, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Edit sx={{ fontSize: '1.1rem', color: '#0891b2' }} />
+            </Box>
+            <Typography sx={{ fontWeight: 500 }}>Edit Vehicle</Typography>
           </MenuItem>
+          
+          <Divider sx={{ my: 0.5, opacity: 0.6 }} />
+          
           <MenuItem 
             onClick={() => handleDeleteVehicle(selectedVehicle?.id)}
-            sx={{ color: 'error.main' }}
+            sx={{ 
+              borderRadius: '8px',
+              mx: 0.5,
+              my: 0.3,
+              py: 1.2,
+              px: 2,
+              gap: 1.5,
+              color: '#ef4444',
+              '&:hover': {
+                backgroundColor: 'rgba(239, 68, 68, 0.08)'
+              }
+            }}
           >
-            Delete Vehicle
+            <Box sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '8px',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Box component="span" sx={{ fontSize: '1.3rem' }}>🗑️</Box>
+            </Box>
+            <Typography sx={{ fontWeight: 500 }}>Delete Vehicle</Typography>
           </MenuItem>
         </Menu>
 
@@ -491,44 +982,139 @@ const MyGarage = () => {
           fullWidth
           PaperProps={{
             sx: {
-              borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(20px)'
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 250, 252, 0.95) 100%)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              overflow: 'hidden'
             }
           }}
         >
           <DialogTitle sx={{ 
             fontWeight: 600, 
-            pb: 1, 
-            background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
+            p: 0,
+            position: 'relative',
+            overflow: 'hidden'
           }}>
-            <DirectionsCar fontSize="large" />
-            <Box>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                Add New Vehicle
-              </Typography>
-              <Typography variant="subtitle2" sx={{ opacity: 0.9, mt: 0.5, fontWeight: 400 }}>
-                Complete the form below to add a new vehicle to your garage
-              </Typography>
+            <Box sx={{
+              background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+              color: 'white',
+              p: 3,
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: 2.5
+            }}>
+              <Box sx={{ 
+                width: 60, 
+                height: 60, 
+                borderRadius: '16px', 
+                background: 'rgba(255, 255, 255, 0.2)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.4)'
+              }}>
+                <DirectionsCar sx={{ 
+                  fontSize: '2rem', 
+                  color: 'white',
+                  filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
+                }} />
+              </Box>
+              
+              <Box sx={{ flex: 1, pr: { sm: 7 } }}>
+                <Typography variant="h5" component="div" sx={{ 
+                  fontWeight: 700, 
+                  mb: 0.5,
+                  lineHeight: 1.2,
+                  fontSize: { xs: '1.5rem', sm: '1.8rem' } 
+                }}>
+                  Add New Vehicle
+                </Typography>
+                <Typography sx={{ 
+                  opacity: 0.9, 
+                  fontWeight: 400,
+                  maxWidth: '400px',
+                  lineHeight: 1.4
+                }}>
+                  Complete the form below to add a new vehicle to your garage
+                </Typography>
+              </Box>
+              
+              {/* Decorative elements */}
+              <Box sx={{
+                position: 'absolute',
+                top: -20,
+                right: -20,
+                width: 120,
+                height: 120,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%)',
+                zIndex: 1
+              }} />
+              <Box sx={{
+                position: 'absolute',
+                bottom: -30,
+                left: '30%',
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)',
+                zIndex: 1
+              }} />
             </Box>
           </DialogTitle>
-          <DialogContent sx={{ pt: 3 }}>
+          
+          <DialogContent sx={{ p: { xs: 2.5, sm: 4 }, pt: { xs: 3, sm: 4 } }}>
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3,
+                  borderRadius: '10px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                }}
+              >
                 {error}
               </Alert>
             )}
             
-            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(8, 145, 178, 0.06)', borderRadius: 2, border: '1px dashed rgba(8, 145, 178, 0.2)' }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#0891b2' }}>
+            <Box sx={{ 
+              mb: 3, 
+              p: 3, 
+              bgcolor: 'rgba(8, 145, 178, 0.04)', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(8, 145, 178, 0.15)',
+              boxShadow: '0 4px 20px rgba(8, 145, 178, 0.06)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Typography variant="subtitle1" sx={{ 
+                mb: 2, 
+                fontWeight: 700, 
+                color: '#0e7490',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5
+              }}>
+                <Box sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <DirectionsCar sx={{ fontSize: '1.2rem', color: 'white' }} />
+                </Box>
                 Vehicle Information
               </Typography>
               
-              <Grid container spacing={2}>
+              <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -537,6 +1123,18 @@ const MyGarage = () => {
                     onChange={handleFormChange('make')}
                     placeholder="e.g., Honda"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#0891b2',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#0891b2'
+                      }
+                    }}
                     InputProps={{
                       startAdornment: (
                         <DirectionsCar sx={{ mr: 1, color: 'rgba(8, 145, 178, 0.7)' }} fontSize="small" />
@@ -552,6 +1150,18 @@ const MyGarage = () => {
                     onChange={handleFormChange('model')}
                     placeholder="e.g., Civic"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#0891b2',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#0891b2'
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -563,6 +1173,18 @@ const MyGarage = () => {
                     onChange={handleFormChange('year')}
                     placeholder="e.g., 2020"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#0891b2',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#0891b2'
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -573,17 +1195,67 @@ const MyGarage = () => {
                     onChange={handleFormChange('color')}
                     placeholder="e.g., Blue"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#0891b2',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#0891b2'
+                      }
+                    }}
                   />
                 </Grid>
               </Grid>
+              
+              {/* Decorative element */}
+              <Box sx={{
+                position: 'absolute',
+                top: -30,
+                right: -30,
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(8, 145, 178, 0.04) 0%, rgba(8, 145, 178, 0) 70%)',
+                zIndex: 0
+              }} />
             </Box>
             
-            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(8, 145, 178, 0.06)', borderRadius: 2, border: '1px dashed rgba(8, 145, 178, 0.2)' }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#0891b2' }}>
+            <Box sx={{ 
+              p: 3, 
+              bgcolor: 'rgba(30, 64, 175, 0.04)', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(30, 64, 175, 0.15)',
+              boxShadow: '0 4px 20px rgba(30, 64, 175, 0.06)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Typography variant="subtitle1" sx={{ 
+                mb: 2, 
+                fontWeight: 700, 
+                color: '#1e40af',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5
+              }}>
+                <Box sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Box component="span" sx={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold' }}>ID</Box>
+                </Box>
                 Identification & Contact
               </Typography>
               
-              <Grid container spacing={2}>
+              <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -592,6 +1264,18 @@ const MyGarage = () => {
                     onChange={handleFormChange('licensePlate')}
                     placeholder="e.g., ABC-123"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#3b82f6',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#3b82f6'
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -602,9 +1286,21 @@ const MyGarage = () => {
                     onChange={handleFormChange('phoneNumber')}
                     placeholder="e.g., +1 (555) 123-4567"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#3b82f6',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#3b82f6'
+                      }
+                    }}
                     InputProps={{
                       startAdornment: (
-                        <Box component="span" sx={{ mr: 1, color: 'rgba(8, 145, 178, 0.7)' }}>
+                        <Box component="span" sx={{ mr: 1, color: 'rgba(59, 130, 246, 0.7)' }}>
                           📱
                         </Box>
                       ),
@@ -619,21 +1315,55 @@ const MyGarage = () => {
                     onChange={handleFormChange('nickname')}
                     placeholder="e.g., My Honda"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#3b82f6',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#3b82f6'
+                      }
+                    }}
                   />
                 </Grid>
               </Grid>
+              
+              {/* Decorative element */}
+              <Box sx={{
+                position: 'absolute',
+                bottom: -30,
+                left: -30,
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, rgba(59, 130, 246, 0) 70%)',
+                zIndex: 0
+              }} />
             </Box>
           </DialogContent>
-          <DialogActions sx={{ p: 3, bgcolor: '#f9fafb', borderTop: '1px solid #e5e7eb' }}>
+          
+          <DialogActions sx={{ 
+            p: { xs: 2.5, sm: 3 }, 
+            pt: 2,
+            bgcolor: 'rgba(248, 250, 252, 0.7)', 
+            borderTop: '1px solid rgba(226, 232, 240, 0.8)',
+            justifyContent: 'space-between'
+          }}>
             <Button 
               onClick={() => setAddVehicleOpen(false)}
               variant="outlined"
               sx={{
-                borderColor: '#9ca3af',
-                color: '#6b7280',
+                borderColor: '#cbd5e1',
+                color: '#64748b',
+                borderRadius: '10px',
+                px: 3,
+                py: 1,
                 '&:hover': {
-                  borderColor: '#6b7280',
-                  bgcolor: 'rgba(107, 114, 128, 0.04)'
+                  borderColor: '#94a3b8',
+                  bgcolor: 'rgba(148, 163, 184, 0.04)'
                 }
               }}
             >
@@ -646,10 +1376,19 @@ const MyGarage = () => {
               disabled={!vehicleForm.make || !vehicleForm.model || !vehicleForm.year}
               sx={{
                 background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(8, 145, 178, 0.2)',
+                borderRadius: '10px',
+                boxShadow: '0 8px 16px -1px rgba(8, 145, 178, 0.25)',
                 px: 3,
-                py: 1
+                py: 1.2,
+                '&:hover': {
+                  boxShadow: '0 12px 20px -1px rgba(8, 145, 178, 0.35)',
+                  transform: 'translateY(-2px)'
+                },
+                '&.Mui-disabled': {
+                  background: '#cbd5e1',
+                  color: '#94a3b8'
+                },
+                transition: 'all 0.2s ease'
               }}
             >
               Add Vehicle
@@ -665,44 +1404,139 @@ const MyGarage = () => {
           fullWidth
           PaperProps={{
             sx: {
-              borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(20px)'
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 250, 252, 0.95) 100%)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              overflow: 'hidden'
             }
           }}
         >
           <DialogTitle sx={{ 
             fontWeight: 600, 
-            pb: 1, 
-            background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
+            p: 0,
+            position: 'relative',
+            overflow: 'hidden'
           }}>
-            <Edit fontSize="large" />
-            <Box>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                Edit Vehicle
-              </Typography>
-              <Typography variant="subtitle2" sx={{ opacity: 0.9, mt: 0.5, fontWeight: 400 }}>
-                Update your vehicle information
-              </Typography>
+            <Box sx={{
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+              color: 'white',
+              p: 3,
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: 2.5
+            }}>
+              <Box sx={{ 
+                width: 60, 
+                height: 60, 
+                borderRadius: '16px', 
+                background: 'rgba(255, 255, 255, 0.2)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.4)'
+              }}>
+                <Edit sx={{ 
+                  fontSize: '2rem', 
+                  color: 'white',
+                  filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
+                }} />
+              </Box>
+              
+              <Box sx={{ flex: 1, pr: { sm: 7 } }}>
+                <Typography variant="h5" component="div" sx={{ 
+                  fontWeight: 700, 
+                  mb: 0.5,
+                  lineHeight: 1.2,
+                  fontSize: { xs: '1.5rem', sm: '1.8rem' } 
+                }}>
+                  Edit Vehicle
+                </Typography>
+                <Typography sx={{ 
+                  opacity: 0.9, 
+                  fontWeight: 400,
+                  maxWidth: '400px',
+                  lineHeight: 1.4
+                }}>
+                  Update information for your {vehicleForm.year} {vehicleForm.make} {vehicleForm.model}
+                </Typography>
+              </Box>
+              
+              {/* Decorative elements */}
+              <Box sx={{
+                position: 'absolute',
+                top: -20,
+                right: -20,
+                width: 120,
+                height: 120,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%)',
+                zIndex: 1
+              }} />
+              <Box sx={{
+                position: 'absolute',
+                bottom: -30,
+                left: '30%',
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)',
+                zIndex: 1
+              }} />
             </Box>
           </DialogTitle>
-          <DialogContent sx={{ pt: 3 }}>
+          
+          <DialogContent sx={{ p: { xs: 2.5, sm: 4 }, pt: { xs: 3, sm: 4 } }}>
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3,
+                  borderRadius: '10px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                }}
+              >
                 {error}
               </Alert>
             )}
             
-            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(8, 145, 178, 0.06)', borderRadius: 2, border: '1px dashed rgba(8, 145, 178, 0.2)' }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#0891b2' }}>
+            <Box sx={{ 
+              mb: 3, 
+              p: 3, 
+              bgcolor: 'rgba(59, 130, 246, 0.04)', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(59, 130, 246, 0.15)',
+              boxShadow: '0 4px 20px rgba(59, 130, 246, 0.06)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Typography variant="subtitle1" sx={{ 
+                mb: 2, 
+                fontWeight: 700, 
+                color: '#2563eb',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5
+              }}>
+                <Box sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <DirectionsCar sx={{ fontSize: '1.2rem', color: 'white' }} />
+                </Box>
                 Vehicle Information
               </Typography>
               
-              <Grid container spacing={2}>
+              <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -710,9 +1544,21 @@ const MyGarage = () => {
                     value={vehicleForm.make}
                     onChange={handleFormChange('make')}
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#3b82f6',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#3b82f6'
+                      }
+                    }}
                     InputProps={{
                       startAdornment: (
-                        <DirectionsCar sx={{ mr: 1, color: 'rgba(8, 145, 178, 0.7)' }} fontSize="small" />
+                        <DirectionsCar sx={{ mr: 1, color: 'rgba(59, 130, 246, 0.7)' }} fontSize="small" />
                       ),
                     }}
                   />
@@ -724,6 +1570,18 @@ const MyGarage = () => {
                     value={vehicleForm.model}
                     onChange={handleFormChange('model')}
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#3b82f6',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#3b82f6'
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -734,6 +1592,18 @@ const MyGarage = () => {
                     value={vehicleForm.year}
                     onChange={handleFormChange('year')}
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#3b82f6',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#3b82f6'
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -743,17 +1613,67 @@ const MyGarage = () => {
                     value={vehicleForm.color}
                     onChange={handleFormChange('color')}
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#3b82f6',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#3b82f6'
+                      }
+                    }}
                   />
                 </Grid>
               </Grid>
+              
+              {/* Decorative element */}
+              <Box sx={{
+                position: 'absolute',
+                top: -30,
+                right: -30,
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, rgba(59, 130, 246, 0) 70%)',
+                zIndex: 0
+              }} />
             </Box>
             
-            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(8, 145, 178, 0.06)', borderRadius: 2, border: '1px dashed rgba(8, 145, 178, 0.2)' }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#0891b2' }}>
+            <Box sx={{ 
+              p: 3, 
+              bgcolor: 'rgba(8, 145, 178, 0.04)', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(8, 145, 178, 0.15)',
+              boxShadow: '0 4px 20px rgba(8, 145, 178, 0.06)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Typography variant="subtitle1" sx={{ 
+                mb: 2, 
+                fontWeight: 700, 
+                color: '#0e7490',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5
+              }}>
+                <Box sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Box component="span" sx={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold' }}>ID</Box>
+                </Box>
                 Identification & Contact
               </Typography>
               
-              <Grid container spacing={2}>
+              <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -761,6 +1681,18 @@ const MyGarage = () => {
                     value={vehicleForm.licensePlate}
                     onChange={handleFormChange('licensePlate')}
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#0891b2',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#0891b2'
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -770,6 +1702,18 @@ const MyGarage = () => {
                     value={vehicleForm.phoneNumber}
                     onChange={handleFormChange('phoneNumber')}
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#0891b2',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#0891b2'
+                      }
+                    }}
                     InputProps={{
                       startAdornment: (
                         <Box component="span" sx={{ mr: 1, color: 'rgba(8, 145, 178, 0.7)' }}>
@@ -786,21 +1730,55 @@ const MyGarage = () => {
                     value={vehicleForm.nickname}
                     onChange={handleFormChange('nickname')}
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '10px',
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#0891b2',
+                          borderWidth: 2
+                        }
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#0891b2'
+                      }
+                    }}
                   />
                 </Grid>
               </Grid>
+              
+              {/* Decorative element */}
+              <Box sx={{
+                position: 'absolute',
+                bottom: -30,
+                left: -30,
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(8, 145, 178, 0.04) 0%, rgba(8, 145, 178, 0) 70%)',
+                zIndex: 0
+              }} />
             </Box>
           </DialogContent>
-          <DialogActions sx={{ p: 3, bgcolor: '#f9fafb', borderTop: '1px solid #e5e7eb' }}>
+          
+          <DialogActions sx={{ 
+            p: { xs: 2.5, sm: 3 }, 
+            pt: 2,
+            bgcolor: 'rgba(248, 250, 252, 0.7)', 
+            borderTop: '1px solid rgba(226, 232, 240, 0.8)',
+            justifyContent: 'space-between'
+          }}>
             <Button 
               onClick={() => setEditVehicleOpen(false)}
               variant="outlined"
               sx={{
-                borderColor: '#9ca3af',
-                color: '#6b7280',
+                borderColor: '#cbd5e1',
+                color: '#64748b',
+                borderRadius: '10px',
+                px: 3,
+                py: 1,
                 '&:hover': {
-                  borderColor: '#6b7280',
-                  bgcolor: 'rgba(107, 114, 128, 0.04)'
+                  borderColor: '#94a3b8',
+                  bgcolor: 'rgba(148, 163, 184, 0.04)'
                 }
               }}
             >
@@ -812,11 +1790,20 @@ const MyGarage = () => {
               startIcon={<Edit />}
               disabled={!vehicleForm.make || !vehicleForm.model || !vehicleForm.year}
               sx={{
-                background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(8, 145, 178, 0.2)',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                borderRadius: '10px',
+                boxShadow: '0 8px 16px -1px rgba(59, 130, 246, 0.25)',
                 px: 3,
-                py: 1
+                py: 1.2,
+                '&:hover': {
+                  boxShadow: '0 12px 20px -1px rgba(59, 130, 246, 0.35)',
+                  transform: 'translateY(-2px)'
+                },
+                '&.Mui-disabled': {
+                  background: '#cbd5e1',
+                  color: '#94a3b8'
+                },
+                transition: 'all 0.2s ease'
               }}
             >
               Save Changes

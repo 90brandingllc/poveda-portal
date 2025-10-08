@@ -257,126 +257,339 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
 
   return (
     <Box>
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-            <Payment sx={{ mr: 1 }} />
-            Payment Summary
-          </Typography>
-          
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body1" gutterBottom>
-              Service: <strong>{servicePackage}</strong>
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              Total Service Price: <strong>${servicePrice}</strong>
-            </Typography>
-          </Box>
-
-          <Divider sx={{ my: 2 }} />
-
-          <Box sx={{ 
-            bgcolor: 'primary.main', 
-            color: 'white', 
-            p: 2, 
-            borderRadius: 1,
-            mb: 2
+      <Card sx={{ 
+        mb: 3,
+        borderRadius: '20px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.8)',
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+        overflow: 'hidden',
+        backdropFilter: 'blur(20px)',
+      }}>
+        <CardContent sx={{ p: 0 }}>
+          {/* Header Section */}
+          <Box sx={{
+            py: 2,
+            px: 3,
+            background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(245, 158, 11, 0.12) 100%)',
+            borderBottom: '1px solid rgba(234, 179, 8, 0.15)',
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5
           }}>
-            <Typography variant="h6" gutterBottom>
-              💳 Deposit Required ($45)
-            </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-              ${depositDisplay}
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Remaining balance (${remainingAmount.toFixed(2)}) due upon service completion
+            <Box sx={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
+              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)',
+              color: 'white'
+            }}>
+              <Payment sx={{ fontSize: '1.5rem' }} />
+            </Box>
+            <Typography variant="h6" sx={{ 
+              fontWeight: 700,
+              color: '#92400e',
+              letterSpacing: '-0.3px'
+            }}>
+              Payment Summary
             </Typography>
           </Box>
+          
+          <Box sx={{ px: 3, pb: 3 }}>
+            {/* Service Details */}
+            <Box sx={{ 
+              mb: 4,
+              p: 2.5,
+              borderRadius: '16px',
+              bgcolor: 'rgba(241, 245, 249, 0.6)',
+              border: '1px solid #e2e8f0',
+              position: 'relative'
+            }}>
+              <Typography variant="subtitle2" sx={{ 
+                mb: 2, 
+                fontWeight: 700, 
+                color: '#334155',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <Box component="span" sx={{ 
+                  color: '#f59e0b', 
+                  display: 'flex', 
+                  alignItems: 'center' 
+                }}>
+                  <AccountBalanceWallet fontSize="small" />
+                </Box>
+                Service Information
+              </Typography>
 
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <strong>Secure Payment:</strong> Your payment information is encrypted and processed securely through Stripe.
-          </Alert>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                  Service:
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
+                  {servicePackage || 'Headlight Restoration'}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                  Total Service Price:
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#334155' }}>
+                  ${servicePrice}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Deposit Box */}
+            <Box sx={{ 
+              mb: 3,
+              p: 3,
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #f59e0b10 0%, #eab30815 100%)',
+              border: '1px solid rgba(245, 158, 11, 0.2)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Box sx={{
+                position: 'absolute',
+                top: -40,
+                right: -40,
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0) 70%)',
+                zIndex: 0
+              }} />
+
+              <Box sx={{ position: 'relative', zIndex: 1 }}>
+                <Typography variant="subtitle1" sx={{ 
+                  mb: 0.5, 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  color: '#92400e',
+                  fontWeight: 600
+                }}>
+                  <Box component="span" sx={{ fontSize: '1.3rem' }}>💳</Box>
+                  Deposit Required ($45)
+                </Typography>
+
+                <Typography variant="h3" sx={{ 
+                  fontWeight: 800,
+                  color: '#92400e',
+                  mb: 1,
+                  fontSize: '2.5rem',
+                }}>
+                  ${depositDisplay}
+                </Typography>
+
+                <Box sx={{ 
+                  p: 1.5, 
+                  bgcolor: 'rgba(255, 255, 255, 0.7)',
+                  borderRadius: '10px',
+                  border: '1px solid #fde68a',
+                  mt: 2
+                }}>
+                  <Typography variant="body2" sx={{ color: '#92400e', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box component="span" sx={{ fontSize: '1rem' }}>🔍</Box>
+                    Remaining balance <Box component="span" sx={{ fontWeight: 700 }}>(${remainingAmount.toFixed(2)})</Box> due upon service completion
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            <Alert 
+              severity="info" 
+              icon={<Box component="span" sx={{ fontSize: '1.3rem' }}>🔒</Box>}
+              sx={{ 
+                mb: 1,
+                borderRadius: '12px',
+                border: '1px solid rgba(3, 105, 161, 0.2)',
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                Your payment information is encrypted and processed securely through Stripe.
+              </Typography>
+            </Alert>
+          </Box>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <Payment sx={{ mr: 1 }} />
-            Choose Payment Method
-          </Typography>
-          
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            {[
-              { id: 0, icon: <CreditCard />, label: 'Card', color: '#1976d2', desc: 'Credit/Debit Cards' },
-              { id: 1, icon: <AccountBalance />, label: 'PayPal', color: '#0070ba', desc: 'PayPal Account' },
-              { id: 2, icon: <Payment />, label: 'Cash App Pay', color: '#00d632', desc: 'CashApp Payment' },
-              { id: 3, icon: <MonetizationOn />, label: 'Klarna', color: '#ffb3d9', desc: 'Buy Now, Pay Later' },
-              { id: 4, icon: <Savings />, label: 'Afterpay', color: '#b2f2bb', desc: 'Split in 4 payments' },
-              { id: 5, icon: <AccountBalanceWallet />, label: 'Affirm', color: '#0099ff', desc: 'Monthly payments' },
-              { id: 6, icon: <Business />, label: 'Bank', color: '#28a745', desc: 'Bank Transfer', badge: '$5 USD Refund' }
-            ].map((method) => (
-              <Grid item xs={6} sm={4} md={3} key={method.id}>
-                <Paper
-                  elevation={paymentMethod === method.id ? 3 : 1}
-                  sx={{
-                    p: 2,
-                    cursor: 'pointer',
-                    border: paymentMethod === method.id ? `2px solid ${method.color}` : '2px solid transparent',
-                    borderRadius: 2,
-                    textAlign: 'center',
-                    position: 'relative',
-                    '&:hover': {
-                      elevation: 2,
-                      borderColor: method.color
-                    }
-                  }}
-                  onClick={() => setPaymentMethod(method.id)}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
+      <Card sx={{ 
+        borderRadius: '20px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.8)',
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+        overflow: 'hidden',
+        backdropFilter: 'blur(20px)',
+      }}>
+        <CardContent sx={{ p: 0 }}>
+          {/* Header Section */}
+          <Box sx={{
+            py: 2,
+            px: 3,
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.12) 100%)',
+            borderBottom: '1px solid rgba(59, 130, 246, 0.15)',
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5
+          }}>
+            <Box sx={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
+              color: 'white'
+            }}>
+              <Payment sx={{ fontSize: '1.5rem' }} />
+            </Box>
+            <Typography variant="h6" sx={{ 
+              fontWeight: 700,
+              color: '#1e40af',
+              letterSpacing: '-0.3px'
+            }}>
+              Choose Payment Method
+            </Typography>
+          </Box>
+
+          <Box sx={{ px: 3, pb: 3 }}>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              {[
+                { id: 0, icon: <CreditCard />, label: 'Card', color: '#1976d2', desc: 'Credit/Debit Cards' },
+                { id: 1, icon: <AccountBalance />, label: 'PayPal', color: '#0070ba', desc: 'PayPal Account' },
+                { id: 2, icon: <Payment />, label: 'Cash App Pay', color: '#00c853', desc: 'CashApp Payment' },
+                { id: 3, icon: <MonetizationOn />, label: 'Klarna', color: '#ffb3d9', desc: 'Buy Now, Pay Later' },
+                { id: 4, icon: <Savings />, label: 'Afterpay', color: '#b2f2bb', desc: 'Split in 4 payments' },
+                { id: 5, icon: <AccountBalanceWallet />, label: 'Affirm', color: '#0099ff', desc: 'Monthly payments' },
+                { id: 6, icon: <Business />, label: 'Bank', color: '#28a745', desc: 'Bank Transfer', badge: '$5 USD Refund' }
+              ].map((method) => (
+                <Grid item xs={6} sm={4} md={4} lg={3} key={method.id}>
+                  <Paper
+                    elevation={paymentMethod === method.id ? 4 : 0}
+                    sx={{
+                      p: { xs: 1.5, sm: 2 },
+                      height: '100%',
+                      cursor: 'pointer',
+                      border: paymentMethod === method.id ? `2px solid ${method.color}` : '1px solid #e2e8f0',
+                      borderRadius: '16px',
+                      position: 'relative',
+                      transition: 'all 0.2s ease',
+                      background: paymentMethod === method.id ? 
+                        `linear-gradient(135deg, ${method.color}05 0%, ${method.color}10 100%)` : 
+                        'rgba(255, 255, 255, 0.6)',
+                      backdropFilter: 'blur(10px)',
+                      '&:hover': {
+                        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08)`,
+                        transform: 'translateY(-2px)',
+                        borderColor: method.color,
+                      }
+                    }}
+                    onClick={() => setPaymentMethod(method.id)}
+                  >
+                    <Box sx={{ 
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center'
+                    }}>
+                      {/* Payment Icon */}
+                      <Box sx={{
+                        width: { xs: 40, sm: 48 },
+                        height: { xs: 40, sm: 48 },
+                        borderRadius: '12px',
+                        mb: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: `linear-gradient(135deg, ${method.color} 0%, ${method.color}dd 100%)`,
+                        color: 'white',
+                        boxShadow: paymentMethod === method.id ? `0 4px 12px ${method.color}40` : 'none',
+                      }}>
+                        {React.cloneElement(method.icon, { sx: { fontSize: '1.5rem' } })}
+                      </Box>
+                        
+                      {/* Payment Label */}
+                      <Typography variant="subtitle2" sx={{ 
+                        fontWeight: 700, 
+                        color: paymentMethod === method.id ? method.color : '#334155',
+                        mb: 0.5
+                      }}>
+                        {method.label}
+                      </Typography>
+                        
+                      {/* Payment Description */}
+                      <Typography variant="caption" sx={{ 
+                        fontSize: '0.7rem',
+                        color: '#64748b',
+                        lineHeight: 1.2
+                      }}>
+                        {method.desc}
+                      </Typography>
+
+                      {/* Radio indicator */}
+                      <Box sx={{
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        width: 16,
+                        height: 16,
                         borderRadius: '50%',
-                        border: `2px solid ${paymentMethod === method.id ? method.color : '#ccc'}`,
-                        backgroundColor: paymentMethod === method.id ? method.color : 'transparent',
-                        mr: 1,
-                        flexShrink: 0
-                      }}
-                    />
-                    <Box sx={{ color: method.color, mr: 1 }}>
-                      {method.icon}
+                        border: `2px solid ${paymentMethod === method.id ? method.color : '#cbd5e1'}`,
+                        backgroundColor: 'white',
+                        padding: '2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {paymentMethod === method.id && (
+                          <Box sx={{
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: '50%',
+                            backgroundColor: method.color,
+                          }} />
+                        )}
+                      </Box>
                     </Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#333' }}>
-                      {method.label}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                    {method.desc}
-                  </Typography>
-                  {method.badge && (
-                    <Box
-                      sx={{
+
+                    {method.badge && (
+                      <Box sx={{
                         position: 'absolute',
                         top: -8,
-                        right: -8,
+                        left: -8,
                         backgroundColor: '#28a745',
                         color: 'white',
-                        px: 1,
+                        px: 1.5,
                         py: 0.5,
-                        borderRadius: 1,
-                        fontSize: '0.6rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      {method.badge}
-                    </Box>
-                  )}
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+                        borderRadius: '20px',
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        boxShadow: '0 2px 8px rgba(40, 167, 69, 0.3)',
+                        border: '1px solid rgba(255, 255, 255, 0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5
+                      }}>
+                        <Box component="span" sx={{ fontSize: '0.8rem' }}>🎁</Box>
+                        {method.badge}
+                      </Box>
+                    )}
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -386,57 +599,181 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
 
           {paymentMethod === 0 && (
             <Box component="form" onSubmit={handleCardPayment}>
-              <Paper 
-                variant="outlined" 
-                sx={{ 
-                  p: 2, 
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ 
+                  mb: 1, 
+                  fontWeight: 600, 
+                  color: '#1e40af',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.8
+                }}>
+                  <CreditCard fontSize="small" />
+                  Enter Card Details
+                </Typography>
+                
+                <Paper 
+                  variant="outlined" 
+                  sx={{ 
+                    p: 3, 
+                    mb: 3,
+                    borderRadius: '16px',
+                    border: '1px solid #e2e8f0',
+                    background: 'rgba(255, 255, 255, 0.7)',
+                    backdropFilter: 'blur(10px)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '4px',
+                      background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+                    },
+                    '& .StripeElement': {
+                      height: '40px',
+                      padding: '12px 16px',
+                      color: '#0f172a',
+                      fontSize: '1rem',
+                      fontWeight: '500',
+                    }
+                  }}
+                >
+                  <CardElement options={{
+                    style: {
+                      base: {
+                        fontSize: '16px',
+                        color: '#0f172a',
+                        fontWeight: '500',
+                        fontFamily: '"Inter", "Helvetica", "Arial", sans-serif',
+                        '::placeholder': {
+                          color: '#94a3b8',
+                        },
+                        iconColor: '#3b82f6',
+                      },
+                      invalid: {
+                        color: '#ef4444',
+                        iconColor: '#ef4444',
+                      },
+                    },
+                  }} />
+                </Paper>
+                
+                {/* Secure payment message */}
+                <Box sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
                   mb: 3,
-                  '& .StripeElement': {
-                    height: '40px',
-                    padding: '10px 12px',
-                    color: '#32325d',
-                  }
-                }}
-              >
-                <CardElement options={cardElementOptions} />
-              </Paper>
+                  p: 1.5,
+                  borderRadius: '10px',
+                  background: 'rgba(241, 245, 249, 0.5)',
+                }}>
+                  <Box component="span" sx={{ color: '#64748b', fontSize: '1rem' }}>🔒</Box>
+                  <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500 }}>
+                    Your card information is secure and encrypted
+                  </Typography>
+                </Box>
 
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={!stripe || isProcessing}
-                sx={{
-                  py: 1.5,
-                  background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #0d47a1 0%, #01579b 100%)'
-                  }
-                }}
-              >
-                {isProcessing ? (
-                  <>
-                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                    Processing Payment...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard sx={{ mr: 1 }} />
-                    Pay ${depositDisplay} with Card
-                  </>
-                )}
-              </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  size="large"
+                  fullWidth
+                  disabled={!stripe || isProcessing}
+                  sx={{
+                    py: 2,
+                    borderRadius: '16px',
+                    background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+                    boxShadow: '0 8px 16px rgba(13, 71, 161, 0.3)',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    textTransform: 'none',
+                    letterSpacing: '0.2px',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #0d47a1 0%, #01579b 100%)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 12px 20px rgba(13, 71, 161, 0.4)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {isProcessing ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                      <CircularProgress size={22} color="inherit" />
+                      <Typography sx={{ fontWeight: 600 }}>Processing Payment...</Typography>
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                      <Box component="span" sx={{ fontSize: '1.3rem' }}>💳</Box>
+                      <Typography sx={{ fontWeight: 600 }}>Pay ${depositDisplay} with Card</Typography>
+                    </Box>
+                  )}
+                </Button>
+              </Box>
             </Box>
           )}
 
           {paymentMethod === 1 && (
-            <Box>
-              <Alert severity="info" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  You'll be redirected to PayPal to complete your ${depositDisplay} deposit payment securely.
-                </Typography>
-              </Alert>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ 
+                mb: 1, 
+                fontWeight: 600, 
+                color: '#0070ba',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.8
+              }}>
+                <AccountBalance fontSize="small" />
+                PayPal Secure Checkout
+              </Typography>
+              
+              <Paper sx={{
+                p: 3,
+                mb: 3,
+                borderRadius: '16px',
+                border: '1px solid rgba(0, 112, 186, 0.2)',
+                background: 'linear-gradient(135deg, rgba(0, 112, 186, 0.02) 0%, rgba(0, 112, 186, 0.08) 100%)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+                <Box sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2
+                }}>
+                  <Box sx={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#ffffff',
+                    border: '1px solid #e1e7ed',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.05)'
+                  }}>
+                    <Box 
+                      component="img" 
+                      src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-color.svg" 
+                      alt="PayPal" 
+                      sx={{ width: 40, height: 'auto' }}
+                    />
+                  </Box>
+                  
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', mb: 0.5 }}>
+                      Fast, safe, and secure payments
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                      You'll be redirected to PayPal to complete your payment of ${depositDisplay}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
               
               <Button
                 variant="contained"
@@ -445,23 +782,32 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                 onClick={handlePayPalPayment}
                 disabled={isProcessing}
                 sx={{
-                  py: 1.5,
+                  py: 2,
+                  borderRadius: '16px',
                   backgroundColor: '#0070ba',
+                  boxShadow: '0 8px 16px rgba(0, 112, 186, 0.3)',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  textTransform: 'none',
+                  letterSpacing: '0.2px',
                   '&:hover': {
-                    backgroundColor: '#005ea6'
-                  }
+                    backgroundColor: '#005ea6',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 20px rgba(0, 112, 186, 0.4)'
+                  },
+                  transition: 'all 0.2s ease'
                 }}
               >
                 {isProcessing ? (
-                  <>
-                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                    Redirecting to PayPal...
-                  </>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                    <CircularProgress size={22} color="inherit" />
+                    <Typography sx={{ fontWeight: 600 }}>Redirecting to PayPal...</Typography>
+                  </Box>
                 ) : (
-                  <>
-                    <AccountBalance sx={{ mr: 1 }} />
-                    Pay ${depositDisplay} with PayPal
-                  </>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                    <AccountBalance />
+                    <Typography sx={{ fontWeight: 600 }}>Pay ${depositDisplay} with PayPal</Typography>
+                  </Box>
                 )}
               </Button>
             </Box>
@@ -673,6 +1019,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 2 }}>
             🔒 All payments are secure and encrypted • Multiple payment options available
           </Typography>
+          </Box>
         </CardContent>
       </Card>
     </Box>
