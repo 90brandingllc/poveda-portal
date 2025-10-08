@@ -1199,9 +1199,11 @@ const BookAppointment = () => {
               {!paymentResult ? (
                 <DepositPayment
                   servicePrice={formData.estimatedPrice}
-                  servicePackage={formData.servicePackage}
+                  servicePackage={formData.selectedServices.map(s => s.name).join(', ')}
                   onPaymentSuccess={handlePaymentSuccess}
                   onPaymentError={handlePaymentError}
+                  customerName={currentUser?.displayName || currentUser?.email || 'Customer'}
+                  customerEmail={currentUser?.email || ''}
                 />
               ) : (
               <Card>

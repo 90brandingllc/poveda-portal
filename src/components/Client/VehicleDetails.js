@@ -254,9 +254,6 @@ const VehicleDetails = () => {
                   <Typography variant="body2" sx={{ mb: 1 }}>
                     <strong>Color:</strong> {vehicle?.color || 'Not specified'}
                   </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>License:</strong> {vehicle?.licensePlate || 'Not specified'}
-                  </Typography>
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
