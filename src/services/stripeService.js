@@ -10,9 +10,9 @@ const stripePromise = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ?
 
 export const getStripe = () => stripePromise;
 
-// Calculate deposit amount ($45 fixed deposit)
+// Calculate deposit amount ($50 fixed deposit)
 export const calculateDepositAmount = (servicePrice) => {
-  return 45 * 100; // $45 converted to cents for Stripe
+  return 50 * 100; // $50 converted to cents for Stripe
 };
 
 // Format amount for display
