@@ -38,7 +38,8 @@ import {
   Email,
   LocationOn,
   DirectionsCar,
-  ArrowBack
+  ArrowBack,
+  Delete
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase/config';
@@ -49,7 +50,8 @@ import {
   doc, 
   query, 
   orderBy,
-  serverTimestamp 
+  serverTimestamp,
+  deleteDoc
 } from 'firebase/firestore';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -64,6 +66,8 @@ const ManageAppointments = () => {
   const [, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [tabValue, setTabValue] = useState(0);
 
@@ -117,6 +121,58 @@ const ManageAppointments = () => {
   const handleViewDetails = (appointment) => {
     setSelectedAppointment(appointment);
     setDetailsDialogOpen(true);
+  };
+
+  // Function to start the deletion process
+  const handleDeleteAppointment = (appointment) => {
+    setAppointmentToDelete(appointment);
+    setDeleteDialogOpen(true);
+  };
+  
+  // Function to confirm and execute appointment deletion
+  const handleConfirmDelete = async () => {
+    if (!appointmentToDelete) {
+      setDeleteDialogOpen(false);
+      return;
+    }
+    
+    // Verify if appointment has a status
+    if (!appointmentToDelete.status) {
+      setSnackbar({
+        open: true,
+        message: 'Cannot delete: Appointment does not have an assigned status',
+        severity: 'error'
+      });
+      setDeleteDialogOpen(false);
+      return;
+    }
+    
+    try {
+      await deleteDoc(doc(db, 'appointments', appointmentToDelete.id));
+      
+      setSnackbar({
+        open: true,
+        message: 'Appointment successfully deleted',
+        severity: 'success'
+      });
+      
+      setDeleteDialogOpen(false);
+      setAppointmentToDelete(null);
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      
+      setSnackbar({
+        open: true,
+        message: 'Error deleting appointment. Please try again.',
+        severity: 'error'
+      });
+    }
+  };
+  
+  // Function to close the delete confirmation dialog
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setAppointmentToDelete(null);
   };
 
   const getStatusColor = (status) => {
@@ -695,6 +751,28 @@ const ManageAppointments = () => {
                               {isSmallMobile ? 'Complete' : 'Complete'}
                             </Button>
                           )}
+                          {/* Botón para eliminar cita */}
+                          <Button
+                            onClick={() => handleDeleteAppointment(appointment)}
+                            variant="outlined"
+                            size="small"
+                            startIcon={!isSmallMobile && <Delete />}
+                            sx={{
+                              fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
+                              minWidth: isSmallMobile ? 65 : 'auto',
+                              px: isSmallMobile ? 1.5 : 1.5,
+                              py: isSmallMobile ? 0.5 : 0.5,
+                              height: isSmallMobile ? 28 : 32,
+                              borderColor: '#d32f2f',
+                              color: '#d32f2f',
+                              '&:hover': {
+                                borderColor: '#c62828',
+                                bgcolor: 'rgba(211, 47, 47, 0.04)'
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
                         </Box>
                       </CardContent>
                     </Card>
@@ -787,6 +865,7 @@ const ManageAppointments = () => {
                             onClick={() => handleViewDetails(appointment)}
                             color="primary"
                             size="small"
+                            title="Ver detalles"
                           >
                             <Visibility />
                           </IconButton>
@@ -796,6 +875,7 @@ const ManageAppointments = () => {
                                 onClick={() => handleStatusChange(appointment.id, 'approved')}
                                 sx={{ color: '#2e7d32' }}
                                 size="small"
+                                title="Aprobar cita"
                               >
                                 <CheckCircle />
                               </IconButton>
@@ -803,6 +883,7 @@ const ManageAppointments = () => {
                                 onClick={() => handleStatusChange(appointment.id, 'rejected')}
                                 sx={{ color: '#d32f2f' }}
                                 size="small"
+                                title="Rechazar cita"
                               >
                                 <Cancel />
                               </IconButton>
@@ -813,10 +894,20 @@ const ManageAppointments = () => {
                               onClick={() => handleStatusChange(appointment.id, 'completed')}
                               sx={{ color: '#1976d2' }}
                               size="small"
+                              title="Marcar como completada"
                             >
                               <CheckCircle />
                             </IconButton>
                           )}
+                          {/* Botón para eliminar cita */}
+                          <IconButton
+                            onClick={() => handleDeleteAppointment(appointment)}
+                            sx={{ color: '#d32f2f' }}
+                            size="small"
+                            title="Eliminar cita"
+                          >
+                            <Delete />
+                          </IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -999,43 +1090,136 @@ const ManageAppointments = () => {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
-            {selectedAppointment?.status === 'pending' && (
-              <>
+            <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+              <Box>
                 <Button 
                   onClick={() => {
-                    handleStatusChange(selectedAppointment.id, 'approved');
+                    handleDeleteAppointment(selectedAppointment);
                     setDetailsDialogOpen(false);
                   }}
-                  variant="contained" 
-                  color="success"
-                >
-                  Approve
-                </Button>
-                <Button 
-                  onClick={() => {
-                    handleStatusChange(selectedAppointment.id, 'rejected');
-                    setDetailsDialogOpen(false);
-                  }}
-                  variant="contained" 
+                  variant="outlined" 
                   color="error"
+                  startIcon={<Delete />}
+                  sx={{ mr: 1 }}
                 >
-                  Reject
+                  Delete Appointment
                 </Button>
-              </>
+              </Box>
+              
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
+                {selectedAppointment?.status === 'pending' && (
+                  <>
+                    <Button 
+                      onClick={() => {
+                        handleStatusChange(selectedAppointment.id, 'approved');
+                        setDetailsDialogOpen(false);
+                      }}
+                      variant="contained" 
+                      color="success"
+                    >
+                      Approve
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        handleStatusChange(selectedAppointment.id, 'rejected');
+                        setDetailsDialogOpen(false);
+                      }}
+                      variant="contained" 
+                      color="error"
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {selectedAppointment?.status === 'approved' && (
+                  <Button 
+                    onClick={() => {
+                      handleStatusChange(selectedAppointment.id, 'completed');
+                      setDetailsDialogOpen(false);
+                    }}
+                    variant="contained" 
+                    color="primary"
+                  >
+                    Mark Complete
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={handleCancelDelete}
+          maxWidth="sm"
+          fullWidth
+          sx={{
+            '& .MuiDialog-paper': {
+              borderRadius: 2
+            }
+          }}
+        >
+          <DialogTitle sx={{ bgcolor: '#d32f2f', color: 'white', py: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Delete />
+              Confirm Deletion
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 3, pb: 1 }}>
+            <Typography variant="h6" gutterBottom>
+              Are you sure you want to delete this appointment?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              This action cannot be undone and the appointment will be permanently removed from the system.
+            </Typography>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                <strong>Note:</strong> You can only delete appointments that have an assigned status. Appointments without a status cannot be deleted.
+              </Typography>
+            </Alert>
+            
+            {appointmentToDelete && (
+              <Box sx={{ 
+                mt: 2, 
+                p: 2, 
+                bgcolor: 'rgba(211, 47, 47, 0.05)', 
+                borderRadius: 1, 
+                border: '1px solid rgba(211, 47, 47, 0.2)' 
+              }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  <strong>Customer:</strong> {appointmentToDelete.userName || appointmentToDelete.customerName || 'Unknown'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Service:</strong> {appointmentToDelete.service || appointmentToDelete.serviceType || 'Not specified'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Date:</strong> {appointmentToDelete.date?.toDate?.()?.toLocaleDateString() || 
+                    appointmentToDelete.preferredDate?.toDate?.()?.toLocaleDateString() || 
+                    appointmentToDelete.selectedDate || 'No date'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Status:</strong> {appointmentToDelete.status || 'pending'}
+                </Typography>
+              </Box>
             )}
-            {selectedAppointment?.status === 'approved' && (
-              <Button 
-                onClick={() => {
-                  handleStatusChange(selectedAppointment.id, 'completed');
-                  setDetailsDialogOpen(false);
-                }}
-                variant="contained" 
-                color="primary"
-              >
-                Mark Complete
-              </Button>
-            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button 
+              onClick={handleCancelDelete} 
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmDelete} 
+              variant="contained" 
+              color="error"
+              startIcon={<Delete />}
+            >
+              Delete Appointment
+            </Button>
           </DialogActions>
         </Dialog>
 
