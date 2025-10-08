@@ -25,7 +25,7 @@ import {
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getStripe, calculateDepositAmount, formatCurrency } from '../../services/stripeService';
 
-const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError }) => {
+const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError, customerName, customerEmail }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -40,47 +40,73 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     event.preventDefault();
 
     if (!stripe || !elements) {
+      setError('Stripe is not initialized. Please check your configuration.');
       return;
     }
 
     setIsProcessing(true);
     setError('');
 
-    const card = elements.getElement(CardElement);
-
-    // Create payment method
-    const { error: paymentError, paymentMethod } = await stripe.createPaymentMethod({
-      type: 'card',
-      card: card,
-      billing_details: {
-        name: 'Customer', // You can pass customer name here
-      },
-    });
-
-    if (paymentError) {
-      setError(paymentError.message);
-      setIsProcessing(false);
-      return;
-    }
-
-    // For demo purposes, we'll simulate a successful payment
-    // In a real app, you'd send this to your backend to create a payment intent
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful payment
-      const mockPaymentResult = {
-        id: `pi_${Math.random().toString(36).substr(2, 9)}`,
-        status: 'succeeded',
-        amount: depositAmount,
-        payment_method: paymentMethod.id,
-        method: 'card'
-      };
+      const card = elements.getElement(CardElement);
 
-      onPaymentSuccess(mockPaymentResult);
+      // Step 1: Create Payment Intent on backend
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const functions = getFunctions();
+      const createPaymentIntentFn = httpsCallable(functions, 'createPaymentIntent');
+      
+      const paymentIntentResult = await createPaymentIntentFn({
+        amount: depositAmount, // Amount in cents
+        currency: 'usd',
+        metadata: {
+          servicePackage: servicePackage || 'Auto Detailing Service',
+          servicePrice: servicePrice,
+          depositAmount: depositDisplay,
+          customerEmail: customerEmail || 'customer@example.com',
+          customerName: customerName || 'Customer'
+        }
+      });
+
+      const { clientSecret, paymentIntentId } = paymentIntentResult.data;
+
+      // Step 2: Confirm payment with Stripe
+      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: card,
+          billing_details: {
+            name: customerName || 'Customer',
+            email: customerEmail || 'customer@example.com',
+          },
+        },
+      });
+
+      if (confirmError) {
+        setError(confirmError.message);
+        onPaymentError(confirmError);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Step 3: Verify payment succeeded
+      if (paymentIntent.status === 'succeeded') {
+        const paymentResult = {
+          id: paymentIntent.id,
+          status: paymentIntent.status,
+          amount: paymentIntent.amount,
+          payment_method: paymentIntent.payment_method,
+          method: 'card',
+          created: paymentIntent.created,
+          currency: paymentIntent.currency
+        };
+
+        onPaymentSuccess(paymentResult);
+      } else {
+        setError(`Payment status: ${paymentIntent.status}. Please try again.`);
+        onPaymentError(new Error(`Payment status: ${paymentIntent.status}`));
+      }
     } catch (err) {
-      setError('Payment failed. Please try again.');
+      console.error('Payment error:', err);
+      setError(err.message || 'Payment failed. Please try again.');
       onPaymentError(err);
     }
 
@@ -1026,7 +1052,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
   );
 };
 
-const DepositPayment = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError }) => {
+const DepositPayment = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError, customerName, customerEmail }) => {
   const stripePromise = getStripe();
 
   return (
@@ -1036,6 +1062,8 @@ const DepositPayment = ({ servicePrice, servicePackage, onPaymentSuccess, onPaym
         servicePackage={servicePackage}
         onPaymentSuccess={onPaymentSuccess}
         onPaymentError={onPaymentError}
+        customerName={customerName}
+        customerEmail={customerEmail}
       />
     </Elements>
   );

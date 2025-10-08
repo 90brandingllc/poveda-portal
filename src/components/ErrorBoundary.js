@@ -125,7 +125,7 @@ class ErrorBoundary extends React.Component {
               <Box sx={{ 
                 display: 'flex', 
                 justifyContent: 'center', 
-                gap: 2,
+                gap: 3,
                 flexDirection: { xs: 'column', sm: 'row' }
               }}>
                 <Button

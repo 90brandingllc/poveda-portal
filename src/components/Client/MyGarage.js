@@ -61,7 +61,6 @@ const MyGarage = () => {
     model: '',
     year: '',
     color: '',
-    licensePlate: '',
     nickname: '',
     phoneNumber: ''
   });
@@ -96,7 +95,6 @@ const MyGarage = () => {
       model: '',
       year: '',
       color: '',
-      licensePlate: '',
       nickname: '',
       phoneNumber: ''
     });
@@ -112,7 +110,6 @@ const MyGarage = () => {
       model: vehicle.model || '',
       year: vehicle.year || '',
       color: vehicle.color || '',
-      licensePlate: vehicle.licensePlate || '',
       nickname: vehicle.nickname || '',
       phoneNumber: vehicle.phoneNumber || ''
     });
@@ -742,21 +739,6 @@ const MyGarage = () => {
                         flexDirection: 'column', 
                         gap: 1.5 
                       }}>
-                        <Box>
-                          <Typography sx={{ 
-                            fontSize: '0.7rem', 
-                            color: '#94a3b8', 
-                            fontWeight: 600, 
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            mb: 0.5 
-                          }}>
-                            License Plate
-                          </Typography>
-                          <Typography sx={{ color: '#334155', fontWeight: 500 }}>
-                            {vehicle.licensePlate || 'Not specified'}
-                          </Typography>
-                        </Box>
                       </Box>
                     </Box>
 
@@ -1256,29 +1238,7 @@ const MyGarage = () => {
               </Typography>
               
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="License Plate"
-                    value={vehicleForm.licensePlate}
-                    onChange={handleFormChange('licensePlate')}
-                    placeholder="e.g., ABC-123"
-                    variant="outlined"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '10px',
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#3b82f6',
-                          borderWidth: 2
-                        }
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#3b82f6'
-                      }
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="Phone Number"
@@ -1674,28 +1634,7 @@ const MyGarage = () => {
               </Typography>
               
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="License Plate"
-                    value={vehicleForm.licensePlate}
-                    onChange={handleFormChange('licensePlate')}
-                    variant="outlined"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '10px',
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#0891b2',
-                          borderWidth: 2
-                        }
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#0891b2'
-                      }
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="Phone Number"
