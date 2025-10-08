@@ -61,7 +61,8 @@ const MyGarage = () => {
     year: '',
     color: '',
     licensePlate: '',
-    nickname: ''
+    nickname: '',
+    phoneNumber: ''
   });
 
   // Fetch vehicles
@@ -95,7 +96,8 @@ const MyGarage = () => {
       year: '',
       color: '',
       licensePlate: '',
-      nickname: ''
+      nickname: '',
+      phoneNumber: ''
     });
     setAddVehicleOpen(true);
     setError('');
@@ -110,7 +112,8 @@ const MyGarage = () => {
       year: vehicle.year || '',
       color: vehicle.color || '',
       licensePlate: vehicle.licensePlate || '',
-      nickname: vehicle.nickname || ''
+      nickname: vehicle.nickname || '',
+      phoneNumber: vehicle.phoneNumber || ''
     });
     setEditVehicleOpen(true);
     setMenuAnchor(null);
@@ -410,6 +413,11 @@ const MyGarage = () => {
                       <Typography variant="body2" color="text.secondary">
                         <strong>License:</strong> {vehicle.licensePlate}
                       </Typography>
+                      {vehicle.phoneNumber && (
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Phone:</strong> {vehicle.phoneNumber}
+                        </Typography>
+                      )}
                     </Box>
 
                     {/* Service Info */}
@@ -489,78 +497,159 @@ const MyGarage = () => {
             }
           }}
         >
-          <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>
-            Add New Vehicle
+          <DialogTitle sx={{ 
+            fontWeight: 600, 
+            pb: 1, 
+            background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}>
+            <DirectionsCar fontSize="large" />
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                Add New Vehicle
+              </Typography>
+              <Typography variant="subtitle2" sx={{ opacity: 0.9, mt: 0.5, fontWeight: 400 }}>
+                Complete the form below to add a new vehicle to your garage
+              </Typography>
+            </Box>
           </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Make *"
-                  value={vehicleForm.make}
-                  onChange={handleFormChange('make')}
-                  placeholder="e.g., Honda"
-                />
+          <DialogContent sx={{ pt: 3 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(8, 145, 178, 0.06)', borderRadius: 2, border: '1px dashed rgba(8, 145, 178, 0.2)' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#0891b2' }}>
+                Vehicle Information
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Make *"
+                    value={vehicleForm.make}
+                    onChange={handleFormChange('make')}
+                    placeholder="e.g., Honda"
+                    variant="outlined"
+                    InputProps={{
+                      startAdornment: (
+                        <DirectionsCar sx={{ mr: 1, color: 'rgba(8, 145, 178, 0.7)' }} fontSize="small" />
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Model *"
+                    value={vehicleForm.model}
+                    onChange={handleFormChange('model')}
+                    placeholder="e.g., Civic"
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Year *"
+                    type="number"
+                    value={vehicleForm.year}
+                    onChange={handleFormChange('year')}
+                    placeholder="e.g., 2020"
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Color"
+                    value={vehicleForm.color}
+                    onChange={handleFormChange('color')}
+                    placeholder="e.g., Blue"
+                    variant="outlined"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Model *"
-                  value={vehicleForm.model}
-                  onChange={handleFormChange('model')}
-                  placeholder="e.g., Civic"
-                />
+            </Box>
+            
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(8, 145, 178, 0.06)', borderRadius: 2, border: '1px dashed rgba(8, 145, 178, 0.2)' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#0891b2' }}>
+                Identification & Contact
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="License Plate"
+                    value={vehicleForm.licensePlate}
+                    onChange={handleFormChange('licensePlate')}
+                    placeholder="e.g., ABC-123"
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Phone Number"
+                    value={vehicleForm.phoneNumber}
+                    onChange={handleFormChange('phoneNumber')}
+                    placeholder="e.g., +1 (555) 123-4567"
+                    variant="outlined"
+                    InputProps={{
+                      startAdornment: (
+                        <Box component="span" sx={{ mr: 1, color: 'rgba(8, 145, 178, 0.7)' }}>
+                          📱
+                        </Box>
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Nickname (Optional)"
+                    value={vehicleForm.nickname}
+                    onChange={handleFormChange('nickname')}
+                    placeholder="e.g., My Honda"
+                    variant="outlined"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Year *"
-                  type="number"
-                  value={vehicleForm.year}
-                  onChange={handleFormChange('year')}
-                  placeholder="e.g., 2020"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Color"
-                  value={vehicleForm.color}
-                  onChange={handleFormChange('color')}
-                  placeholder="e.g., Blue"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="License Plate"
-                  value={vehicleForm.licensePlate}
-                  onChange={handleFormChange('licensePlate')}
-                  placeholder="e.g., ABC-123"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Nickname (Optional)"
-                  value={vehicleForm.nickname}
-                  onChange={handleFormChange('nickname')}
-                  placeholder="e.g., My Honda"
-                />
-              </Grid>
-            </Grid>
+            </Box>
           </DialogContent>
-          <DialogActions sx={{ p: 3, pt: 1 }}>
-            <Button onClick={() => setAddVehicleOpen(false)}>
+          <DialogActions sx={{ p: 3, bgcolor: '#f9fafb', borderTop: '1px solid #e5e7eb' }}>
+            <Button 
+              onClick={() => setAddVehicleOpen(false)}
+              variant="outlined"
+              sx={{
+                borderColor: '#9ca3af',
+                color: '#6b7280',
+                '&:hover': {
+                  borderColor: '#6b7280',
+                  bgcolor: 'rgba(107, 114, 128, 0.04)'
+                }
+              }}
+            >
               Cancel
             </Button>
             <Button 
               variant="contained" 
               onClick={handleSaveVehicle}
+              startIcon={<Add />}
+              disabled={!vehicleForm.make || !vehicleForm.model || !vehicleForm.year}
               sx={{
                 background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(8, 145, 178, 0.2)',
+                px: 3,
+                py: 1
               }}
             >
               Add Vehicle
@@ -582,72 +671,152 @@ const MyGarage = () => {
             }
           }}
         >
-          <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>
-            Edit Vehicle
+          <DialogTitle sx={{ 
+            fontWeight: 600, 
+            pb: 1, 
+            background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}>
+            <Edit fontSize="large" />
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                Edit Vehicle
+              </Typography>
+              <Typography variant="subtitle2" sx={{ opacity: 0.9, mt: 0.5, fontWeight: 400 }}>
+                Update your vehicle information
+              </Typography>
+            </Box>
           </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Make *"
-                  value={vehicleForm.make}
-                  onChange={handleFormChange('make')}
-                />
+          <DialogContent sx={{ pt: 3 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(8, 145, 178, 0.06)', borderRadius: 2, border: '1px dashed rgba(8, 145, 178, 0.2)' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#0891b2' }}>
+                Vehicle Information
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Make *"
+                    value={vehicleForm.make}
+                    onChange={handleFormChange('make')}
+                    variant="outlined"
+                    InputProps={{
+                      startAdornment: (
+                        <DirectionsCar sx={{ mr: 1, color: 'rgba(8, 145, 178, 0.7)' }} fontSize="small" />
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Model *"
+                    value={vehicleForm.model}
+                    onChange={handleFormChange('model')}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Year *"
+                    type="number"
+                    value={vehicleForm.year}
+                    onChange={handleFormChange('year')}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Color"
+                    value={vehicleForm.color}
+                    onChange={handleFormChange('color')}
+                    variant="outlined"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Model *"
-                  value={vehicleForm.model}
-                  onChange={handleFormChange('model')}
-                />
+            </Box>
+            
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(8, 145, 178, 0.06)', borderRadius: 2, border: '1px dashed rgba(8, 145, 178, 0.2)' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#0891b2' }}>
+                Identification & Contact
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="License Plate"
+                    value={vehicleForm.licensePlate}
+                    onChange={handleFormChange('licensePlate')}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Phone Number"
+                    value={vehicleForm.phoneNumber}
+                    onChange={handleFormChange('phoneNumber')}
+                    variant="outlined"
+                    InputProps={{
+                      startAdornment: (
+                        <Box component="span" sx={{ mr: 1, color: 'rgba(8, 145, 178, 0.7)' }}>
+                          📱
+                        </Box>
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Nickname (Optional)"
+                    value={vehicleForm.nickname}
+                    onChange={handleFormChange('nickname')}
+                    variant="outlined"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Year *"
-                  type="number"
-                  value={vehicleForm.year}
-                  onChange={handleFormChange('year')}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Color"
-                  value={vehicleForm.color}
-                  onChange={handleFormChange('color')}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="License Plate"
-                  value={vehicleForm.licensePlate}
-                  onChange={handleFormChange('licensePlate')}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Nickname (Optional)"
-                  value={vehicleForm.nickname}
-                  onChange={handleFormChange('nickname')}
-                />
-              </Grid>
-            </Grid>
+            </Box>
           </DialogContent>
-          <DialogActions sx={{ p: 3, pt: 1 }}>
-            <Button onClick={() => setEditVehicleOpen(false)}>
+          <DialogActions sx={{ p: 3, bgcolor: '#f9fafb', borderTop: '1px solid #e5e7eb' }}>
+            <Button 
+              onClick={() => setEditVehicleOpen(false)}
+              variant="outlined"
+              sx={{
+                borderColor: '#9ca3af',
+                color: '#6b7280',
+                '&:hover': {
+                  borderColor: '#6b7280',
+                  bgcolor: 'rgba(107, 114, 128, 0.04)'
+                }
+              }}
+            >
               Cancel
             </Button>
             <Button 
               variant="contained" 
               onClick={handleSaveVehicle}
+              startIcon={<Edit />}
+              disabled={!vehicleForm.make || !vehicleForm.model || !vehicleForm.year}
               sx={{
                 background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(8, 145, 178, 0.2)',
+                px: 3,
+                py: 1
               }}
             >
               Save Changes

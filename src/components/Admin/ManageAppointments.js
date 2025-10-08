@@ -470,9 +470,12 @@ const ManageAppointments = () => {
                                 mb: 0.25,
                                 fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
                                 wordBreak: 'break-word',
-                                display: 'block'
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5
                               }}
                             >
+                              <Email fontSize="small" sx={{ fontSize: isSmallMobile ? '0.8rem' : '0.9rem', opacity: 0.8 }} />
                               {appointment.userEmail || appointment.customerEmail}
                             </Typography>
                             {appointment.customerPhone && (
@@ -481,10 +484,29 @@ const ManageAppointments = () => {
                                 color="text.secondary"
                                 sx={{ 
                                   fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
-                                  display: 'block'
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5
                                 }}
                               >
+                                <Phone fontSize="small" sx={{ fontSize: isSmallMobile ? '0.8rem' : '0.9rem', opacity: 0.8 }} />
                                 {appointment.customerPhone}
+                              </Typography>
+                            )}
+                            {appointment.vehiclePhone && (
+                              <Typography 
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ 
+                                  fontSize: isSmallMobile ? '0.65rem' : '0.75rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  color: '#0891b2'
+                                }}
+                              >
+                                <Phone fontSize="small" sx={{ fontSize: isSmallMobile ? '0.8rem' : '0.9rem', opacity: 0.8 }} />
+                                {appointment.vehiclePhone} <span style={{ fontSize: '0.85em', opacity: 0.7 }}>(vehículo)</span>
                               </Typography>
                             )}
                           </Box>
@@ -702,12 +724,22 @@ const ManageAppointments = () => {
                           <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                             {appointment.userName || appointment.customerName || 'Unknown'}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Email fontSize="small" sx={{ color: '#666', opacity: 0.8 }} />
                             {appointment.userEmail || appointment.customerEmail}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {appointment.customerPhone}
-                          </Typography>
+                          {appointment.customerPhone && (
+                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Phone fontSize="small" sx={{ color: '#666', opacity: 0.8 }} />
+                              {appointment.customerPhone}
+                            </Typography>
+                          )}
+                          {appointment.vehiclePhone && (
+                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Phone fontSize="small" sx={{ color: '#0891b2', opacity: 0.8 }} />
+                              {appointment.vehiclePhone} <span style={{ fontSize: '0.85em', opacity: 0.7 }}></span>
+                            </Typography>
+                          )}
                         </Box>
                       </TableCell>
                       <TableCell>
@@ -904,6 +936,14 @@ const ManageAppointments = () => {
                   <Typography variant="body2" sx={{ mb: 1 }}>
                     <strong>Color:</strong> {selectedAppointment.vehicleColor}
                   </Typography>
+                  {selectedAppointment.vehiclePhone && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Phone sx={{ mr: 1, color: '#0891b2' }} />
+                      <Typography variant="body2">
+                        <strong>Vehicle Phone:</strong> {selectedAppointment.vehiclePhone}
+                      </Typography>
+                    </Box>
+                  )}
                 </Grid>
 
                 {/* Appointment Details */}
