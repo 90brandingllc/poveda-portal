@@ -25,7 +25,13 @@ import {
   CheckCircle,
   Schedule,
   Block,
-  DirectionsCar
+  DirectionsCar,
+  Home,
+  LocationOn,
+  Check,
+  ArrowBack,
+  ArrowForward,
+  Phone,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useAuth } from '../../contexts/AuthContext';
@@ -58,6 +64,7 @@ const BookAppointment = () => {
     selectedServices: [], // Array of selected services
     vehicleType: '', // small, suv, threeRow
     vehicleId: '',
+    vehiclePhone: '', // Campo para almacenar el teléfono del vehículo
     date: null,
     timeSlot: null,
     address: {
@@ -436,6 +443,7 @@ const BookAppointment = () => {
         servicesDetails: formData.selectedServices, // Full service objects for reference
         vehicleType: formData.vehicleType,
         vehicleId: formData.vehicleId,
+        vehiclePhone: formData.vehiclePhone, // Incluir teléfono del vehículo en la cita
         date: formData.date.toDate(),
         timeSlot: formData.timeSlot,
         time: formData.time ? formData.time.format('HH:mm') : formData.timeSlot,
@@ -752,7 +760,14 @@ const BookAppointment = () => {
                           height: '100%',
                           borderRadius: { xs: '12px', sm: '16px' }
                         }}
-                        onClick={() => setFormData(prev => ({ ...prev, vehicleId: vehicle.id }))}
+                        onClick={() => {
+                          // Transferir tanto el ID como el teléfono del vehículo al formulario
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            vehicleId: vehicle.id,
+                            vehiclePhone: vehicle.phoneNumber // Transferir el teléfono del vehículo
+                          }))
+                        }}
                       >
                         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
@@ -1055,6 +1070,23 @@ const BookAppointment = () => {
                           'Not selected'}
                       </Typography>
                     </Box>
+                    
+                    {formData.vehiclePhone && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, display: 'flex', alignItems: 'center' }}>
+                          <Phone fontSize="small" sx={{ mr: 0.5, color: '#0891b2' }} />
+                          Vehicle Phone:
+                        </Typography>
+                        <Typography variant="body1" sx={{ 
+                          fontWeight: 600,
+                          fontSize: { xs: '0.875rem', sm: '1rem' },
+                          textAlign: 'right',
+                          maxWidth: '60%'
+                        }}>
+                          {formData.vehiclePhone}
+                        </Typography>
+                      </Box>
+                    )}
                     
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
