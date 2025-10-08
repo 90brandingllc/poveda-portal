@@ -175,8 +175,7 @@ const AdminLayout = ({ children }) => {
       flexDirection: 'column',
       background: 'rgba(255, 255, 255, 0.8)', 
       backdropFilter: 'blur(8px)',
-    
-      overflow: 'hidden'
+      overflow: 'auto' // Changed from 'hidden' to 'auto' to enable scrolling
     }}>
       {/* Logo Section */}
       <Box sx={{ p: 5, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -234,7 +233,22 @@ const AdminLayout = ({ children }) => {
       </Paper>
 
       {/* Navigation Menu */}
-      <List sx={{ flex: 1, px: 2 }}>
+      <List sx={{ 
+        flex: 1, 
+        px: 2, 
+        overflowY: 'auto', // Enable vertical scrolling for the menu items
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: 'rgba(0,0,0,0.1)',
+          borderRadius: '10px',
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: 'transparent',
+        },
+        maxHeight: { xs: '60vh', sm: '60vh', md: '65vh' }, // Set a maximum height based on viewport height
+      }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
             <ListItemButton
@@ -627,7 +641,9 @@ const AdminLayout = ({ children }) => {
               boxSizing: 'border-box', 
               width: drawerWidth,
               border: 'none',
-              background: 'transparent'
+              background: 'transparent',
+              height: '100%',
+              overflowY: 'visible' // Ensure the drawer content can be scrolled
             },
           }}
         >
@@ -643,7 +659,12 @@ const AdminLayout = ({ children }) => {
               boxSizing: 'border-box', 
               width: drawerWidth,
               border: 'none',
-              background: 'transparent'
+              background: 'transparent',
+              height: '100%',
+              overflowY: 'visible', // Ensure the drawer content can be scrolled
+              '&::-webkit-scrollbar': {
+                display: 'none' // Hide default scrollbar for cleaner look
+              }
             },
           }}
           open

@@ -17,7 +17,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Snackbar
+  Snackbar,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import {
   Schedule,
@@ -28,7 +30,10 @@ import {
   LocationOn,
   CalendarToday,
   Edit,
-  Save
+  Save,
+  Visibility,
+  VisibilityOff,
+  Delete
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc } from 'firebase/firestore';
@@ -57,6 +62,9 @@ const AppointmentsList = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+  const [hideConfirmOpen, setHideConfirmOpen] = useState(false);
+  const [appointmentToHide, setAppointmentToHide] = useState(null);
+  const [showHiddenAppointments, setShowHiddenAppointments] = useState(false);
 
   useEffect(() => {
     let unsubscribe = null;
@@ -99,7 +107,12 @@ const AppointmentsList = () => {
             return bDate - aDate;
           });
           
-          setAppointments(userAppointments);
+          // Filter out hidden appointments unless showHiddenAppointments is true
+          const filteredAppointments = showHiddenAppointments 
+            ? userAppointments 
+            : userAppointments.filter(appointment => !appointment.hidden);
+            
+          setAppointments(filteredAppointments);
           setLoading(false);
         }, (error) => {
           console.error('AppointmentsList - Error fetching appointments:', error);
@@ -129,7 +142,7 @@ const AppointmentsList = () => {
         unsubscribe();
       }
     };
-  }, [currentUser]);
+  }, [currentUser, showHiddenAppointments]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -252,6 +265,95 @@ const AppointmentsList = () => {
   const handleCancelConfirmClose = () => {
     setCancelConfirmOpen(false);
     setAppointmentToCancel(null);
+  };
+
+  // Handle hiding an appointment
+  const handleHideAppointment = (appointment = null) => {
+    const appointmentToHide = appointment || selectedAppointment;
+    
+    if (!appointmentToHide) {
+      setSnackbar({
+        open: true,
+        message: 'No appointment selected. Please try again.',
+        severity: 'error'
+      });
+      return;
+    }
+
+    // Set the appointment to hide and show confirmation dialog
+    setAppointmentToHide(appointmentToHide);
+    setHideConfirmOpen(true);
+  };
+
+  // Handle confirming hide action
+  const handleConfirmHide = async () => {
+    if (!appointmentToHide) {
+      setHideConfirmOpen(false);
+      return;
+    }
+
+    try {
+      // Update the appointment with hidden = true
+      await updateDoc(doc(db, 'appointments', appointmentToHide.id), {
+        hidden: true,
+        updatedAt: serverTimestamp()
+      });
+      
+      setSnackbar({
+        open: true,
+        message: 'Appointment hidden successfully!',
+        severity: 'success'
+      });
+      
+      // Close all dialogs and reset state
+      setHideConfirmOpen(false);
+      setDetailsOpen(false);
+      setSelectedAppointment(null);
+      setAppointmentToHide(null);
+    } catch (error) {
+      console.error('Error hiding appointment:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to hide appointment. Please try again.',
+        severity: 'error'
+      });
+      setHideConfirmOpen(false);
+    }
+  };
+
+  // Handle unhiding an appointment
+  const handleUnhideAppointment = async (appointment) => {
+    try {
+      // Update the appointment with hidden = false
+      await updateDoc(doc(db, 'appointments', appointment.id), {
+        hidden: false,
+        updatedAt: serverTimestamp()
+      });
+      
+      setSnackbar({
+        open: true,
+        message: 'Appointment unhidden successfully!',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error unhiding appointment:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to unhide appointment. Please try again.',
+        severity: 'error'
+      });
+    }
+  };
+
+  // Handle closing the hide confirmation dialog
+  const handleHideConfirmClose = () => {
+    setHideConfirmOpen(false);
+    setAppointmentToHide(null);
+  };
+
+  // Toggle showing hidden appointments
+  const toggleHiddenAppointments = () => {
+    setShowHiddenAppointments(prev => !prev);
   };
 
   const handleRescheduleSubmit = async () => {
@@ -392,7 +494,7 @@ const AppointmentsList = () => {
           p: { xs: 3, md: 5 },
           boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
         }}>
-          <Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             <Typography 
               variant="h3" 
               sx={{ 
@@ -419,7 +521,7 @@ const AppointmentsList = () => {
               Manage your service appointments
             </Typography>
           </Box>
-          <Button
+          <Button 
             component={Link}
             to="/book-appointment"
             sx={{
@@ -528,20 +630,22 @@ const AppointmentsList = () => {
             <Grid item xs={12} md={6} lg={4} key={appointment.id}>
               <Box 
                 sx={{ 
-                  background: 'rgba(255, 255, 255, 0.9)',
+                  background: appointment.hidden ? 'rgba(245, 245, 245, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                   backdropFilter: 'blur(12px)',
                   borderRadius: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  border: appointment.hidden ? '1px solid rgba(200, 200, 200, 0.4)' : '1px solid rgba(255, 255, 255, 0.2)',
                   p: 4,
                   height: '100%',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
                   position: 'relative',
                   overflow: 'hidden',
+                  opacity: appointment.hidden ? 0.8 : 1,
                   '&:hover': {
                     transform: 'translateY(-8px)',
                     boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
-                    border: '1px solid rgba(255, 255, 255, 0.4)'
+                    border: appointment.hidden ? '1px solid rgba(200, 200, 200, 0.6)' : '1px solid rgba(255, 255, 255, 0.4)',
+                    opacity: 1
                   },
                   '&::before': {
                     content: '""',
@@ -556,19 +660,37 @@ const AppointmentsList = () => {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-                  <Chip 
-                    label={appointment.status || 'pending'} 
-                    size="small"
-                    sx={{
-                      height: '24px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      background: `${getStatusColor(appointment.status)}15`,
-                      color: getStatusColor(appointment.status),
-                      border: `1px solid ${getStatusColor(appointment.status)}30`,
-                      textTransform: 'capitalize'
-                    }}
-                  />
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip 
+                      label={appointment.status || 'pending'} 
+                      size="small"
+                      sx={{
+                        height: '24px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        background: `${getStatusColor(appointment.status)}15`,
+                        color: getStatusColor(appointment.status),
+                        border: `1px solid ${getStatusColor(appointment.status)}30`,
+                        textTransform: 'capitalize'
+                      }}
+                    />
+                    
+                    {appointment.hidden && (
+                      <Chip
+                        icon={<VisibilityOff sx={{ fontSize: '0.85rem' }} />}
+                        label="Archived"
+                        size="small"
+                        sx={{
+                          height: '24px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          background: '#64748b15',
+                          color: '#64748b',
+                          border: '1px solid #64748b30'
+                        }}
+                      />
+                    )}
+                  </Box>
                   <IconButton 
                     size="small"
                     onClick={(e) => handleMenuOpen(e, appointment)}
@@ -790,6 +912,47 @@ const AppointmentsList = () => {
         {selectedAppointment?.status === 'completed' && (
           <MenuItem onClick={handleMenuClose}>
             Book Again
+          </MenuItem>
+        )}
+        
+        <Divider />
+        
+        {/* Opción para ocultar/mostrar según el estado de la cita */}
+        {selectedAppointment && (
+          selectedAppointment.hidden ? (
+            <MenuItem 
+              onClick={() => {
+                handleUnhideAppointment(selectedAppointment);
+                handleMenuClose();
+              }}
+            >
+              <Visibility sx={{ mr: 1 }} />
+              Show Appointment
+            </MenuItem>
+          ) : (
+            <MenuItem 
+              onClick={() => {
+                handleHideAppointment();
+                handleMenuClose();
+              }}
+            >
+              <VisibilityOff sx={{ mr: 1 }} />
+              Hide Appointment
+            </MenuItem>
+          )
+        )}
+        
+        {/* Opción para eliminar citas en cualquier estado */}
+        {selectedAppointment && selectedAppointment.status !== 'pending' && (
+          <MenuItem 
+            onClick={() => {
+              handleMenuClose();
+              handleCancelAppointment();
+            }}
+            sx={{ color: 'error.main' }}
+          >
+            <Delete sx={{ mr: 1 }} />
+            Delete Appointment
           </MenuItem>
         )}
       </Menu>
@@ -1205,6 +1368,90 @@ const AppointmentsList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Hide Confirmation Dialog */}
+      <Dialog
+        open={hideConfirmOpen}
+        onClose={handleHideConfirmClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ bgcolor: 'info.main', color: 'white' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <VisibilityOff sx={{ mr: 1 }} />
+            Hide Appointment
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Do you want to hide this appointment from your list?
+          </Typography>
+          {appointmentToHide && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                <strong>{appointmentToHide.service}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {formatDate(appointmentToHide.date)} at {appointmentToHide.time || 'TBD'}
+              </Typography>
+              {appointmentToHide.address && (
+                <Typography variant="body2" color="text.secondary">
+                  {appointmentToHide.address.street}, {appointmentToHide.address.city}, {appointmentToHide.address.state} {appointmentToHide.address.zipCode}
+                </Typography>
+              )}
+            </Box>
+          )}
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <strong>Note:</strong> You can show hidden appointments again by using the toggle button at the top of the page.
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={handleHideConfirmClose}
+            variant="outlined"
+            size="large"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmHide}
+            variant="contained"
+            color="primary"
+            size="large"
+          >
+            Hide Appointment
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Botón flotante para mostrar/ocultar citas ocultas */}
+      {appointments.length > 0 && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            zIndex: 1000
+          }}
+        >
+          <Chip
+            icon={showHiddenAppointments ? <Visibility /> : <VisibilityOff />}
+            label={showHiddenAppointments ? "Hide archived appointments" : "Show archived appointments"}
+            color="primary"
+            variant="outlined"
+            onClick={toggleHiddenAppointments}
+            sx={{
+              py: 2.5,
+              px: 2,
+              fontSize: '0.9rem',
+              '&:hover': {
+                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+              }
+            }}
+          />
+        </Box>
+      )}
 
       {/* Snackbar for notifications */}
       <Snackbar
