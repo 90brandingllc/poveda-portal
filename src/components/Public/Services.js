@@ -342,7 +342,7 @@ const Services = () => {
                     Step 1: Book & Pay Online
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Pay <strong>$45 deposit</strong> securely online when booking your appointment
+                    Pay <strong>$50 deposit</strong> securely online when booking your appointment
                   </Typography>
                 </Box>
               </Grid>
@@ -418,7 +418,7 @@ const Services = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <CreditCard sx={{ mr: 1, color: '#4caf50', fontSize: 16 }} />
                         <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                          <strong>$45 deposit</strong> - Paid online when booking
+                          <strong>$50 deposit</strong> - Paid online when booking
                         </Typography>
                       </Box>
                     </Box>

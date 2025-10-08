@@ -1166,7 +1166,7 @@ const BookAppointment = () => {
                             color: '#1976d2',
                             fontSize: { xs: '0.875rem', sm: '1rem' }
                           }}>
-                            Online Deposit ($45)
+                            Online Deposit ($50)
                           </Typography>
                         </Box>
                         <Typography variant="h5" sx={{ 

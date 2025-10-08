@@ -404,7 +404,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   fontWeight: 600
                 }}>
                   <Box component="span" sx={{ fontSize: '1.3rem' }}>💳</Box>
-                  Deposit Required ($45)
+                  Deposit Required ($50)
                 </Typography>
 
                 <Typography variant="h3" sx={{ 
