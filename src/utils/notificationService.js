@@ -11,18 +11,33 @@ import { db } from '../firebase/config';
  */
 export const createNotification = async (userId, title, message, type = 'info', metadata = {}) => {
   try {
+    if (!userId) {
+      console.error('Error: userId is required for notifications');
+      return null;
+    }
+    
+    // Limpiar cualquier valor undefined de metadata
+    const cleanMetadata = {};
+    Object.keys(metadata).forEach(key => {
+      if (metadata[key] !== undefined) {
+        cleanMetadata[key] = metadata[key];
+      }
+    });
+    
+    // Crear el objeto de notificación con valores limpios
     const notification = {
       userId,
-      title,
-      message,
-      type,
+      title: title || 'Notification',
+      message: message || '',
+      type: type || 'info',
       read: false,
       createdAt: serverTimestamp(),
-      metadata,
-      icon: type // Default icon matches type
+      metadata: cleanMetadata,
+      icon: type || 'info' // Default icon matches type
     };
 
     const docRef = await addDoc(collection(db, 'notifications'), notification);
+    console.log(`Notification created successfully: ${docRef.id}`);
     return docRef.id;
   } catch (error) {
     console.error('Error creating notification:', error);
@@ -49,26 +64,44 @@ export const NotificationTypes = {
  * Create appointment confirmation notification
  */
 export const createAppointmentConfirmedNotification = async (userId, appointmentData) => {
-  const { service, date, timeSlot, address } = appointmentData;
-  const appointmentDate = date.toDate ? date.toDate() : new Date(date);
+  // Extraer datos con valores predeterminados para evitar undefined
+  const { 
+    service = 'requested',
+    date, 
+    timeSlot = 'scheduled time', 
+    address = {}, 
+    id: appointmentId 
+  } = appointmentData;
+  
+  // Asegurarse que date sea un objeto Date válido
+  const appointmentDate = date ? (date.toDate ? date.toDate() : new Date(date)) : new Date();
+  
+  // Extraer dirección con valores predeterminados
+  const { street = 'your location', city = '' } = address;
+  
+  // Mensaje con validación
+  const message = `Your ${service} appointment on ${appointmentDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })} at ${timeSlot} has been confirmed. Our team will arrive at ${street}${city ? ', ' + city : ''}.`;
+  
+  // Metadata limpia
+  const metadata = {
+    type: NotificationTypes.APPOINTMENT_CONFIRMED,
+    ...(appointmentId ? { appointmentId } : {}),
+    ...(service !== 'requested' ? { service } : {}),
+    date: appointmentDate.toISOString(),
+    ...(timeSlot !== 'scheduled time' ? { timeSlot } : {})
+  };
   
   return createNotification(
     userId,
     'Appointment Confirmed',
-    `Your ${service} appointment on ${appointmentDate.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })} at ${timeSlot} has been confirmed. Our team will arrive at ${address.street}, ${address.city}.`,
+    message,
     'success',
-    {
-      type: NotificationTypes.APPOINTMENT_CONFIRMED,
-      appointmentId: appointmentData.id,
-      service,
-      date: appointmentDate.toISOString(),
-      timeSlot
-    }
+    metadata
   );
 };
 
@@ -96,20 +129,24 @@ export const createEstimateReadyNotification = async (userId, estimateData) => {
  * Create payment received notification
  */
 export const createPaymentReceivedNotification = async (userId, paymentData) => {
-  const { amount, remaining, service } = paymentData;
+  // Extraer y asegurar que no haya valores undefined
+  const { amount, remaining, service, id: paymentId } = paymentData;
+  
+  // Crear un objeto de metadata limpio sin valores undefined
+  const metadata = {
+    type: NotificationTypes.PAYMENT_RECEIVED,
+    ...(paymentId ? { paymentId } : {}),
+    ...(amount ? { amount } : {}),
+    ...(remaining !== undefined ? { remaining } : {}),
+    ...(service ? { service } : {})
+  };
   
   return createNotification(
     userId,
     'Payment Received',
     `We have received your ${amount ? `payment of $${amount}` : 'payment'} for your ${service || 'upcoming appointment'}. ${remaining ? `Remaining balance: $${remaining}` : 'Thank you!'}`,
     'success',
-    {
-      type: NotificationTypes.PAYMENT_RECEIVED,
-      paymentId: paymentData.id,
-      amount,
-      remaining,
-      service
-    }
+    metadata
   );
 };
 

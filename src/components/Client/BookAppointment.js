@@ -444,7 +444,7 @@ const BookAppointment = () => {
         servicesDetails: formData.selectedServices, // Full service objects for reference
         vehicleType: formData.vehicleType,
         vehicleId: formData.vehicleId,
-        vehiclePhone: formData.vehiclePhone, // Incluir teléfono del vehículo en la cita
+        ...(formData.vehiclePhone ? { vehiclePhone: formData.vehiclePhone } : {}), // Solo incluir si tiene valor
         date: formData.date.toDate(),
         timeSlot: formData.timeSlot,
         time: formData.time ? formData.time.format('HH:mm') : formData.timeSlot,
