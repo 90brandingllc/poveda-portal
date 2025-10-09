@@ -54,6 +54,8 @@ export const NotificationTypes = {
   APPOINTMENT_COMPLETED: 'appointment_completed',
   APPOINTMENT_REMINDER: 'appointment_reminder',
   ESTIMATE_READY: 'estimate_ready',
+  ESTIMATE_APPROVED: 'estimate_approved',
+  ESTIMATE_DECLINED: 'estimate_declined',
   PAYMENT_RECEIVED: 'payment_received',
   PAYMENT_FAILED: 'payment_failed',
   WELCOME: 'welcome',
@@ -232,6 +234,49 @@ export const createServiceReminderNotification = async (userId, vehicleData) => 
   );
 };
 
+/**
+ * Create estimate approved notification
+ */
+export const createEstimateApprovedNotification = async (userId, estimateData) => {
+  const { subject, projectTitle, quotedPrice, id: estimateId } = estimateData;
+  const title = subject || projectTitle || 'your project';
+  
+  const metadata = {
+    type: NotificationTypes.ESTIMATE_APPROVED,
+    ...(estimateId ? { estimateId } : {}),
+    ...(quotedPrice ? { quotedPrice } : {})
+  };
+  
+  return createNotification(
+    userId,
+    'Estimate Approved',
+    `Great news! Your estimate for ${title} has been approved${quotedPrice ? ` with a quoted price of $${quotedPrice}` : ''}. We'll be in touch soon to schedule the work.`,
+    'success',
+    metadata
+  );
+};
+
+/**
+ * Create estimate declined notification
+ */
+export const createEstimateDeclinedNotification = async (userId, estimateData) => {
+  const { subject, projectTitle, id: estimateId } = estimateData;
+  const title = subject || projectTitle || 'your project';
+  
+  const metadata = {
+    type: NotificationTypes.ESTIMATE_DECLINED,
+    ...(estimateId ? { estimateId } : {})
+  };
+  
+  return createNotification(
+    userId,
+    'Estimate Status Update',
+    `Unfortunately, we are unable to proceed with the estimate for ${title} at this time. Please feel free to reach out if you have any questions or would like to discuss alternative options.`,
+    'warning',
+    metadata
+  );
+};
+
 export default {
   createNotification,
   createAppointmentConfirmedNotification,
@@ -241,5 +286,7 @@ export default {
   createServiceCompletedNotification,
   createWelcomeNotification,
   createServiceReminderNotification,
+  createEstimateApprovedNotification,
+  createEstimateDeclinedNotification,
   NotificationTypes
 };
