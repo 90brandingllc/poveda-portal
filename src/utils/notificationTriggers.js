@@ -1,4 +1,10 @@
-import { createNotification, createAppointmentConfirmedNotification, createServiceCompletedNotification } from './notificationService';
+import { 
+  createNotification, 
+  createAppointmentConfirmedNotification, 
+  createServiceCompletedNotification,
+  createEstimateApprovedNotification,
+  createEstimateDeclinedNotification
+} from './notificationService';
 import { sendAppointmentStatusEmail } from './emailService';
 import { doc, getDoc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -125,7 +131,59 @@ export const listenForAppointmentStatusChanges = (onStatusChange = null) => {
   });
 };
 
+/**
+ * Sends appropriate notifications when an estimate status changes
+ * @param {string} estimateId - The ID of the estimate
+ * @param {string} newStatus - The new status ('approved', 'declined', etc.)
+ * @param {Object} [estimateData] - Optional estimate data if already available
+ * @returns {Promise<boolean>} - Whether notifications were successfully sent
+ */
+export const handleEstimateStatusChange = async (estimateId, newStatus, estimateData = null) => {
+  try {
+    console.log(`Sending notifications for estimate ${estimateId} with new status: ${newStatus}`);
+    
+    // Get estimate data if not provided
+    if (!estimateData) {
+      const estimateRef = doc(db, 'estimates', estimateId);
+      const estimateSnap = await getDoc(estimateRef);
+      
+      if (!estimateSnap.exists()) {
+        console.error('Estimate not found for notification', estimateId);
+        return false;
+      }
+      
+      estimateData = { id: estimateId, ...estimateSnap.data() };
+    } else if (!estimateData.id) {
+      estimateData = { ...estimateData, id: estimateId };
+    }
+    
+    if (!estimateData.userId) {
+      console.error('No userId found for estimate notification', estimateId);
+      return false;
+    }
+    
+    // Create appropriate notification based on status
+    try {
+      if (newStatus === 'approved') {
+        await createEstimateApprovedNotification(estimateData.userId, estimateData);
+      } else if (newStatus === 'declined') {
+        await createEstimateDeclinedNotification(estimateData.userId, estimateData);
+      }
+      
+      console.log(`Successfully sent notifications for estimate ${estimateId}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending notifications:', error);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error in handleEstimateStatusChange:', error);
+    return false;
+  }
+};
+
 export default {
   handleAppointmentStatusChange,
-  listenForAppointmentStatusChanges
+  listenForAppointmentStatusChanges,
+  handleEstimateStatusChange
 };

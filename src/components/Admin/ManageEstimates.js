@@ -58,9 +58,11 @@ import {
   doc, 
   query, 
   orderBy,
-  arrayUnion
+  arrayUnion,
+  getDoc
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { handleEstimateStatusChange } from '../../utils/notificationTriggers';
 
 // OpenAI Integration
 const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
@@ -173,10 +175,27 @@ const ManageEstimates = () => {
 
   const handleStatusChange = async (estimateId, newStatus) => {
     try {
-      await updateDoc(doc(db, 'estimates', estimateId), {
+      // Get the estimate data first
+      const estimateRef = doc(db, 'estimates', estimateId);
+      const estimateSnap = await getDoc(estimateRef);
+      
+      if (!estimateSnap.exists()) {
+        throw new Error('Estimate not found');
+      }
+      
+      const estimateData = { id: estimateId, ...estimateSnap.data() };
+      
+      // Update the estimate status
+      await updateDoc(estimateRef, {
         status: newStatus,
         lastUpdated: new Date()
       });
+      
+      // Send notification if status is approved or declined
+      if (newStatus === 'approved' || newStatus === 'declined') {
+        await handleEstimateStatusChange(estimateId, newStatus, estimateData);
+        console.log(`Status change to ${newStatus} processed successfully with notification`);
+      }
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Failed to update status. Please try again.');

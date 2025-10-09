@@ -59,31 +59,31 @@ export const NotificationProvider = ({ children }) => {
         ),
         (snapshot) => {
           const readIds = getReadNotifications();
-          const newItems = snapshot.docChanges()
-            .filter(change => change.type === 'added')
-            .map(change => ({
-              id: change.doc.id,
-              type: 'appointment',
-              title: 'Nueva Cita',
-              content: `Se ha creado una nueva cita para ${change.doc.data().userName || 'un cliente'}`,
-              createdAt: change.doc.data().createdAt?.toDate() || new Date(),
-              read: readIds.includes(change.doc.id),
-              data: change.doc.data()
-            }));
+          
+          // Procesar todos los documentos, no solo los cambios
+          const allItems = snapshot.docs.map(doc => ({
+            id: doc.id,
+            type: 'appointment',
+            title: 'Nueva Cita',
+            content: `Se ha creado una nueva cita para ${doc.data().userName || 'un cliente'}`,
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            read: readIds.includes(doc.id),
+            data: doc.data()
+          }));
 
-          if (newItems.length > 0) {
-            setNotifications(prev => {
-              const combined = [...newItems, ...prev]
-                .sort((a, b) => b.createdAt - a.createdAt)
-                .slice(0, 50); // Mantener un máximo de 50 notificaciones
-              
-              // Actualizar contador de no leídas
-              const unreadItems = combined.filter(item => !item.read).length;
-              setUnreadCount(unreadItems);
-              
-              return combined;
-            });
-          }
+          setNotifications(prev => {
+            // Combinar con otras notificaciones (tickets, estimates)
+            const otherNotifications = prev.filter(n => n.type !== 'appointment');
+            const combined = [...allItems, ...otherNotifications]
+              .sort((a, b) => b.createdAt - a.createdAt)
+              .slice(0, 50); // Mantener un máximo de 50 notificaciones
+            
+            // Actualizar contador de no leídas
+            const unreadItems = combined.filter(item => !item.read).length;
+            setUnreadCount(unreadItems);
+            
+            return combined;
+          });
         }
       );
       
@@ -97,30 +97,30 @@ export const NotificationProvider = ({ children }) => {
         ),
         (snapshot) => {
           const readIds = getReadNotifications();
-          const newItems = snapshot.docChanges()
-            .filter(change => change.type === 'added')
-            .map(change => ({
-              id: change.doc.id,
-              type: 'ticket',
-              title: 'Nuevo Ticket de Soporte',
-              content: `Se ha creado un nuevo ticket: ${change.doc.data().subject || 'Sin asunto'}`,
-              createdAt: change.doc.data().createdAt?.toDate() || new Date(),
-              read: readIds.includes(change.doc.id),
-              data: change.doc.data()
-            }));
+          
+          // Procesar todos los documentos
+          const allItems = snapshot.docs.map(doc => ({
+            id: doc.id,
+            type: 'ticket',
+            title: 'Nuevo Ticket de Soporte',
+            content: `Se ha creado un nuevo ticket: ${doc.data().subject || 'Sin asunto'}`,
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            read: readIds.includes(doc.id),
+            data: doc.data()
+          }));
 
-          if (newItems.length > 0) {
-            setNotifications(prev => {
-              const combined = [...newItems, ...prev]
-                .sort((a, b) => b.createdAt - a.createdAt)
-                .slice(0, 50);
-              
-              const unreadItems = combined.filter(item => !item.read).length;
-              setUnreadCount(unreadItems);
-              
-              return combined;
-            });
-          }
+          setNotifications(prev => {
+            // Combinar con otras notificaciones (appointments, estimates)
+            const otherNotifications = prev.filter(n => n.type !== 'ticket');
+            const combined = [...allItems, ...otherNotifications]
+              .sort((a, b) => b.createdAt - a.createdAt)
+              .slice(0, 50);
+            
+            const unreadItems = combined.filter(item => !item.read).length;
+            setUnreadCount(unreadItems);
+            
+            return combined;
+          });
         }
       );
       
@@ -134,30 +134,30 @@ export const NotificationProvider = ({ children }) => {
         ),
         (snapshot) => {
           const readIds = getReadNotifications();
-          const newItems = snapshot.docChanges()
-            .filter(change => change.type === 'added')
-            .map(change => ({
-              id: change.doc.id,
-              type: 'estimate',
-              title: 'Nueva Solicitud de Presupuesto',
-              content: `${change.doc.data().userName || 'Un cliente'} ha solicitado un presupuesto`,
-              createdAt: change.doc.data().createdAt?.toDate() || new Date(),
-              read: readIds.includes(change.doc.id),
-              data: change.doc.data()
-            }));
+          
+          // Procesar todos los documentos
+          const allItems = snapshot.docs.map(doc => ({
+            id: doc.id,
+            type: 'estimate',
+            title: 'Nueva Solicitud de Presupuesto',
+            content: `${doc.data().userName || 'Un cliente'} ha solicitado un presupuesto`,
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            read: readIds.includes(doc.id),
+            data: doc.data()
+          }));
 
-          if (newItems.length > 0) {
-            setNotifications(prev => {
-              const combined = [...newItems, ...prev]
-                .sort((a, b) => b.createdAt - a.createdAt)
-                .slice(0, 50);
-              
-              const unreadItems = combined.filter(item => !item.read).length;
-              setUnreadCount(unreadItems);
-              
-              return combined;
-            });
-          }
+          setNotifications(prev => {
+            // Combinar con otras notificaciones (appointments, tickets)
+            const otherNotifications = prev.filter(n => n.type !== 'estimate');
+            const combined = [...allItems, ...otherNotifications]
+              .sort((a, b) => b.createdAt - a.createdAt)
+              .slice(0, 50);
+            
+            const unreadItems = combined.filter(item => !item.read).length;
+            setUnreadCount(unreadItems);
+            
+            return combined;
+          });
         }
       );
       
