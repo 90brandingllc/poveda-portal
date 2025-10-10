@@ -6,21 +6,13 @@ import {
   Alert,
   Card,
   CardContent,
-  Divider,
   CircularProgress,
   Paper,
-  Tabs,
-  Tab,
   Grid
 } from '@mui/material';
 import {
-  Payment,
   CreditCard,
-  AccountBalance,
-  MonetizationOn,
-  Savings,
-  AccountBalanceWallet,
-  Business
+  AccountBalance
 } from '@mui/icons-material';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getStripe, calculateDepositAmount, formatCurrency } from '../../services/stripeService';
@@ -30,7 +22,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState(0); // 0: Card, 1: PayPal, 2: CashApp, 3: Klarna, 4: Afterpay, 5: Affirm, 6: Bank
+  const [paymentMethod, setPaymentMethod] = useState(0); // 0: Card, 1: Zelle
 
   const depositAmount = calculateDepositAmount(servicePrice);
   const depositDisplay = formatCurrency(depositAmount);
@@ -113,156 +105,26 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     setIsProcessing(false);
   };
 
-  const handlePayPalPayment = async () => {
+  const handleZellePayment = async () => {
     setIsProcessing(true);
     setError('');
 
     try {
-      // Simulate PayPal payment processing
+      // Simulate Zelle payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock successful PayPal payment
+      // Mock successful Zelle payment (ficticio - para uso interno)
       const mockPaymentResult = {
-        id: `pp_${Math.random().toString(36).substr(2, 9)}`,
+        id: `zelle_${Math.random().toString(36).substr(2, 9)}`,
         status: 'succeeded',
         amount: depositAmount,
-        payment_method: 'paypal',
-        method: 'paypal'
+        payment_method: 'zelle',
+        method: 'zelle'
       };
 
       onPaymentSuccess(mockPaymentResult);
     } catch (err) {
-      setError('PayPal payment failed. Please try again.');
-      onPaymentError(err);
-    }
-
-    setIsProcessing(false);
-  };
-
-  const handleCashAppPayment = async () => {
-    setIsProcessing(true);
-    setError('');
-
-    try {
-      // Simulate CashApp payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful CashApp payment
-      const mockPaymentResult = {
-        id: `ca_${Math.random().toString(36).substr(2, 9)}`,
-        status: 'succeeded',
-        amount: depositAmount,
-        payment_method: 'cashapp',
-        method: 'cashapp'
-      };
-
-      onPaymentSuccess(mockPaymentResult);
-    } catch (err) {
-      setError('CashApp payment failed. Please try again.');
-      onPaymentError(err);
-    }
-
-    setIsProcessing(false);
-  };
-
-  const handleKlarnaPayment = async () => {
-    setIsProcessing(true);
-    setError('');
-
-    try {
-      // Simulate Klarna payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful Klarna payment
-      const mockPaymentResult = {
-        id: `klarna_${Math.random().toString(36).substr(2, 9)}`,
-        status: 'succeeded',
-        amount: depositAmount,
-        payment_method: 'klarna',
-        method: 'klarna'
-      };
-
-      onPaymentSuccess(mockPaymentResult);
-    } catch (err) {
-      setError('Klarna payment failed. Please try again.');
-      onPaymentError(err);
-    }
-
-    setIsProcessing(false);
-  };
-
-  const handleAfterpayPayment = async () => {
-    setIsProcessing(true);
-    setError('');
-
-    try {
-      // Simulate Afterpay payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful Afterpay payment
-      const mockPaymentResult = {
-        id: `afterpay_${Math.random().toString(36).substr(2, 9)}`,
-        status: 'succeeded',
-        amount: depositAmount,
-        payment_method: 'afterpay',
-        method: 'afterpay'
-      };
-
-      onPaymentSuccess(mockPaymentResult);
-    } catch (err) {
-      setError('Afterpay payment failed. Please try again.');
-      onPaymentError(err);
-    }
-
-    setIsProcessing(false);
-  };
-
-  const handleAffirmPayment = async () => {
-    setIsProcessing(true);
-    setError('');
-
-    try {
-      // Simulate Affirm payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful Affirm payment
-      const mockPaymentResult = {
-        id: `affirm_${Math.random().toString(36).substr(2, 9)}`,
-        status: 'succeeded',
-        amount: depositAmount,
-        payment_method: 'affirm',
-        method: 'affirm'
-      };
-
-      onPaymentSuccess(mockPaymentResult);
-    } catch (err) {
-      setError('Affirm payment failed. Please try again.');
-      onPaymentError(err);
-    }
-
-    setIsProcessing(false);
-  };
-
-  const handleBankPayment = async () => {
-    setIsProcessing(true);
-    setError('');
-
-    try {
-      // Simulate Bank transfer processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful Bank payment
-      const mockPaymentResult = {
-        id: `bank_${Math.random().toString(36).substr(2, 9)}`,
-        status: 'succeeded',
-        amount: depositAmount,
-        payment_method: 'bank_transfer',
-        method: 'bank'
-      };
-
-      onPaymentSuccess(mockPaymentResult);
-    } catch (err) {
-      setError('Bank transfer failed. Please try again.');
+      setError('Zelle payment failed. Please try again.');
       onPaymentError(err);
     }
 
@@ -315,7 +177,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
               boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)',
               color: 'white'
             }}>
-              <Payment sx={{ fontSize: '1.5rem' }} />
+              <CreditCard sx={{ fontSize: '1.5rem' }} />
             </Box>
             <Typography variant="h6" sx={{ 
               fontWeight: 700,
@@ -349,7 +211,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   display: 'flex', 
                   alignItems: 'center' 
                 }}>
-                  <AccountBalanceWallet fontSize="small" />
+                  <CreditCard fontSize="small" />
                 </Box>
                 Service Information
               </Typography>
@@ -479,7 +341,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
               boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
               color: 'white'
             }}>
-              <Payment sx={{ fontSize: '1.5rem' }} />
+              <CreditCard sx={{ fontSize: '1.5rem' }} />
             </Box>
             <Typography variant="h6" sx={{ 
               fontWeight: 700,
@@ -491,34 +353,43 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
           </Box>
 
           <Box sx={{ px: 3, pb: 3 }}>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid container spacing={3} sx={{ mb: 3 }}>
               {[
-                { id: 0, icon: <CreditCard />, label: 'Card', color: '#1976d2', desc: 'Credit/Debit Cards' },
-                { id: 1, icon: <AccountBalance />, label: 'PayPal', color: '#0070ba', desc: 'PayPal Account' },
-                { id: 2, icon: <Payment />, label: 'Cash App Pay', color: '#00c853', desc: 'CashApp Payment' },
-                { id: 3, icon: <MonetizationOn />, label: 'Klarna', color: '#ffb3d9', desc: 'Buy Now, Pay Later' },
-                { id: 4, icon: <Savings />, label: 'Afterpay', color: '#b2f2bb', desc: 'Split in 4 payments' },
-                { id: 5, icon: <AccountBalanceWallet />, label: 'Affirm', color: '#0099ff', desc: 'Monthly payments' },
-                { id: 6, icon: <Business />, label: 'Bank', color: '#28a745', desc: 'Bank Transfer', badge: '$5 USD Refund' }
+                { 
+                  id: 0, 
+                  icon: <CreditCard />, 
+                  label: 'Credit/Debit Card', 
+                  color: '#1565c0', 
+                  desc: 'Visa, Mastercard, Amex',
+                  badge: 'Secure & Instant'
+                },
+                { 
+                  id: 1, 
+                  icon: <AccountBalance />, 
+                  label: 'Zelle', 
+                  color: '#6b21a8', 
+                  desc: 'Fast Bank Transfer',
+                  badge: 'Internal Use'
+                }
               ].map((method) => (
-                <Grid item xs={6} sm={4} md={4} lg={3} key={method.id}>
+                <Grid item xs={12} sm={6} key={method.id}>
                   <Paper
-                    elevation={paymentMethod === method.id ? 4 : 0}
+                    elevation={paymentMethod === method.id ? 6 : 2}
                     sx={{
-                      p: { xs: 1.5, sm: 2 },
+                      p: 3,
                       height: '100%',
                       cursor: 'pointer',
-                      border: paymentMethod === method.id ? `2px solid ${method.color}` : '1px solid #e2e8f0',
-                      borderRadius: '16px',
+                      border: paymentMethod === method.id ? `3px solid ${method.color}` : '2px solid #e2e8f0',
+                      borderRadius: '20px',
                       position: 'relative',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.3s ease',
                       background: paymentMethod === method.id ? 
-                        `linear-gradient(135deg, ${method.color}05 0%, ${method.color}10 100%)` : 
-                        'rgba(255, 255, 255, 0.6)',
-                      backdropFilter: 'blur(10px)',
+                        `linear-gradient(135deg, ${method.color}08 0%, ${method.color}15 100%)` : 
+                        'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                      backdropFilter: 'blur(20px)',
                       '&:hover': {
-                        boxShadow: `0 8px 16px rgba(0, 0, 0, 0.08)`,
-                        transform: 'translateY(-2px)',
+                        boxShadow: `0 12px 24px ${method.color}30`,
+                        transform: 'translateY(-4px)',
                         borderColor: method.color,
                       }
                     }}
@@ -532,34 +403,36 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                     }}>
                       {/* Payment Icon */}
                       <Box sx={{
-                        width: { xs: 40, sm: 48 },
-                        height: { xs: 40, sm: 48 },
-                        borderRadius: '12px',
-                        mb: 1,
+                        width: 64,
+                        height: 64,
+                        borderRadius: '16px',
+                        mb: 2,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         background: `linear-gradient(135deg, ${method.color} 0%, ${method.color}dd 100%)`,
                         color: 'white',
-                        boxShadow: paymentMethod === method.id ? `0 4px 12px ${method.color}40` : 'none',
+                        boxShadow: paymentMethod === method.id ? `0 6px 20px ${method.color}50` : `0 4px 12px ${method.color}30`,
                       }}>
-                        {React.cloneElement(method.icon, { sx: { fontSize: '1.5rem' } })}
+                        {React.cloneElement(method.icon, { sx: { fontSize: '2rem' } })}
                       </Box>
                         
                       {/* Payment Label */}
-                      <Typography variant="subtitle2" sx={{ 
+                      <Typography variant="h6" sx={{ 
                         fontWeight: 700, 
-                        color: paymentMethod === method.id ? method.color : '#334155',
-                        mb: 0.5
+                        color: paymentMethod === method.id ? method.color : '#0f172a',
+                        mb: 0.5,
+                        fontSize: '1.1rem'
                       }}>
                         {method.label}
                       </Typography>
                         
                       {/* Payment Description */}
-                      <Typography variant="caption" sx={{ 
-                        fontSize: '0.7rem',
+                      <Typography variant="body2" sx={{ 
+                        fontSize: '0.875rem',
                         color: '#64748b',
-                        lineHeight: 1.2
+                        lineHeight: 1.4,
+                        fontWeight: 500
                       }}>
                         {method.desc}
                       </Typography>
@@ -567,17 +440,18 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                       {/* Radio indicator */}
                       <Box sx={{
                         position: 'absolute',
-                        top: 12,
-                        right: 12,
-                        width: 16,
-                        height: 16,
+                        top: 16,
+                        right: 16,
+                        width: 20,
+                        height: 20,
                         borderRadius: '50%',
                         border: `2px solid ${paymentMethod === method.id ? method.color : '#cbd5e1'}`,
                         backgroundColor: 'white',
-                        padding: '2px',
+                        padding: '3px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        transition: 'all 0.2s ease',
                       }}>
                         {paymentMethod === method.id && (
                           <Box sx={{
@@ -593,22 +467,23 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                     {method.badge && (
                       <Box sx={{
                         position: 'absolute',
-                        top: -8,
-                        left: -8,
-                        backgroundColor: '#28a745',
+                        top: -10,
+                        left: 16,
+                        backgroundColor: method.id === 0 ? '#10b981' : '#6b21a8',
                         color: 'white',
-                        px: 1.5,
-                        py: 0.5,
+                        px: 2,
+                        py: 0.75,
                         borderRadius: '20px',
-                        fontSize: '0.65rem',
+                        fontSize: '0.7rem',
                         fontWeight: 700,
-                        boxShadow: '0 2px 8px rgba(40, 167, 69, 0.3)',
-                        border: '1px solid rgba(255, 255, 255, 0.4)',
+                        boxShadow: method.id === 0 ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 4px 12px rgba(107, 33, 168, 0.4)',
+                        border: '2px solid rgba(255, 255, 255, 0.9)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 0.5
+                        gap: 0.5,
+                        letterSpacing: '0.5px'
                       }}>
-                        <Box component="span" sx={{ fontSize: '0.8rem' }}>🎁</Box>
+                        <Box component="span" sx={{ fontSize: '0.9rem' }}>{method.id === 0 ? '🔒' : '⚡'}</Box>
                         {method.badge}
                       </Box>
                     )}
@@ -744,306 +619,86 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
           )}
 
           {paymentMethod === 1 && (
-            <Box sx={{ mb: 2 }}>
+            <Box>
               <Typography variant="subtitle2" sx={{ 
-                mb: 1, 
+                mb: 2, 
                 fontWeight: 600, 
-                color: '#0070ba',
+                color: '#6b21a8',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.8
+                gap: 1
               }}>
                 <AccountBalance fontSize="small" />
-                PayPal Secure Checkout
+                Zelle Transfer - Internal Use
               </Typography>
               
-              <Paper sx={{
-                p: 3,
-                mb: 3,
+              <Alert severity="warning" sx={{ mb: 3, borderRadius: '12px' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  <strong>⚡ For Internal Use Only</strong> - This payment method is for authorized staff to process manual Zelle transfers.
+                </Typography>
+              </Alert>
+              
+              <Paper variant="outlined" sx={{ 
+                p: 3, 
+                mb: 3, 
                 borderRadius: '16px',
-                border: '1px solid rgba(0, 112, 186, 0.2)',
-                background: 'linear-gradient(135deg, rgba(0, 112, 186, 0.02) 0%, rgba(0, 112, 186, 0.08) 100%)',
-                position: 'relative',
-                overflow: 'hidden',
+                background: 'linear-gradient(135deg, rgba(107, 33, 168, 0.03) 0%, rgba(107, 33, 168, 0.08) 100%)',
+                border: '2px solid rgba(107, 33, 168, 0.2)'
               }}>
-                <Box sx={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2
-                }}>
-                  <Box sx={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#ffffff',
-                    border: '1px solid #e1e7ed',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.05)'
-                  }}>
-                    <Box 
-                      component="img" 
-                      src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-color.svg" 
-                      alt="PayPal" 
-                      sx={{ width: 40, height: 'auto' }}
-                    />
-                  </Box>
-                  
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', mb: 0.5 }}>
-                      Fast, safe, and secure payments
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
-                      You'll be redirected to PayPal to complete your payment of ${depositDisplay}
-                    </Typography>
-                  </Box>
-                </Box>
+                <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: '#0f172a' }}>
+                  Zelle Transfer Instructions:
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, color: '#64748b' }}>
+                  • Customer sends $50.00 to Zelle account
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, color: '#64748b' }}>
+                  • Verify receipt before confirming
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b' }}>
+                  • Reference: Booking ID will be generated
+                </Typography>
               </Paper>
               
               <Button
                 variant="contained"
                 size="large"
                 fullWidth
-                onClick={handlePayPalPayment}
+                onClick={handleZellePayment}
                 disabled={isProcessing}
                 sx={{
                   py: 2,
                   borderRadius: '16px',
-                  backgroundColor: '#0070ba',
-                  boxShadow: '0 8px 16px rgba(0, 112, 186, 0.3)',
+                  background: 'linear-gradient(135deg, #6b21a8 0%, #581c87 100%)',
+                  boxShadow: '0 8px 16px rgba(107, 33, 168, 0.3)',
                   fontWeight: 600,
                   fontSize: '0.95rem',
                   textTransform: 'none',
                   letterSpacing: '0.2px',
                   '&:hover': {
-                    backgroundColor: '#005ea6',
+                    background: 'linear-gradient(135deg, #581c87 0%, #4c1d95 100%)',
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 12px 20px rgba(0, 112, 186, 0.4)'
+                    boxShadow: '0 12px 20px rgba(107, 33, 168, 0.4)',
                   },
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
                 }}
               >
                 {isProcessing ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
                     <CircularProgress size={22} color="inherit" />
-                    <Typography sx={{ fontWeight: 600 }}>Redirecting to PayPal...</Typography>
+                    <Typography sx={{ fontWeight: 600 }}>Processing Zelle Transfer...</Typography>
                   </Box>
                 ) : (
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
-                    <AccountBalance />
-                    <Typography sx={{ fontWeight: 600 }}>Pay ${depositDisplay} with PayPal</Typography>
+                    <Box component="span" sx={{ fontSize: '1.3rem' }}>⚡</Box>
+                    <Typography sx={{ fontWeight: 600 }}>Confirm Zelle Payment ${depositDisplay}</Typography>
                   </Box>
                 )}
               </Button>
             </Box>
           )}
 
-          {paymentMethod === 2 && (
-            <Box>
-              <Alert severity="info" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  You'll be redirected to CashApp to complete your ${depositDisplay} deposit payment securely.
-                </Typography>
-              </Alert>
-              
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleCashAppPayment}
-                disabled={isProcessing}
-                sx={{
-                  py: 1.5,
-                  backgroundColor: '#00d632',
-                  color: '#000',
-                  '&:hover': {
-                    backgroundColor: '#00c12a'
-                  }
-                }}
-              >
-                {isProcessing ? (
-                  <>
-                    <CircularProgress size={20} sx={{ color: '#000', mr: 1 }} />
-                    Redirecting to CashApp...
-                  </>
-                ) : (
-                  <>
-                    <Payment sx={{ mr: 1 }} />
-                    Pay ${depositDisplay} with CashApp
-                  </>
-                )}
-              </Button>
-            </Box>
-          )}
-
-          {paymentMethod === 3 && (
-            <Box>
-              <Alert severity="info" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  <strong>Buy now, pay later with Klarna!</strong> Split your ${depositDisplay} payment into 4 interest-free installments.
-                </Typography>
-              </Alert>
-              
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleKlarnaPayment}
-                disabled={isProcessing}
-                sx={{
-                  py: 1.5,
-                  backgroundColor: '#ffb3d9',
-                  color: '#000',
-                  '&:hover': {
-                    backgroundColor: '#ff9dd1'
-                  }
-                }}
-              >
-                {isProcessing ? (
-                  <>
-                    <CircularProgress size={20} sx={{ color: '#000', mr: 1 }} />
-                    Redirecting to Klarna...
-                  </>
-                ) : (
-                  <>
-                    <MonetizationOn sx={{ mr: 1 }} />
-                    Pay ${depositDisplay} with Klarna
-                  </>
-                )}
-              </Button>
-            </Box>
-          )}
-
-          {paymentMethod === 4 && (
-            <Box>
-              <Alert severity="info" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  <strong>Split it into 4 payments with Afterpay!</strong> Pay ${(parseFloat(depositDisplay) / 4).toFixed(2)} today and the rest over 6 weeks.
-                </Typography>
-              </Alert>
-              
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleAfterpayPayment}
-                disabled={isProcessing}
-                sx={{
-                  py: 1.5,
-                  backgroundColor: '#b2f2bb',
-                  color: '#000',
-                  '&:hover': {
-                    backgroundColor: '#9ceaa7'
-                  }
-                }}
-              >
-                {isProcessing ? (
-                  <>
-                    <CircularProgress size={20} sx={{ color: '#000', mr: 1 }} />
-                    Redirecting to Afterpay...
-                  </>
-                ) : (
-                  <>
-                    <Savings sx={{ mr: 1 }} />
-                    Pay ${depositDisplay} with Afterpay
-                  </>
-                )}
-              </Button>
-            </Box>
-          )}
-
-          {paymentMethod === 5 && (
-            <Box>
-              <Alert severity="info" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  <strong>Monthly payments with Affirm!</strong> Choose your payment plan for your ${depositDisplay} deposit.
-                </Typography>
-              </Alert>
-              
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleAffirmPayment}
-                disabled={isProcessing}
-                sx={{
-                  py: 1.5,
-                  backgroundColor: '#0099ff',
-                  '&:hover': {
-                    backgroundColor: '#0077cc'
-                  }
-                }}
-              >
-                {isProcessing ? (
-                  <>
-                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                    Redirecting to Affirm...
-                  </>
-                ) : (
-                  <>
-                    <AccountBalanceWallet sx={{ mr: 1 }} />
-                    Pay ${depositDisplay} with Affirm
-                  </>
-                )}
-              </Button>
-            </Box>
-          )}
-
-          {paymentMethod === 6 && (
-            <Box>
-              <Alert severity="success" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  <strong>Bank Transfer - Get $5 USD Refund!</strong> Transfer ${depositDisplay} directly from your bank account and receive a $5 refund.
-                </Typography>
-              </Alert>
-              
-              <Paper variant="outlined" sx={{ p: 2, mb: 3, backgroundColor: '#f8f9fa' }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 }}>
-                  Bank Transfer Details:
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  Account: POVEDA PREMIUM AUTO CARE
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  Amount: ${depositDisplay}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  Reference: Your booking ID will be provided
-                </Typography>
-              </Paper>
-              
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleBankPayment}
-                disabled={isProcessing}
-                sx={{
-                  py: 1.5,
-                  backgroundColor: '#28a745',
-                  '&:hover': {
-                    backgroundColor: '#218838'
-                  }
-                }}
-              >
-                {isProcessing ? (
-                  <>
-                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                    Processing Bank Transfer...
-                  </>
-                ) : (
-                  <>
-                    <Business sx={{ mr: 1 }} />
-                    Confirm Bank Transfer ${depositDisplay}
-                  </>
-                )}
-              </Button>
-            </Box>
-          )}
-
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 2 }}>
-            🔒 All payments are secure and encrypted • Multiple payment options available
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 3 }}>
+            🔒 All payments are secure and encrypted with industry-leading security
           </Typography>
           </Box>
         </CardContent>
