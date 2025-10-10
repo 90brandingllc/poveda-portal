@@ -1,5 +1,16 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Documentation files (keep only README.md)
+*.md
+!README.md
+Readme
+
+# Scripts with sensitive data
+configure_firebase_live.sh
+create_env_live.sh
+*_live.sh
+*.sh
+
 # dependencies
 /node_modules
 /.pnp

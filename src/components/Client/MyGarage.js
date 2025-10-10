@@ -51,10 +51,12 @@ const MyGarage = () => {
   const [loading, setLoading] = useState(true);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
   const [editVehicleOpen, setEditVehicleOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   const [vehicleForm, setVehicleForm] = useState({
     make: '',
@@ -189,14 +191,26 @@ const MyGarage = () => {
     }
   };
 
-  const handleDeleteVehicle = async (vehicleId) => {
+  const handleDeleteClick = (vehicle) => {
+    setSelectedVehicle(vehicle);
+    setDeleteConfirmOpen(true);
+    setMenuAnchor(null);
+  };
+
+  const handleDeleteVehicle = async () => {
+    if (!selectedVehicle) return;
+    
+    setDeleteLoading(true);
     try {
-      await deleteDoc(doc(db, 'vehicles', vehicleId));
+      await deleteDoc(doc(db, 'vehicles', selectedVehicle.id));
       setSuccess('Vehicle deleted successfully!');
-      setMenuAnchor(null);
+      setDeleteConfirmOpen(false);
+      setSelectedVehicle(null);
     } catch (error) {
       console.error('Error deleting vehicle:', error);
       setError('Failed to delete vehicle. Please try again.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -927,7 +941,7 @@ const MyGarage = () => {
           <Divider sx={{ my: 0.5, opacity: 0.6 }} />
           
           <MenuItem 
-            onClick={() => handleDeleteVehicle(selectedVehicle?.id)}
+            onClick={() => handleDeleteClick(selectedVehicle)}
             sx={{ 
               borderRadius: '8px',
               mx: 0.5,
@@ -1746,6 +1760,254 @@ const MyGarage = () => {
               }}
             >
               Save Changes
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteConfirmOpen}
+          onClose={() => !deleteLoading && setDeleteConfirmOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97) 0%, rgba(254, 242, 242, 0.95) 100%)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 25px 50px rgba(239, 68, 68, 0.25)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              overflow: 'hidden'
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            fontWeight: 600, 
+            p: 0,
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <Box sx={{ 
+              p: { xs: 2.5, sm: 3 }, 
+              pb: { xs: 2, sm: 2.5 },
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(220, 38, 38, 0.12) 100%)',
+              borderBottom: '1px solid rgba(239, 68, 68, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2
+            }}>
+              <Box sx={{
+                width: { xs: 45, sm: 50 },
+                height: { xs: 45, sm: 50 },
+                borderRadius: '14px',
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 16px rgba(239, 68, 68, 0.25)',
+                color: 'white'
+              }}>
+                <Box component="span" sx={{ fontSize: '1.8rem' }}>🗑️</Box>
+              </Box>
+              
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 700, 
+                  color: '#dc2626',
+                  fontSize: { xs: '1.3rem', sm: '1.5rem' }
+                }}>
+                  Delete Vehicle
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+                  This action cannot be undone
+                </Typography>
+              </Box>
+            </Box>
+          </DialogTitle>
+
+          <DialogContent sx={{ 
+            p: { xs: 2.5, sm: 3 }, 
+            pt: { xs: 2.5, sm: 3 } 
+          }}>
+            <Alert 
+              severity="warning" 
+              sx={{ 
+                mb: 3,
+                borderRadius: '12px',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                bgcolor: 'rgba(254, 243, 199, 0.5)'
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                <strong>⚠️ Warning:</strong> Deleting this vehicle will permanently remove all associated service history and data.
+              </Typography>
+            </Alert>
+
+            {selectedVehicle && (
+              <Box sx={{ 
+                p: 3,
+                borderRadius: '16px',
+                border: '2px solid rgba(239, 68, 68, 0.15)',
+                bgcolor: 'rgba(254, 242, 242, 0.5)',
+                position: 'relative'
+              }}>
+                <Typography variant="subtitle2" sx={{ 
+                  fontWeight: 600, 
+                  color: '#64748b', 
+                  mb: 2,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  fontSize: '0.75rem'
+                }}>
+                  Vehicle to Delete:
+                </Typography>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                  <Box sx={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white'
+                  }}>
+                    <DirectionsCar sx={{ fontSize: '1.8rem' }} />
+                  </Box>
+                  
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ 
+                      fontWeight: 700,
+                      color: '#0f172a',
+                      fontSize: '1.2rem',
+                      lineHeight: 1.2
+                    }}>
+                      {selectedVehicle.year} {selectedVehicle.make} {selectedVehicle.model}
+                    </Typography>
+                    {selectedVehicle.nickname && (
+                      <Typography variant="body2" sx={{ 
+                        color: '#64748b',
+                        fontWeight: 500,
+                        mt: 0.5
+                      }}>
+                        "{selectedVehicle.nickname}"
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+
+                {selectedVehicle.color && (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    mt: 2,
+                    pt: 2,
+                    borderTop: '1px solid rgba(226, 232, 240, 0.5)'
+                  }}>
+                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                      Color:
+                    </Typography>
+                    <Chip 
+                      label={selectedVehicle.color}
+                      size="small"
+                      sx={{ 
+                        fontWeight: 600,
+                        bgcolor: 'rgba(239, 68, 68, 0.1)',
+                        color: '#dc2626'
+                      }}
+                    />
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            <Typography variant="body2" sx={{ 
+              color: '#64748b', 
+              mt: 3,
+              textAlign: 'center',
+              fontWeight: 500
+            }}>
+              Are you absolutely sure you want to delete this vehicle?
+            </Typography>
+          </DialogContent>
+
+          <DialogActions sx={{ 
+            p: { xs: 2.5, sm: 3 }, 
+            pt: 2,
+            bgcolor: 'rgba(254, 242, 242, 0.5)', 
+            borderTop: '1px solid rgba(239, 68, 68, 0.15)',
+            gap: 2
+          }}>
+            <Button 
+              onClick={() => setDeleteConfirmOpen(false)}
+              disabled={deleteLoading}
+              variant="outlined"
+              fullWidth
+              sx={{
+                borderColor: '#cbd5e1',
+                color: '#64748b',
+                borderRadius: '12px',
+                px: 3,
+                py: 1.5,
+                fontWeight: 600,
+                '&:hover': {
+                  borderColor: '#94a3b8',
+                  bgcolor: 'rgba(148, 163, 184, 0.04)'
+                },
+                '&.Mui-disabled': {
+                  borderColor: '#e2e8f0',
+                  color: '#cbd5e1'
+                }
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleDeleteVehicle}
+              disabled={deleteLoading}
+              fullWidth
+              sx={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                borderRadius: '12px',
+                boxShadow: '0 8px 16px -1px rgba(239, 68, 68, 0.35)',
+                px: 3,
+                py: 1.5,
+                fontWeight: 600,
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  boxShadow: '0 12px 20px -1px rgba(239, 68, 68, 0.45)',
+                  transform: 'translateY(-2px)'
+                },
+                '&.Mui-disabled': {
+                  background: '#fca5a5',
+                  color: 'white',
+                  boxShadow: 'none'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {deleteLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box component="span" className="spinner" sx={{ 
+                    width: 16, 
+                    height: 16,
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: 'white',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                    '@keyframes spin': {
+                      '0%': { transform: 'rotate(0deg)' },
+                      '100%': { transform: 'rotate(360deg)' }
+                    }
+                  }} />
+                  <span>Deleting...</span>
+                </Box>
+              ) : (
+                <>🗑️ Delete Vehicle</>
+              )}
             </Button>
           </DialogActions>
         </Dialog>
