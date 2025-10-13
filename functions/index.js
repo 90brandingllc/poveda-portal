@@ -1092,10 +1092,12 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid amount');
     }
 
-    // Create payment intent
+    // Create payment intent with automatic capture
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount), // Ensure integer
       currency: currency.toLowerCase(),
+      capture_method: 'automatic', // IMPORTANTE: Captura automática sin aprobación manual
+      confirmation_method: 'automatic', // Confirmación automática
       metadata: {
         ...metadata,
         source: 'POVEDA_AUTO_CARE',
