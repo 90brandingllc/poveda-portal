@@ -81,7 +81,8 @@ const BookAppointment = () => {
     },
     notes: '',
     emailReminders: true,
-    estimatedPrice: 0
+    estimatedPrice: 0,
+    preselectedFromUrl: false // Flag para controlar si el servicio se cargó desde la URL
   });
 
   // Adjust steps based on whether user is logged in
@@ -313,8 +314,16 @@ const BookAppointment = () => {
     setLoadingSlots(false);
   };
 
-  // Preselect service from URL parameters
+  // Para controlar que el efecto de URL solo se ejecute una vez
+  const [urlProcessed, setUrlProcessed] = useState(false);
+
+  // Preselect service from URL parameters - con protección contra bucle infinito
   useEffect(() => {
+    // Si ya procesamos esta URL, no hacemos nada más
+    if (urlProcessed) {
+      return;
+    }
+    
     const serviceParam = searchParams.get('service');
     const serviceNameParam = searchParams.get('serviceName');
     const priceParam = searchParams.get('price');
@@ -322,77 +331,58 @@ const BookAppointment = () => {
     if (serviceParam && serviceNameParam && priceParam) {
       console.log('URL Params:', { serviceParam, serviceNameParam, priceParam });
       
-      // Find the matching service in serviceCategories
-      let foundService = null;
-      let foundCategory = null;
+      // Marcar como procesada ANTES de actualizar el estado para evitar bucle infinito
+      setUrlProcessed(true);
       
-      // Search through all categories
-      Object.entries(serviceCategories).forEach(([categoryKey, category]) => {
-        // Try multiple matching strategies
-        const service = category.services.find(s => {
-          const serviceUrlId = s.name.toLowerCase().replace(/\s+/g, '-');
-          const paramUrlId = serviceParam.toLowerCase();
-          
-          // Strategy 1: Exact match
-          if (serviceUrlId === paramUrlId) return true;
-          
-          // Strategy 2: Check if service name contains key words from param
-          const paramWords = paramUrlId.split('-');
-          const serviceWords = serviceUrlId.split('-');
-          
-          // If "gold" and "interior" are in the param, match with interior GOLD PACKAGE
-          if (paramWords.includes('gold') && paramWords.includes('interior') && 
-              categoryKey === 'interior' && s.name.includes('GOLD')) {
-            return true;
+      // Solución SIMPLIFICADA: Crear un servicio directo desde los parámetros
+      const price = parseInt(priceParam, 10);
+      if (!isNaN(price)) {
+        // Crear un servicio con la información básica
+        const directService = {
+          id: `url_service_${Date.now()}`, // ID único para identificación
+          name: serviceNameParam,
+          price: price,
+          description: serviceNameParam,
+          fromUrl: true, // Flag especial para saber que viene de URL
+          urlId: serviceParam, // Guardar el id original de la URL
+          // Asumimos valores por defecto para los tipos de vehículos
+          vehicleTypes: {
+            small: price,
+            suv: price + 20,
+            threeRow: price + 40
           }
-          
-          // If "silver" and "interior" are in the param, match with interior SILVER PACKAGE
-          if (paramWords.includes('silver') && paramWords.includes('interior') && 
-              categoryKey === 'interior' && s.name.includes('SILVER')) {
-            return true;
-          }
-          
-          // If "diamond" and "interior" are in the param, match with interior DIAMOND PACKAGE
-          if (paramWords.includes('diamond') && paramWords.includes('interior') && 
-              categoryKey === 'interior' && s.name.includes('DIAMOND')) {
-            return true;
-          }
-          
-          // Similar logic for exterior
-          if (paramWords.includes('gold') && paramWords.includes('exterior') && 
-              categoryKey === 'exterior' && s.name.includes('GOLD')) {
-            return true;
-          }
-          
-          // For polish services
-          if (paramWords.includes('polish') && categoryKey === 'polishing') {
-            if (paramWords.includes('step') && s.name.includes('STEP')) return true;
-            if (paramWords.includes('gold') && paramWords.includes('step') && s.name.includes('GOLD')) return true;
-            if (paramWords.includes('diamond') && s.name.includes('DIAMOND')) return true;
-          }
-          
-          return false;
-        });
+        };
         
-        if (service) {
-          foundService = service;
-          foundCategory = categoryKey;
-          console.log('Found service:', service.name, 'in category:', categoryKey);
-        }
-      });
-      
-      // If service found, preselect it
-      if (foundService && foundCategory) {
+        // Asignar a una categoría basada en el parámetro service
+        let serviceCategory = 'packages'; // Por defecto
+        
+        // Reglas simples para determinar la categoría
+        if (serviceParam.includes('interior')) serviceCategory = 'interior';
+        else if (serviceParam.includes('exterior')) serviceCategory = 'exterior';
+        else if (serviceParam.includes('polish')) serviceCategory = 'polishing';
+        else if (serviceParam.includes('package')) serviceCategory = 'packages';
+        
+        // Crear objeto final con categoría
+        const finalService = {
+          ...directService,
+          category: serviceCategory
+        };
+        
+        // Establecer en el estado
+        console.log('Preselecting service from URL:', finalService);
+        
+        // Establecer el servicio en el estado (una sola vez)
         setFormData(prev => ({
           ...prev,
-          selectedServices: [{ ...foundService, category: foundCategory }]
+          selectedServices: [finalService],
+          preselectedFromUrl: true
         }));
-        console.log('Service preselected successfully');
-      } else {
-        console.log('No matching service found for:', serviceParam);
       }
+    } else {
+      // Si no hay parámetros de servicio, igual marcamos como procesado
+      setUrlProcessed(true);
     }
-  }, [searchParams, serviceCategories]);
+  }, [searchParams]); // Solo dependemos de searchParams, NO de urlProcessed
 
   // Fetch user's vehicles (only if logged in)
   useEffect(() => {
@@ -443,27 +433,43 @@ const BookAppointment = () => {
   };
 
   const handleServiceSelect = (category, service) => {
+    console.log('Selecting service:', { category, service });
+    
+    // Siempre usar copia con categoría
     const serviceWithCategory = { ...service, category };
-    // Identificar servicios por nombre Y categoría para evitar mezclas
+    
+    // Método simplificado de comprobación: solo comparar por nombre y categoría
     const isSelected = formData.selectedServices.some(s => 
       s.name === service.name && s.category === category
     );
     
+    console.log('Is service selected?', isSelected);
+    
     let updatedServices;
+    
     if (isSelected) {
-      // Remove service if already selected
+      // DESELECCIONAR: Remover el servicio si ya estaba seleccionado
+      console.log('Deselecting service');
       updatedServices = formData.selectedServices.filter(s => 
         !(s.name === service.name && s.category === category)
       );
     } else {
-      // Add service if not selected
+      // SELECCIONAR: Agregar el servicio si no estaba seleccionado
+      console.log('Selecting new service');
+      
+      // Permitir seleccionar múltiples servicios principales sin restricciones
+      // Los usuarios pueden combinar servicios de diferentes categorías
       updatedServices = [...formData.selectedServices, serviceWithCategory];
     }
+    
+    console.log('Updated services:', updatedServices);
     
     setFormData({
       ...formData,
       selectedServices: updatedServices,
-      estimatedPrice: 0 // Will be calculated when vehicle type is selected
+      estimatedPrice: 0, // Se recalculará cuando se seleccione tipo de vehículo
+      // Siempre limpiar la bandera para habilitar el comportamiento normal
+      preselectedFromUrl: false
     });
   };
 
@@ -669,7 +675,11 @@ const BookAppointment = () => {
                 </Typography>
                 <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                   {category.services.map((service, index) => {
-                    const isSelected = formData.selectedServices.some(s => s.name === service.name && s.category === key);
+                    // Lógica mejorada para verificar si un servicio está seleccionado
+                    const isSelected = formData.selectedServices.some(s => {
+                      // Comparación simplificada: solo por nombre y categoría
+                      return s.name === service.name && s.category === key;
+                    });
                     return (
                       <Grid item xs={12} sm={6} md={4} key={index}>
                         <Card 
