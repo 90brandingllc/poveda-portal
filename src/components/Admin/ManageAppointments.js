@@ -98,17 +98,45 @@ const ManageAppointments = () => {
     return () => unsubscribe();
   }, []);
 
+  // Función auxiliar para verificar si una cita existe antes de intentar cualquier acción
+  const verifyAppointmentExists = async (appointmentId) => {
+    try {
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      const appointmentSnap = await getDoc(appointmentRef);
+      return appointmentSnap.exists();
+    } catch (error) {
+      console.error(`Error verificando existencia de cita ${appointmentId}:`, error);
+      return false;
+    }
+  };
+
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
+      // Mostrar indicador de carga en UI
+      setSnackbar({
+        open: true,
+        message: `Procesando cambio a estado ${newStatus}...`,
+        severity: 'info'
+      });
+
       // Get the appointment data first
       const appointmentRef = doc(db, 'appointments', appointmentId);
       const appointmentSnap = await getDoc(appointmentRef);
       
       if (!appointmentSnap.exists()) {
-        throw new Error('Appointment not found');
+        console.error(`La cita con ID ${appointmentId} no existe en la base de datos`);
+        throw new Error(`La cita ya no existe en la base de datos. Es posible que haya sido eliminada por otro usuario o haya ocurrido un problema de sincronización.`);
       }
       
       const appointmentData = { id: appointmentId, ...appointmentSnap.data() };
+      
+      console.log(`Actualizando cita ${appointmentId} a estado ${newStatus}`, appointmentData);
+
+      // Verificación adicional de campos obligatorios
+      if (!appointmentData.userId && newStatus !== 'pending') {
+        console.warn('Cita sin userId, añadiendo userId temporal para notificaciones');
+        appointmentData.userId = 'system_notification'; // Valor temporal para evitar errores
+      }
       
       // Update the appointment status
       await updateDoc(appointmentRef, {
@@ -116,35 +144,113 @@ const ManageAppointments = () => {
         updatedAt: serverTimestamp()
       });
       
-      // Use centralized notification service
-      await handleAppointmentStatusChange(appointmentId, newStatus, appointmentData);
+      // Registro para depuración
+      console.log(`Estado cambiado: ${appointmentData.status || 'unknown'} -> ${newStatus}`);
       
-      console.log(`Status change to ${newStatus} processed successfully`);
+      // Intentar enviar notificación, pero no fallar si hay problemas
+      try {
+        // Use centralized notification service
+        await handleAppointmentStatusChange(appointmentId, newStatus, appointmentData);
+        console.log(`Status change to ${newStatus} processed successfully`);
+      } catch (notificationError) {
+        console.error('Error en sistema de notificaciones:', notificationError);
+        // No interrumpir el flujo principal si fallan las notificaciones
+      }
       
-      
+      // Actualizar UI con éxito
       setSnackbar({
         open: true,
-        message: `Appointment ${newStatus} successfully!`,
+        message: `Estado de cita cambiado a ${newStatus} correctamente!`,
         severity: 'success'
       });
+      
+      // Forzar actualización de los datos en la UI
+      // No es necesario ya que onSnapshot manejará la actualización automáticamente
     } catch (error) {
       console.error('Error updating appointment:', error);
+      
+      // Registro de error para depuración
+      console.error(`Error al cambiar estado de cita ${appointmentId} a ${newStatus}:`, error);
+      
       setSnackbar({
         open: true,
-        message: 'Failed to update appointment status.',
+        message: `Error al actualizar estado: ${error.message || 'Error desconocido'}`,
         severity: 'error'
       });
     }
   };
 
+  // Función utilitaria para normalizar los datos de citas y evitar errores por datos faltantes
+  const normalizeAppointmentData = (appointment) => {
+    if (!appointment) return {};
+    
+    // Asegurarse de que los campos básicos existan
+    const normalized = {
+      ...appointment,
+      status: appointment.status || 'pending',
+      createdAt: appointment.createdAt || { seconds: Date.now() / 1000 },
+      updatedAt: appointment.updatedAt || { seconds: Date.now() / 1000 },
+      userName: appointment.userName || appointment.customerName || 'Cliente',
+      userEmail: appointment.userEmail || appointment.customerEmail || '',
+      service: appointment.service || 
+               (Array.isArray(appointment.services) && appointment.services.length > 0 ? 
+                appointment.services[0] : '') || 
+               'Servicio no especificado',
+      // Asegurarse de que estos objetos siempre existan
+      address: appointment.address || {}
+    };
+    
+    // Asegurarse de que el objeto date sea accesible
+    if (normalized.date && normalized.date.seconds) {
+      // Ya es un timestamp de Firestore, está bien
+    } else if (normalized.date) {
+      // Convertir a un objeto compatible
+      try {
+        const dateObj = new Date(normalized.date);
+        normalized.date = {
+          seconds: Math.floor(dateObj.getTime() / 1000),
+          toDate: () => dateObj
+        };
+      } catch (e) {
+        console.warn('Error normalizando fecha:', e);
+        // Usar fecha actual como fallback
+        const now = new Date();
+        normalized.date = {
+          seconds: Math.floor(now.getTime() / 1000),
+          toDate: () => now
+        };
+      }
+    } else {
+      // Sin fecha, usar fecha actual
+      const now = new Date();
+      normalized.date = {
+        seconds: Math.floor(now.getTime() / 1000),
+        toDate: () => now
+      };
+    }
+    
+    return normalized;
+  };
+
   const handleViewDetails = (appointment) => {
-    setSelectedAppointment(appointment);
+    setSelectedAppointment(normalizeAppointmentData(appointment));
     setDetailsDialogOpen(true);
   };
 
   // Function to start the deletion process
-  const handleDeleteAppointment = (appointment) => {
-    setAppointmentToDelete(appointment);
+  const handleDeleteAppointment = async (appointment) => {
+    // Verificar si la cita existe antes de intentar eliminarla
+    const exists = await verifyAppointmentExists(appointment.id);
+    if (!exists) {
+      setSnackbar({
+        open: true,
+        message: 'La cita ya no existe en la base de datos.',
+        severity: 'error'
+      });
+      return;
+    }
+    
+    setAppointmentToDelete(normalizeAppointmentData(appointment));
     setDeleteDialogOpen(true);
   };
   
@@ -155,23 +261,31 @@ const ManageAppointments = () => {
       return;
     }
     
-    // Verify if appointment has a status
-    if (!appointmentToDelete.status) {
+    try {
+      // Mostrar indicador de carga
       setSnackbar({
         open: true,
-        message: 'Cannot delete: Appointment does not have an assigned status',
-        severity: 'error'
+        message: 'Eliminando cita...',
+        severity: 'info'
       });
-      setDeleteDialogOpen(false);
-      return;
-    }
-    
-    try {
-      await deleteDoc(doc(db, 'appointments', appointmentToDelete.id));
+      
+      // Verificar si la cita existe antes de intentar eliminarla
+      const appointmentRef = doc(db, 'appointments', appointmentToDelete.id);
+      const appointmentSnap = await getDoc(appointmentRef);
+      
+      if (!appointmentSnap.exists()) {
+        throw new Error('La cita ya no existe en la base de datos');
+      }
+      
+      // Registro para depuración
+      console.log(`Eliminando cita ${appointmentToDelete.id} con estado ${appointmentToDelete.status || 'unknown'}`);
+      
+      // Eliminar la cita independientemente de su estado
+      await deleteDoc(appointmentRef);
       
       setSnackbar({
         open: true,
-        message: 'Appointment successfully deleted',
+        message: 'Cita eliminada correctamente',
         severity: 'success'
       });
       
@@ -180,9 +294,12 @@ const ManageAppointments = () => {
     } catch (error) {
       console.error('Error deleting appointment:', error);
       
+      // Registro de error para depuración
+      console.error(`Error al eliminar cita ${appointmentToDelete.id}:`, error);
+      
       setSnackbar({
         open: true,
-        message: 'Error deleting appointment. Please try again.',
+        message: `Error al eliminar la cita: ${error.message || 'Error desconocido'}`,
         severity: 'error'
       });
     }
@@ -716,7 +833,18 @@ const ManageAppointments = () => {
                           {appointment.status === 'pending' && (
                             <>
                               <Button
-                                onClick={() => handleStatusChange(appointment.id, 'approved')}
+                                onClick={async () => {
+                                  const exists = await verifyAppointmentExists(appointment.id);
+                                  if (exists) {
+                                    handleStatusChange(appointment.id, 'approved');
+                                  } else {
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'La cita ya no existe en la base de datos.',
+                                      severity: 'error'
+                                    });
+                                  }
+                                }}
                                 variant="contained"
                                 size="small"
                                 sx={{ 
@@ -733,7 +861,18 @@ const ManageAppointments = () => {
                                 {isSmallMobile ? 'Approve' : 'Approve'}
                               </Button>
                               <Button
-                                onClick={() => handleStatusChange(appointment.id, 'rejected')}
+                                onClick={async () => {
+                                  const exists = await verifyAppointmentExists(appointment.id);
+                                  if (exists) {
+                                    handleStatusChange(appointment.id, 'rejected');
+                                  } else {
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'La cita ya no existe en la base de datos.',
+                                      severity: 'error'
+                                    });
+                                  }
+                                }}
                                 variant="contained"
                                 size="small"
                                 sx={{ 
@@ -753,7 +892,18 @@ const ManageAppointments = () => {
                           )}
                           {appointment.status === 'approved' && (
                             <Button
-                              onClick={() => handleStatusChange(appointment.id, 'completed')}
+                              onClick={async () => {
+                                const exists = await verifyAppointmentExists(appointment.id);
+                                if (exists) {
+                                  handleStatusChange(appointment.id, 'completed');
+                                } else {
+                                  setSnackbar({
+                                    open: true,
+                                    message: 'La cita ya no existe en la base de datos.',
+                                    severity: 'error'
+                                  });
+                                }
+                              }}
                               variant="contained"
                               size="small"
                               startIcon={!isSmallMobile && <CheckCircle />}
@@ -891,7 +1041,18 @@ const ManageAppointments = () => {
                           {appointment.status === 'pending' && (
                             <>
                               <IconButton
-                                onClick={() => handleStatusChange(appointment.id, 'approved')}
+                                onClick={async () => {
+                                  const exists = await verifyAppointmentExists(appointment.id);
+                                  if (exists) {
+                                    handleStatusChange(appointment.id, 'approved');
+                                  } else {
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'La cita ya no existe en la base de datos.',
+                                      severity: 'error'
+                                    });
+                                  }
+                                }}
                                 sx={{ color: '#2e7d32' }}
                                 size="small"
                                 title="Aprobar cita"
@@ -899,7 +1060,18 @@ const ManageAppointments = () => {
                                 <CheckCircle />
                               </IconButton>
                               <IconButton
-                                onClick={() => handleStatusChange(appointment.id, 'rejected')}
+                                onClick={async () => {
+                                  const exists = await verifyAppointmentExists(appointment.id);
+                                  if (exists) {
+                                    handleStatusChange(appointment.id, 'rejected');
+                                  } else {
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'La cita ya no existe en la base de datos.',
+                                      severity: 'error'
+                                    });
+                                  }
+                                }}
                                 sx={{ color: '#d32f2f' }}
                                 size="small"
                                 title="Rechazar cita"
@@ -910,7 +1082,18 @@ const ManageAppointments = () => {
                           )}
                           {appointment.status === 'approved' && (
                             <IconButton
-                              onClick={() => handleStatusChange(appointment.id, 'completed')}
+                              onClick={async () => {
+                                const exists = await verifyAppointmentExists(appointment.id);
+                                if (exists) {
+                                  handleStatusChange(appointment.id, 'completed');
+                                } else {
+                                  setSnackbar({
+                                    open: true,
+                                    message: 'La cita ya no existe en la base de datos.',
+                                    severity: 'error'
+                                  });
+                                }
+                              }}
                               sx={{ color: '#1976d2' }}
                               size="small"
                               title="Marcar como completada"
@@ -1193,11 +1376,6 @@ const ManageAppointments = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               This action cannot be undone and the appointment will be permanently removed from the system.
             </Typography>
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              <Typography variant="body2">
-                <strong>Note:</strong> You can only delete appointments that have an assigned status. Appointments without a status cannot be deleted.
-              </Typography>
-            </Alert>
             
             {appointmentToDelete && (
               <Box sx={{ 

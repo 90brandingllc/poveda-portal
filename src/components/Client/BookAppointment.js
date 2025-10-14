@@ -234,112 +234,121 @@ const BookAppointment = () => {
 
   const serviceCategories = {
     interior: {
-      name: 'Interior Services',
+      name: 'INTERIOR SERVICES',
       services: [
         { 
-          name: 'Silver Interior Maintenance', 
+          name: 'SILVER PACKAGE', 
           price: 75, 
           description: 'Perfect for keeping your vehicle clean and presentable on a daily basis',
           details: 'Air blow, full vacuuming, plastic shine, carpet mat cleaning, trunk cleaning, interior glass cleaning',
           vehicleTypes: { small: 75, suv: 85, threeRow: 95 }
         },
         { 
-          name: 'Gold Deep Interior Cleaning', 
+          name: 'GOLD PACKAGE', 
           price: 145, 
           description: 'A complete cleaning to make your interior look like new',
           details: 'Deep cleaning of seats/carpets/headliner, window cleaning, extractor/steam, plastic conditioning, air freshener',
           vehicleTypes: { small: 145, suv: 165, threeRow: 185 }
         },
         { 
-          name: 'Diamond Extreme Interior Restoration', 
-          price: 182, 
+          name: 'DIAMOND PACKAGE', 
+          price: 225, 
           description: 'For vehicles with high dirt levels or challenging conditions (50%+ stains, heavy pet hair, strong odors)',
           details: 'All Gold services + intensive stain/odor treatment + deep decontamination + surface restoration',
-          vehicleTypes: { small: 182, suv: 202, threeRow: 222 }
+          vehicleTypes: { small: 225, suv: 245, threeRow: 265 }
         }
       ]
     },
+    interior_addons: {
+      name: 'INTERIOR PACKAGE ADD-ONS',
+      services: [
+        { name: 'Light Pet Hair', price: 25, description: 'Professional removal of light pet hair' },
+        { name: 'Heavy Pet Hair', price: 50, description: 'Intensive removal of heavy pet hair' },
+        { name: 'Baby Seat', price: 25, description: 'Thorough cleaning of baby car seats' },
+        { name: 'Full Cleaning for Dirty Headliners', price: 50, description: 'Deep cleaning of headliner surfaces' },
+        { name: 'Engine', price: 40, description: 'Thorough cleaning of engine compartment' },
+        { name: 'Headlight Restoration', price: 70, description: 'Restore clarity and visibility' }
+      ]
+    },
     exterior: {
-      name: 'Exterior Services',
+      name: 'EXTERIOR SERVICES',
       services: [
         { 
-          name: 'Gold Exterior Maintenance', 
+          name: 'GOLD PACKAGE', 
           price: 55, 
           description: 'Ideal for keeping your vehicle exterior clean, protected, and presentable',
           details: 'Two-bucket wash, wheel cleaning, tire shine, wheel well cleaning, exterior glass, gas cap, hand-dry',
           vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
-        },
-        { 
-          name: 'Complete Exterior Detail', 
-          price: 55, 
-          description: 'More thorough cleaning to enhance appearance and protect paint',
-          details: 'All Gold services + optional add-ons available',
-          vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
         }
       ]
     },
+    exterior_addons: {
+      name: 'EXTERIOR PACKAGE ADD-ONS',
+      services: [
+        { name: 'Headlight Restoration', price: 70, description: 'Restore clarity and visibility' },
+        { name: 'Plastic Restoration', price: 30, description: 'Restore faded plastic trim' },
+        { name: 'Engine Cleaning', price: 40, description: 'Thorough cleaning of engine compartment' },
+        { name: 'Clay Bar Treatment', price: 45, description: 'Removes contaminants, reduces oxidation risk, and helps wax or ceramic coating last longer' },
+        { name: 'Ceramic Protection (3 months) + Clay Bar', price: 75, description: 'Short-term ceramic coating with clay bar treatment' }
+      ]
+    },
     polishing: {
-      name: 'Polishing Services',
+      name: 'POLISHING & CERAMIC COATING SERVICES',
       services: [
         { 
-          name: 'Step Polish (Light Correction)', 
-          price: 200, 
+          name: 'SILVER PACKAGE', 
+          price: 220, 
           description: 'Light cleaning and correction to remove small imperfections and enhance shine',
           details: '1 step polishing, shine enhancement, light scratch removal',
-          vehicleTypes: { small: 200, suv: 220, threeRow: 250 }
+          vehicleTypes: { small: 220, suv: 240, threeRow: 270 }
         },
         { 
-          name: 'Gold Step Polish (Deep Correction)', 
-          price: 280, 
+          name: 'GOLD PACKAGE', 
+          price: 300, 
           description: 'Deeper treatment to correct noticeable defects and restore uniform, glossy finish',
           details: '2 polishing steps, moderate scratch/oxidation removal, preparation for ceramic/sealant',
-          vehicleTypes: { small: 280, suv: 300, threeRow: 350 }
+          vehicleTypes: { small: 300, suv: 320, threeRow: 350 }
         },
         { 
-          name: 'Diamond Polish + Ceramic Coating', 
-          price: 480, 
+          name: 'DIAMOND PACKAGE', 
+          price: 650, 
           description: 'Maximum protection and long-lasting shine with ceramic coating',
-          details: '2 polishing steps + high-durability ceramic coating (1-5 year options)',
-          vehicleTypes: { small: 480, suv: 520, threeRow: 580 }
+          details: '2 polishing steps + high-durability ceramic coating (3-year protection)',
+          vehicleTypes: { small: 650, suv: 750, threeRow: 850 }
         }
       ]
     },
     packages: {
-      name: 'Service Packages',
+      name: 'VIEW PACKAGES',
       services: [
         { 
-          name: 'Interior Silver + Exterior Gold', 
-          price: 130, 
-          description: 'Basic interior maintenance with exterior cleaning',
-          details: 'Silver interior maintenance + Gold exterior maintenance',
-          vehicleTypes: { small: 130, suv: 150, threeRow: 170 }
+          name: 'SILVER MAINTENANCE PACKAGE', 
+          price: 110, 
+          description: 'Basic interior and exterior maintenance',
+          details: 'Basic cleaning and maintenance for both interior and exterior',
+          vehicleTypes: { small: 110, suv: 130, threeRow: 150 }
         },
         { 
-          name: 'Interior Gold + Exterior Gold', 
-          price: 200, 
-          description: 'Deep interior cleaning with exterior maintenance',
-          details: 'Gold deep interior cleaning + Gold exterior maintenance',
-          vehicleTypes: { small: 200, suv: 230, threeRow: 260 }
+          name: 'GOLD FULL CLEANING PACKAGE', 
+          price: 185, 
+          description: 'Complete interior and exterior cleaning',
+          details: 'Deep cleaning for both interior and exterior surfaces',
+          vehicleTypes: { small: 185, suv: 210, threeRow: 240 }
         },
         { 
-          name: 'Interior Diamond + Exterior Gold', 
-          price: 255, 
-          description: 'Extreme interior restoration with exterior maintenance',
-          details: 'Diamond extreme interior restoration + Gold exterior maintenance',
-          vehicleTypes: { small: 255, suv: 265, threeRow: 275 }
+          name: 'XTREME FULL RENOVATION PACKAGE', 
+          price: 450, 
+          description: 'Complete renovation and restoration for your vehicle',
+          details: 'Intensive cleaning, restoration and protection for both interior and exterior',
+          vehicleTypes: { small: 450, suv: 480, threeRow: 520 }
+        },
+        { 
+          name: 'XTREME FULL RENOVATION WITH 5-YEAR CERAMIC PACKAGE', 
+          price: 765, 
+          description: 'Complete renovation with long-lasting ceramic protection',
+          details: 'Full renovation package plus premium 5-year ceramic coating protection',
+          vehicleTypes: { small: 765, suv: 800, threeRow: 850 }
         }
-      ]
-    },
-    addons: {
-      name: 'Add-On Services',
-      services: [
-        { name: 'Light Pet Hair Removal', price: 25, description: 'Professional removal of light pet hair' },
-        { name: 'Heavy Pet Hair Removal', price: 45, description: 'Intensive removal of heavy pet hair' },
-        { name: 'Baby Car Seat Cleaning', price: 25, description: 'Thorough cleaning of baby car seats' },
-        { name: 'Paint Decontamination (Clay Bar)', price: 45, description: 'Removes embedded particles and contaminants' },
-        { name: 'Headlight Restoration', price: 70, description: 'Restore clarity and visibility' },
-        { name: 'Full Exterior Plastic Restoration', price: 20, description: 'Restore faded plastic trim' },
-        { name: 'Engine Cleaning', price: 35, description: 'Additional service for combined packages only' }
       ]
     }
   };
@@ -348,12 +357,17 @@ const BookAppointment = () => {
 
   const handleServiceSelect = (category, service) => {
     const serviceWithCategory = { ...service, category };
-    const isSelected = formData.selectedServices.some(s => s.name === service.name);
+    // Identificar servicios por nombre Y categoría para evitar mezclas
+    const isSelected = formData.selectedServices.some(s => 
+      s.name === service.name && s.category === category
+    );
     
     let updatedServices;
     if (isSelected) {
       // Remove service if already selected
-      updatedServices = formData.selectedServices.filter(s => s.name !== service.name);
+      updatedServices = formData.selectedServices.filter(s => 
+        !(s.name === service.name && s.category === category)
+      );
     } else {
       // Add service if not selected
       updatedServices = [...formData.selectedServices, serviceWithCategory];
@@ -440,7 +454,7 @@ const BookAppointment = () => {
         userId: currentUser.uid,
         userEmail: currentUser.email,
         userName: currentUser.displayName || currentUser.email,
-        services: formData.selectedServices.map(service => service.name), // Array of service names
+        services: formData.selectedServices.map(service => `${service.name} (${serviceCategories[service.category].name})`), // Array of service names with categories
         servicesDetails: formData.selectedServices, // Full service objects for reference
         vehicleType: formData.vehicleType,
         vehicleId: formData.vehicleId,
@@ -475,7 +489,7 @@ const BookAppointment = () => {
             id: paymentResult.id,
             amount: depositAmount,
             remaining: remainingBalance,
-            service: formData.selectedServices.map(s => s.name).join(', ')
+            service: formData.selectedServices.map(s => `${s.name} (${serviceCategories[s.category].name})`).join(', ')
           });
         }
         
@@ -545,12 +559,19 @@ const BookAppointment = () => {
             </Grid>
             {Object.entries(serviceCategories).map(([key, category]) => (
               <Grid item xs={12} key={key}>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: '#1976d2' }}>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  fontWeight: 700, 
+                  color: '#1976d2',
+                  textTransform: 'uppercase',
+                  borderBottom: '2px solid #1976d2',
+                  paddingBottom: 1,
+                  marginBottom: 2
+                }}>
                   {category.name}
                 </Typography>
                 <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                   {category.services.map((service, index) => {
-                    const isSelected = formData.selectedServices.some(s => s.name === service.name);
+                    const isSelected = formData.selectedServices.some(s => s.name === service.name && s.category === key);
                     return (
                       <Grid item xs={12} sm={6} md={4} key={index}>
                         <Card 
@@ -588,9 +609,11 @@ const BookAppointment = () => {
                           )}
                           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                             <Typography variant="h6" gutterBottom sx={{ 
-                              fontWeight: 600,
+                              fontWeight: 700,
                               fontSize: { xs: '1rem', sm: '1.25rem' },
-                              pr: 2
+                              pr: 2,
+                              color: key.includes('addons') ? '#555' : '#1976d2',
+                              textTransform: key.includes('addons') ? 'none' : 'uppercase'
                             }}>
                               {service.name}
                             </Typography>
@@ -601,12 +624,21 @@ const BookAppointment = () => {
                             }}>
                               {service.description}
                             </Typography>
-                            <Typography variant="body2" color="primary" sx={{ 
-                              fontWeight: 500,
-                              fontSize: { xs: '0.75rem', sm: '0.8rem' }
-                            }}>
-                              💰 Pricing shown after vehicle type selection
-                            </Typography>
+                            {service.vehicleTypes ? (
+                              <Typography variant="body2" color="primary" sx={{ 
+                                fontWeight: 500,
+                                fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                              }}>
+                                💰 Small: ${service.vehicleTypes.small} | SUV: ${service.vehicleTypes.suv} | 3-Row: ${service.vehicleTypes.threeRow}
+                              </Typography>
+                            ) : (
+                              <Typography variant="body2" color="primary" sx={{ 
+                                fontWeight: 500,
+                                fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                              }}>
+                                💰 ${service.price}
+                              </Typography>
+                            )}
                           </CardContent>
                         </Card>
                       </Grid>
@@ -626,11 +658,11 @@ const BookAppointment = () => {
                     {formData.selectedServices.map((service, idx) => (
                       <Chip 
                         key={idx}
-                        label={service.name}
+                        label={`${service.name} (${serviceCategories[service.category].name})`}
                         onDelete={() => handleServiceSelect(service.category, service)}
                         color="primary"
                         variant="outlined"
-                        sx={{ mb: 1 }}
+                        sx={{ mb: 1, maxWidth: '100%' }}
                       />
                     ))}
                   </Box>
@@ -659,11 +691,11 @@ const BookAppointment = () => {
                 {formData.selectedServices.map((service, idx) => (
                   <Chip 
                     key={idx}
-                    label={service.name}
+                    label={`${service.name} (${serviceCategories[service.category].name})`}
                     size="small"
                     color="primary"
                     variant="outlined"
-                    sx={{ mr: 1, mb: 1 }}
+                    sx={{ mr: 0.5, mb: 0.5, maxWidth: '100%' }}
                   />
                 ))}
               </Box>
@@ -1046,7 +1078,7 @@ const BookAppointment = () => {
                             fontSize: { xs: '0.875rem', sm: '1rem' },
                             mb: idx < formData.selectedServices.length - 1 ? 0.5 : 0
                           }}>
-                            {service.name}
+                            {service.name} ({serviceCategories[service.category].name})
                           </Typography>
                         ))}
                       </Box>
@@ -1213,7 +1245,7 @@ const BookAppointment = () => {
               {!paymentResult ? (
                 <DepositPayment
                   servicePrice={formData.estimatedPrice}
-                  servicePackage={formData.selectedServices.map(s => s.name).join(', ')}
+                  servicePackage={formData.selectedServices.map(s => `${s.name} (${serviceCategories[s.category].name})`).join(', ')}
                   onPaymentSuccess={handlePaymentSuccess}
                   onPaymentError={handlePaymentError}
                   customerName={currentUser?.displayName || currentUser?.email || 'Customer'}
