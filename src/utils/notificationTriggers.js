@@ -40,27 +40,51 @@ export const handleAppointmentStatusChange = async (appointmentId, newStatus, ap
       appointmentData = { ...appointmentData, id: appointmentId };
     }
     
-    if (!appointmentData.userId) {
-      console.error('No userId found for appointment notification', appointmentId);
-      return false;
+    // Verificar si el userId existe y es válido, si no, no enviar notificación
+    // pero no fallar la función completa
+    if (!appointmentData.userId || appointmentData.userId === 'system_notification') {
+      console.warn('No valid userId found for appointment notification', appointmentId);
+      return true; // Retornar true para que la función principal no falle
+    }
+    
+    // Normalizar datos de la cita para evitar errores
+    const normalizedData = {
+      ...appointmentData,
+      service: appointmentData.service || 
+               (Array.isArray(appointmentData.services) && appointmentData.services.length > 0 ? 
+                appointmentData.services[0] : 'requested service'),
+      userEmail: appointmentData.userEmail || appointmentData.customerEmail
+    };
+    
+    // Asegurar que la fecha tiene un formato utilizable
+    if (normalizedData.date) {
+      if (typeof normalizedData.date === 'string') {
+        try {
+          normalizedData.date = new Date(normalizedData.date);
+        } catch (e) {
+          console.warn('Error parsing appointment date:', e);
+        }
+      } else if (normalizedData.date.seconds) {
+        // Ya es un timestamp de Firestore, convertir a Date para mayor compatibilidad
+        normalizedData.date = new Date(normalizedData.date.seconds * 1000);
+      }
     }
     
     // Create appropriate notification based on status
     try {
       if (newStatus === 'approved') {
-        await createAppointmentConfirmedNotification(appointmentData.userId, appointmentData);
+        await createAppointmentConfirmedNotification(normalizedData.userId, normalizedData);
       } else if (newStatus === 'completed') {
-        await createServiceCompletedNotification(appointmentData.userId, appointmentData);
+        await createServiceCompletedNotification(normalizedData.userId, normalizedData);
       } else if (newStatus === 'rejected') {
         // Custom notification for rejected appointments
-        const dateDisplay = appointmentData.date?.seconds ? 
-          new Date(appointmentData.date.seconds * 1000).toLocaleDateString() : 
-          'the scheduled date';
+        const dateDisplay = normalizedData.date instanceof Date ? 
+          normalizedData.date.toLocaleDateString() : 'the scheduled date';
           
         await createNotification(
-          appointmentData.userId,
+          normalizedData.userId,
           'Appointment Rescheduling Required',
-          `Unfortunately, your appointment for ${Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : (appointmentData.service || 'requested service')} on ${dateDisplay} needs to be rescheduled. Please contact us or book a new appointment.`,
+          `Unfortunately, your appointment for ${Array.isArray(normalizedData.services) ? normalizedData.services.join(', ') : (normalizedData.service || 'requested service')} on ${dateDisplay} needs to be rescheduled. Please contact us or book a new appointment.`,
           'warning',
           {
             type: 'appointment_rejected',
@@ -70,9 +94,9 @@ export const handleAppointmentStatusChange = async (appointmentId, newStatus, ap
       }
       
       // Send email notification if enabled
-      if (appointmentData.emailReminders && appointmentData.userEmail) {
+      if (normalizedData.emailReminders && normalizedData.userEmail) {
         try {
-          await sendAppointmentStatusEmail(appointmentData, newStatus);
+          await sendAppointmentStatusEmail(normalizedData, newStatus);
         } catch (emailError) {
           console.error('Error sending email notification:', emailError);
           // Don't fail if email sending fails
@@ -83,6 +107,7 @@ export const handleAppointmentStatusChange = async (appointmentId, newStatus, ap
       return true;
     } catch (error) {
       console.error('Error sending notifications:', error);
+      // No reenviar el error, sólo registrar y retornar false
       return false;
     }
   } catch (error) {
