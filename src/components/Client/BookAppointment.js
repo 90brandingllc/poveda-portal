@@ -61,6 +61,12 @@ const BookAppointment = () => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [vehicles, setVehicles] = useState([]);
+  const [forceUpdate, setForceUpdate] = useState(0); // Add this for forcing re-renders
+  
+  // Helper function to force a re-render
+  const triggerRerender = () => {
+    setForceUpdate(prev => prev + 1);
+  };
 
   const [formData, setFormData] = useState({
     selectedServices: [], // Array of selected services
@@ -370,6 +376,23 @@ const BookAppointment = () => {
         
         // Establecer en el estado
         console.log('Preselecting service from URL:', finalService);
+        console.log('URL params detected - serviceParam:', serviceParam);
+        console.log('URL params detected - serviceNameParam:', serviceNameParam);
+        console.log('URL params detected - priceParam:', priceParam);
+        
+        // Buscar servicio existente que podría coincidir
+        Object.entries(serviceCategories).forEach(([catKey, category]) => {
+          category.services.forEach(service => {
+            const serviceName = service.name.toLowerCase().trim();
+            const urlName = serviceNameParam.toLowerCase().trim();
+            
+            if (serviceName.includes('gold') && urlName.includes('gold') && 
+                serviceName.includes('interior') && urlName.includes('interior')) {
+              console.log('MATCH FOUND for URL service:', service.name);
+              console.log('Category:', catKey);
+            }
+          });
+        });
         
         // Establecer el servicio en el estado (una sola vez)
         setFormData(prev => ({
@@ -377,6 +400,12 @@ const BookAppointment = () => {
           selectedServices: [finalService],
           preselectedFromUrl: true
         }));
+        
+        // Forzar actualización del estado
+        setTimeout(() => {
+          console.log('Forcing update after URL service selection');
+          setForceUpdate(prev => prev + 1);
+        }, 100);
       }
     } else {
       // Si no hay parámetros de servicio, igual marcamos como procesado
@@ -430,6 +459,9 @@ const BookAppointment = () => {
       timeSlot: slot.label,
       time: slot.time // Keep for backward compatibility
     }));
+    
+    // Force a re-render to ensure UI reflects selection
+    setTimeout(triggerRerender, 10);
   };
 
   const handleServiceSelect = (category, service) => {
@@ -438,10 +470,39 @@ const BookAppointment = () => {
     // Siempre usar copia con categoría
     const serviceWithCategory = { ...service, category };
     
-    // Método simplificado de comprobación: solo comparar por nombre y categoría
-    const isSelected = formData.selectedServices.some(s => 
-      s.name === service.name && s.category === category
-    );
+    // Crear un identificador único para este servicio combinando nombre y categoría
+    const serviceId = `${service.name.toLowerCase().trim()}_${category}`;
+    
+    // Usar la misma lógica flexible de comparación que usamos en el renderizado
+    const isSelected = formData.selectedServices.some(s => {
+      // Crear identificador para el servicio seleccionado
+      const selectedServiceId = `${s.name.toLowerCase().trim()}_${s.category}`;
+      
+      // Verificar coincidencia directa por ID
+      if (selectedServiceId === serviceId) {
+        return true;
+      }
+      
+      // Verificar coincidencia por palabras clave principales si están en la misma categoría
+      if (s.category === category) {
+        const selectedName = s.name.toLowerCase().trim();
+        const cardName = service.name.toLowerCase().trim();
+        const importantKeywords = ['silver', 'gold', 'diamond', 'maintenance', 'renovation',
+                                'ceramic', 'package', 'polish', 'exterior', 'interior'];
+        
+        // Si ambos nombres contienen las mismas palabras clave importantes
+        const selectedKeywords = importantKeywords.filter(keyword => selectedName.includes(keyword));
+        const cardKeywords = importantKeywords.filter(keyword => cardName.includes(keyword));
+        
+        // Si comparten al menos 2 palabras clave importantes y están en la misma categoría
+        if (selectedKeywords.length > 0 && 
+            selectedKeywords.filter(k => cardKeywords.includes(k)).length >= 2) {
+          return true;
+        }
+      }
+      
+      return false;
+    });
     
     console.log('Is service selected?', isSelected);
     
@@ -450,9 +511,33 @@ const BookAppointment = () => {
     if (isSelected) {
       // DESELECCIONAR: Remover el servicio si ya estaba seleccionado
       console.log('Deselecting service');
-      updatedServices = formData.selectedServices.filter(s => 
-        !(s.name === service.name && s.category === category)
-      );
+      updatedServices = formData.selectedServices.filter(s => {
+        // Crear identificador para comparación
+        const selectedServiceId = `${s.name.toLowerCase().trim()}_${s.category}`;
+        
+        // Si hay coincidencia directa, remover
+        if (selectedServiceId === serviceId) {
+          return false; // No mantener este servicio
+        }
+        
+        // Si hay coincidencia por palabras clave, también remover
+        if (s.category === category) {
+          const selectedName = s.name.toLowerCase().trim();
+          const cardName = service.name.toLowerCase().trim();
+          const importantKeywords = ['silver', 'gold', 'diamond', 'maintenance', 'renovation',
+                                  'ceramic', 'package', 'polish', 'exterior', 'interior'];
+          
+          const selectedKeywords = importantKeywords.filter(keyword => selectedName.includes(keyword));
+          const cardKeywords = importantKeywords.filter(keyword => cardName.includes(keyword));
+          
+          if (selectedKeywords.length > 0 && 
+              selectedKeywords.filter(k => cardKeywords.includes(k)).length >= 2) {
+            return false; // No mantener este servicio
+          }
+        }
+        
+        return true; // Mantener todos los demás servicios
+      });
     } else {
       // SELECCIONAR: Agregar el servicio si no estaba seleccionado
       console.log('Selecting new service');
@@ -464,13 +549,17 @@ const BookAppointment = () => {
     
     console.log('Updated services:', updatedServices);
     
+    // Actualizar el estado con un forzado de re-renderizado
     setFormData({
       ...formData,
       selectedServices: updatedServices,
       estimatedPrice: 0, // Se recalculará cuando se seleccione tipo de vehículo
-      // Siempre limpiar la bandera para habilitar el comportamiento normal
+      // Limpiar la bandera después de la primera interacción
       preselectedFromUrl: false
     });
+    
+    // Forzar actualización usando la función general
+    setTimeout(triggerRerender, 10);
   };
 
   const handleVehicleTypeSelect = (vehicleType) => {
@@ -505,6 +594,9 @@ const BookAppointment = () => {
       vehicleType: vehicleType,
       estimatedPrice: totalPrice
     });
+    
+    // Force a re-render to ensure UI reflects selection
+    setTimeout(triggerRerender, 10);
   };
 
 
@@ -675,22 +767,67 @@ const BookAppointment = () => {
                 </Typography>
                 <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                   {category.services.map((service, index) => {
-                    // Lógica mejorada para verificar si un servicio está seleccionado
+                    // Lógica mejorada para verificar si un servicio está seleccionado - con mejor soporte para URL
                     const isSelected = formData.selectedServices.some(s => {
-                      // Comparación simplificada: solo por nombre y categoría
-                      return s.name === service.name && s.category === key;
+                      // Obtener nombres normalizados para comparación
+                      const selectedName = s.name.toLowerCase().trim();
+                      const cardName = service.name.toLowerCase().trim();
+                      
+                      // Verificar coincidencia directa (nombre exacto y categoría)
+                      if (selectedName === cardName && s.category === key) {
+                        return true;
+                      }
+                      
+                      // Para servicios desde URL, ser más flexible
+                      if (s.fromUrl) {
+                        // Si hay coincidencia parcial de nombre
+                        if ((selectedName.includes(cardName) || cardName.includes(selectedName)) &&
+                            // Si ambos son de la misma categoría O si el servicio desde URL coincide con palabras clave
+                            (s.category === key || 
+                             (selectedName.includes('gold') && cardName.includes('gold')) ||
+                             (selectedName.includes('interior') && cardName.includes('interior')))) {
+                          console.log(`Coincidencia URL: ${s.name} - ${service.name}`);
+                          return true;
+                        }
+                      }
+                      
+                      // Verificar coincidencia por palabras clave principales
+                      // Esto ayuda cuando hay diferencias menores en la redacción
+                      if (s.category === key) {
+                        const importantKeywords = ['silver', 'gold', 'diamond', 'maintenance', 'renovation',
+                                                'ceramic', 'package', 'polish', 'exterior', 'interior'];
+                        
+                        // Si ambos nombres contienen las mismas palabras clave importantes
+                        const selectedKeywords = importantKeywords.filter(keyword => selectedName.includes(keyword));
+                        const cardKeywords = importantKeywords.filter(keyword => cardName.includes(keyword));
+                        
+                        // Si comparten al menos 1 palabra clave importante y están en la misma categoría
+                        if (selectedKeywords.length > 0 && 
+                            selectedKeywords.some(k => cardKeywords.includes(k))) {
+                          return true;
+                        }
+                      }
+                      
+                      return false;
                     });
+                    
                     return (
                       <Grid item xs={12} sm={6} md={4} key={index}>
                         <Card 
                           sx={{ 
                             cursor: 'pointer',
-                            border: isSelected ? '2px solid #1976d2' : '1px solid #e0e0e0',
-                            backgroundColor: isSelected ? '#e3f2fd' : 'white',
+                            border: isSelected ? '4px solid red' : '1px solid #e0e0e0',
+                            backgroundColor: isSelected ? '#ffeeee' : 'white',
                             '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
                             height: '100%',
                             borderRadius: { xs: '12px', sm: '16px' },
-                            position: 'relative'
+                            position: 'relative',
+                            transition: 'all 0.2s ease',
+                            transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                            boxShadow: isSelected ? '0 5px 15px rgba(255, 0, 0, 0.3)' : 'none',
+                            zIndex: isSelected ? 2 : 1,
+                            outline: isSelected ? '1px dashed red' : 'none',
+                            outlineOffset: '3px'
                           }}
                           onClick={() => handleServiceSelect(key, service)}
                         >
@@ -700,7 +837,7 @@ const BookAppointment = () => {
                                 position: 'absolute',
                                 top: 8,
                                 right: 8,
-                                backgroundColor: '#1976d2',
+                                backgroundColor: 'red',
                                 color: 'white',
                                 borderRadius: '50%',
                                 width: 24,
@@ -837,15 +974,45 @@ const BookAppointment = () => {
                 ].map((vehicleOption) => (
                   <Grid item xs={12} sm={4} key={vehicleOption.type}>
                     <Card 
+                      id={`vehicleType_${vehicleOption.type}`}
+                      data-selected={formData.vehicleType === vehicleOption.type ? 'true' : 'false'}
                       sx={{ 
                         cursor: 'pointer',
-                        border: formData.vehicleType === vehicleOption.type ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                        border: formData.vehicleType === vehicleOption.type ? '3px solid #1976d2' : '1px solid #e0e0e0',
+                        backgroundColor: formData.vehicleType === vehicleOption.type ? '#e3f2fd' : 'white',
                         '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
                         height: '100%',
-                        borderRadius: { xs: '12px', sm: '16px' }
+                        borderRadius: { xs: '12px', sm: '16px' },
+                        position: 'relative',
+                        transition: 'all 0.2s ease-in-out',
+                        transform: formData.vehicleType === vehicleOption.type ? 'scale(1.02)' : 'scale(1)',
+                        boxShadow: formData.vehicleType === vehicleOption.type ? '0 4px 15px rgba(25, 118, 210, 0.3)' : 'none'
                       }}
                       onClick={() => handleVehicleTypeSelect(vehicleOption.type)}
                     >
+                      {formData.vehicleType === vehicleOption.type && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            backgroundColor: '#1976d2',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: 30,
+                            height: 30,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1rem',
+                            fontWeight: 800,
+                            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.5)',
+                            zIndex: 10
+                          }}
+                        >
+                          ✓
+                        </Box>
+                      )}
                       <CardContent sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center' }}>
                         <Typography variant="h5" gutterBottom sx={{ 
                           fontWeight: 600,
@@ -963,12 +1130,19 @@ const BookAppointment = () => {
                   {vehicles.map((vehicle) => (
                     <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
                       <Card 
+                        id={`vehicle_${vehicle.id}`}
+                        data-selected={formData.vehicleId === vehicle.id ? 'true' : 'false'}
                         sx={{ 
                           cursor: 'pointer',
-                          border: formData.vehicleId === vehicle.id ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                          border: formData.vehicleId === vehicle.id ? '3px solid #1976d2' : '1px solid #e0e0e0',
+                          backgroundColor: formData.vehicleId === vehicle.id ? '#e3f2fd' : 'white',
                           '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
                           height: '100%',
-                          borderRadius: { xs: '12px', sm: '16px' }
+                          borderRadius: { xs: '12px', sm: '16px' },
+                          position: 'relative',
+                          transition: 'all 0.2s ease-in-out',
+                          transform: formData.vehicleId === vehicle.id ? 'scale(1.02)' : 'scale(1)',
+                          boxShadow: formData.vehicleId === vehicle.id ? '0 4px 15px rgba(25, 118, 210, 0.3)' : 'none'
                         }}
                         onClick={() => {
                           // Transferir tanto el ID como el teléfono del vehículo al formulario
@@ -976,9 +1150,35 @@ const BookAppointment = () => {
                             ...prev, 
                             vehicleId: vehicle.id,
                             vehiclePhone: vehicle.phoneNumber // Transferir el teléfono del vehículo
-                          }))
+                          }));
+                          
+                          // Forzar actualización para reflejar la selección
+                          setTimeout(triggerRerender, 10);
                         }}
                       >
+                        {formData.vehicleId === vehicle.id && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              backgroundColor: '#1976d2',
+                              color: 'white',
+                              borderRadius: '50%',
+                              width: 30,
+                              height: 30,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '1rem',
+                              fontWeight: 800,
+                              boxShadow: '0 2px 8px rgba(25, 118, 210, 0.5)',
+                              zIndex: 10
+                            }}
+                          >
+                            ✓
+                          </Box>
+                        )}
                         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
                             <DirectionsCar sx={{ color: '#1976d2', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
@@ -1060,6 +1260,8 @@ const BookAppointment = () => {
                       {availableSlots.map((slot, index) => (
                         <Grid item xs={6} sm={4} md={3} key={index}>
                           <Chip
+                            id={`timeslot_${slot.label.replace(/[: ]/g, '_')}`}
+                            data-selected={selectedSlot?.label === slot.label ? 'true' : 'false'}
                             label={slot.label}
                             onClick={() => handleSlotSelect(slot)}
                             color={selectedSlot?.label === slot.label ? 'primary' : 'default'}
@@ -1078,7 +1280,12 @@ const BookAppointment = () => {
                               },
                               '&:hover': {
                                 backgroundColor: slot.available ? 'primary.light' : 'inherit'
-                              }
+                              },
+                              transition: 'all 0.2s ease-in-out',
+                              transform: selectedSlot?.label === slot.label ? 'scale(1.05)' : 'scale(1)',
+                              border: selectedSlot?.label === slot.label ? '2px solid #1976d2' : '1px solid rgba(0, 0, 0, 0.23)',
+                              boxShadow: selectedSlot?.label === slot.label ? '0 2px 10px rgba(25, 118, 210, 0.4)' : 'none',
+                              fontWeight: selectedSlot?.label === slot.label ? 700 : 400
                             }}
                           />
                         </Grid>
