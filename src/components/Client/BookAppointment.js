@@ -368,10 +368,17 @@ const BookAppointment = () => {
         else if (serviceParam.includes('polish')) serviceCategory = 'polishing';
         else if (serviceParam.includes('package')) serviceCategory = 'packages';
         
-        // Crear objeto final con categoría
+        // Si es gold-interior, forzar categoría 'interior'
+        if (serviceParam === 'gold-interior') {
+          serviceCategory = 'interior';
+        }
+        
+        // Crear objeto final con categoría y marcas especiales
         const finalService = {
           ...directService,
-          category: serviceCategory
+          category: serviceCategory,
+          fromUrl: true,   // Marcar que viene de URL
+          urlId: serviceParam  // Guardar el ID del servicio en URL
         };
         
         // Establecer en el estado
@@ -467,38 +474,25 @@ const BookAppointment = () => {
   const handleServiceSelect = (category, service) => {
     console.log('Selecting service:', { category, service });
     
-    // Siempre usar copia con categoría
-    const serviceWithCategory = { ...service, category };
+    // Siempre usar copia con categoría y marcar como seleccionado manualmente
+    const serviceWithCategory = { 
+      ...service, 
+      category,
+      manuallySelected: true // Marcar que fue seleccionado manualmente
+    };
     
-    // Crear un identificador único para este servicio combinando nombre y categoría
-    const serviceId = `${service.name.toLowerCase().trim()}_${category}`;
-    
-    // Usar la misma lógica flexible de comparación que usamos en el renderizado
+    // Lógica de selección, usando coincidencia exacta para usuarios logueados
     const isSelected = formData.selectedServices.some(s => {
-      // Crear identificador para el servicio seleccionado
-      const selectedServiceId = `${s.name.toLowerCase().trim()}_${s.category}`;
+      // Verificar que tenemos datos válidos
+      if (!s || !s.name) return false;
       
-      // Verificar coincidencia directa por ID
-      if (selectedServiceId === serviceId) {
+      // Obtener nombres normalizados
+      const selectedName = s.name.toLowerCase().trim();
+      const cardName = service.name.toLowerCase().trim();
+      
+      // Verificar coincidencia exacta
+      if (selectedName === cardName && s.category === category) {
         return true;
-      }
-      
-      // Verificar coincidencia por palabras clave principales si están en la misma categoría
-      if (s.category === category) {
-        const selectedName = s.name.toLowerCase().trim();
-        const cardName = service.name.toLowerCase().trim();
-        const importantKeywords = ['silver', 'gold', 'diamond', 'maintenance', 'renovation',
-                                'ceramic', 'package', 'polish', 'exterior', 'interior'];
-        
-        // Si ambos nombres contienen las mismas palabras clave importantes
-        const selectedKeywords = importantKeywords.filter(keyword => selectedName.includes(keyword));
-        const cardKeywords = importantKeywords.filter(keyword => cardName.includes(keyword));
-        
-        // Si comparten al menos 2 palabras clave importantes y están en la misma categoría
-        if (selectedKeywords.length > 0 && 
-            selectedKeywords.filter(k => cardKeywords.includes(k)).length >= 2) {
-          return true;
-        }
       }
       
       return false;
@@ -512,27 +506,24 @@ const BookAppointment = () => {
       // DESELECCIONAR: Remover el servicio si ya estaba seleccionado
       console.log('Deselecting service');
       updatedServices = formData.selectedServices.filter(s => {
-        // Crear identificador para comparación
-        const selectedServiceId = `${s.name.toLowerCase().trim()}_${s.category}`;
+        // Verificar que tenemos datos válidos
+        if (!s || !s.name) return true; // Mantener entradas inválidas
         
-        // Si hay coincidencia directa, remover
-        if (selectedServiceId === serviceId) {
+        // Obtener nombres normalizados
+        const selectedName = s.name.toLowerCase().trim();
+        const cardName = service.name.toLowerCase().trim();
+        
+        // Si hay coincidencia exacta de nombre y categoría, remover
+        if (selectedName === cardName && s.category === category) {
           return false; // No mantener este servicio
         }
         
-        // Si hay coincidencia por palabras clave, también remover
-        if (s.category === category) {
-          const selectedName = s.name.toLowerCase().trim();
-          const cardName = service.name.toLowerCase().trim();
-          const importantKeywords = ['silver', 'gold', 'diamond', 'maintenance', 'renovation',
-                                  'ceramic', 'package', 'polish', 'exterior', 'interior'];
-          
-          const selectedKeywords = importantKeywords.filter(keyword => selectedName.includes(keyword));
-          const cardKeywords = importantKeywords.filter(keyword => cardName.includes(keyword));
-          
-          if (selectedKeywords.length > 0 && 
-              selectedKeywords.filter(k => cardKeywords.includes(k)).length >= 2) {
-            return false; // No mantener este servicio
+        // Para usuarios NO logueados, verificar caso especial Gold Interior
+        if (!currentUser) {
+          const serviceParam = new URLSearchParams(window.location.search).get('service');
+          if (serviceParam === 'gold-interior' && s.fromUrl && 
+              cardName.includes('gold') && category === 'interior') {
+            return false; // Remover coincidencia especial Gold Interior para usuarios no logueados
           }
         }
         
@@ -767,43 +758,34 @@ const BookAppointment = () => {
                 </Typography>
                 <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                   {category.services.map((service, index) => {
-                    // Lógica mejorada para verificar si un servicio está seleccionado - con mejor soporte para URL
+                    // Lógica para verificar si un servicio está seleccionado (corregida para usuarios logueados)
                     const isSelected = formData.selectedServices.some(s => {
-                      // Obtener nombres normalizados para comparación
+                      // Verificar que tenemos datos válidos
+                      if (!s || !s.name) return false;
+                      
+                      // Obtener nombres normalizados para comparación (EXACTA)
                       const selectedName = s.name.toLowerCase().trim();
                       const cardName = service.name.toLowerCase().trim();
                       
-                      // Verificar coincidencia directa (nombre exacto y categoría)
+                      // SOLO para usuarios logueados: coincidencia estricta (nombre exacto y categoría)
+                      if (currentUser) {
+                        // Verificar COINCIDENCIA EXACTA para usuarios logueados
+                        return (selectedName === cardName && s.category === key);
+                      }
+                      
+                      // Para usuarios NO logueados que vienen desde URL
+                      // 1. Coincidencia exacta
                       if (selectedName === cardName && s.category === key) {
                         return true;
                       }
                       
-                      // Para servicios desde URL, ser más flexible
-                      if (s.fromUrl) {
-                        // Si hay coincidencia parcial de nombre
-                        if ((selectedName.includes(cardName) || cardName.includes(selectedName)) &&
-                            // Si ambos son de la misma categoría O si el servicio desde URL coincide con palabras clave
-                            (s.category === key || 
-                             (selectedName.includes('gold') && cardName.includes('gold')) ||
-                             (selectedName.includes('interior') && cardName.includes('interior')))) {
-                          console.log(`Coincidencia URL: ${s.name} - ${service.name}`);
-                          return true;
-                        }
-                      }
-                      
-                      // Verificar coincidencia por palabras clave principales
-                      // Esto ayuda cuando hay diferencias menores en la redacción
-                      if (s.category === key) {
-                        const importantKeywords = ['silver', 'gold', 'diamond', 'maintenance', 'renovation',
-                                                'ceramic', 'package', 'polish', 'exterior', 'interior'];
-                        
-                        // Si ambos nombres contienen las mismas palabras clave importantes
-                        const selectedKeywords = importantKeywords.filter(keyword => selectedName.includes(keyword));
-                        const cardKeywords = importantKeywords.filter(keyword => cardName.includes(keyword));
-                        
-                        // Si comparten al menos 1 palabra clave importante y están en la misma categoría
-                        if (selectedKeywords.length > 0 && 
-                            selectedKeywords.some(k => cardKeywords.includes(k))) {
+                      // 2. Caso especial Gold Interior desde URL
+                      const serviceParam = new URLSearchParams(window.location.search).get('service');
+                      if (serviceParam === 'gold-interior' && !currentUser) {
+                        // Si la URL es gold-interior y es Gold Package en Interior
+                        if (cardName.includes('gold') && key === 'interior' && 
+                           (cardName.includes('package') || service.name.includes('Package'))) {
+                          console.log(`Coincidencia Gold Interior URL: ${service.name}`);
                           return true;
                         }
                       }
