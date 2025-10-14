@@ -37,7 +37,7 @@ import dayjs from 'dayjs';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import DepositPayment from '../Payment/DepositPayment';
 import { calculateDepositAmount, formatCurrency } from '../../services/stripeService';
 import { createAppointmentConfirmedNotification, createPaymentReceivedNotification } from '../../utils/notificationService';
@@ -49,6 +49,7 @@ import ClientLayout from '../Layout/ClientLayout';
 const BookAppointment = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeStep, setActiveStep] = useState(0);
@@ -66,6 +67,10 @@ const BookAppointment = () => {
     vehicleType: '', // small, suv, threeRow
     vehicleId: '',
     vehiclePhone: '', // Campo para almacenar el teléfono del vehículo
+    // Guest user info (when not logged in)
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
     date: null,
     timeSlot: null,
     address: {
@@ -79,159 +84,12 @@ const BookAppointment = () => {
     estimatedPrice: 0
   });
 
-  const steps = ['Select Services', 'Select Vehicle Type', 'Select Vehicle', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
+  // Adjust steps based on whether user is logged in
+  const steps = currentUser 
+    ? ['Select Services', 'Select Vehicle Type', 'Select Vehicle', 'Choose Date & Time', 'Location Details', 'Review & Payment']
+    : ['Select Services', 'Select Vehicle Type', 'Your Information', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
 
-  // Generate time slots for business hours (9 AM - 5 PM, Monday to Friday)
-  const generateTimeSlots = (selectedDate) => {
-    if (!selectedDate) return [];
-    
-    const slots = [];
-    const date = dayjs(selectedDate);
-    
-    // Check if it's a weekend
-    if (date.day() === 0 || date.day() === 6) {
-      return []; // No slots on weekends
-    }
-    
-    // Generate 1-hour slots from 9 AM to 5 PM
-    for (let hour = 9; hour < 17; hour++) {
-      const slotTime = date.hour(hour).minute(0).second(0);
-      
-      // Don't show past time slots for today
-      if (date.isSame(dayjs(), 'day') && slotTime.isBefore(dayjs())) {
-        continue;
-      }
-      
-      slots.push({
-        time: slotTime,
-        label: slotTime.format('h:mm A'),
-        available: true // Will be updated when checking against booked appointments
-      });
-    }
-    
-    return slots;
-  };
-
-  // Check slot availability against existing appointments and admin-blocked slots
-  const checkSlotAvailability = async (selectedDate) => {
-    if (!selectedDate) return;
-    
-    setLoadingSlots(true);
-    try {
-      await withRetry(async () => {
-      const dayStart = dayjs(selectedDate).startOf('day').toDate();
-      const dayEnd = dayjs(selectedDate).endOf('day').toDate();
-      
-      // Query appointments for the selected date
-      const appointmentsQuery = query(
-        collection(db, 'appointments'),
-        where('date', '>=', dayStart),
-        where('date', '<=', dayEnd)
-      );
-      
-      // Query admin-blocked slots for the selected date (using same Date object approach as admin)
-      const blockedSlotsQuery = query(
-        collection(db, 'blockedSlots'),
-        where('date', '>=', dayStart),
-        where('date', '<=', dayEnd)
-      );
-      
-      const [appointmentsSnapshot, blockedSlotsSnapshot] = await Promise.all([
-        getDocs(appointmentsQuery),
-        getDocs(blockedSlotsQuery)
-      ]);
-      
-      const bookedSlots = [];
-      const blockedSlots = [];
-      
-      // Get booked slots from appointments
-      appointmentsSnapshot.forEach((doc) => {
-        const appointment = doc.data();
-        if (appointment.timeSlot) {
-          bookedSlots.push(appointment.timeSlot);
-        }
-      });
-      
-      // Get admin-blocked slots
-      blockedSlotsSnapshot.forEach((doc) => {
-        const blockedSlot = doc.data();
-        if (blockedSlot.timeSlot) {
-          blockedSlots.push(blockedSlot.timeSlot);
-        }
-      });
-      
-
-      
-      // Generate slots and mark availability
-      const slots = generateTimeSlots(selectedDate);
-      const availableSlots = slots.map(slot => ({
-        ...slot,
-        available: slot.available && 
-                  !bookedSlots.includes(slot.label) && 
-                  !blockedSlots.includes(slot.label)
-      }));
-      
-        setAvailableSlots(availableSlots);
-      });
-    } catch (error) {
-      const errorInfo = await handleError(error, {
-        action: 'checking_slot_availability',
-        date: selectedDate?.toISOString()
-      });
-      setError(errorInfo.message);
-    }
-    setLoadingSlots(false);
-  };
-
-  // Fetch user's vehicles
-  useEffect(() => {
-    if (currentUser) {
-      const vehiclesQuery = query(
-        collection(db, 'vehicles'),
-        where('userId', '==', currentUser.uid)
-      );
-
-      const unsubscribe = onSnapshot(vehiclesQuery, (snapshot) => {
-        const userVehicles = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setVehicles(userVehicles);
-      }, (error) => {
-        console.error('Error fetching vehicles:', error);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [currentUser]);
-
-  // Effect to check availability when date changes
-  useEffect(() => {
-    if (formData.date) {
-      checkSlotAvailability(formData.date);
-      setSelectedSlot(null);
-      setFormData(prev => ({ ...prev, timeSlot: null }));
-    } else {
-      setAvailableSlots([]);
-    }
-  }, [formData.date]);
-
-  // Handle slot selection
-  const handleSlotSelect = (slot) => {
-    if (!slot.available) return;
-    
-    setSelectedSlot(slot);
-    setFormData(prev => ({ 
-      ...prev, 
-      timeSlot: slot.label,
-      time: slot.time // Keep for backward compatibility
-    }));
-  };
-
-
-
-
-
+  // Service categories definition (moved up for URL parameter processing)
   const serviceCategories = {
     interior: {
       name: 'INTERIOR SERVICES',
@@ -353,7 +211,236 @@ const BookAppointment = () => {
     }
   };
 
+  // Generate time slots for business hours (9 AM - 5 PM, Monday to Friday)
+  const generateTimeSlots = (selectedDate) => {
+    if (!selectedDate) return [];
+    
+    const slots = [];
+    const date = dayjs(selectedDate);
+    
+    // Check if it's a weekend
+    if (date.day() === 0 || date.day() === 6) {
+      return []; // No slots on weekends
+    }
+    
+    // Generate 1-hour slots from 9 AM to 5 PM
+    for (let hour = 9; hour < 17; hour++) {
+      const slotTime = date.hour(hour).minute(0).second(0);
+      
+      // Don't show past time slots for today
+      if (date.isSame(dayjs(), 'day') && slotTime.isBefore(dayjs())) {
+        continue;
+      }
+      
+      slots.push({
+        time: slotTime,
+        label: slotTime.format('h:mm A'),
+        available: true // Will be updated when checking against booked appointments
+      });
+    }
+    
+    return slots;
+  };
 
+  // Check slot availability against existing appointments and admin-blocked slots
+  const checkSlotAvailability = async (selectedDate) => {
+    if (!selectedDate) return;
+    
+    setLoadingSlots(true);
+    try {
+      await withRetry(async () => {
+      const dayStart = dayjs(selectedDate).startOf('day').toDate();
+      const dayEnd = dayjs(selectedDate).endOf('day').toDate();
+      
+      // Query appointments for the selected date
+      const appointmentsQuery = query(
+        collection(db, 'appointments'),
+        where('date', '>=', dayStart),
+        where('date', '<=', dayEnd)
+      );
+      
+      // Query admin-blocked slots for the selected date (using same Date object approach as admin)
+      const blockedSlotsQuery = query(
+        collection(db, 'blockedSlots'),
+        where('date', '>=', dayStart),
+        where('date', '<=', dayEnd)
+      );
+      
+      const [appointmentsSnapshot, blockedSlotsSnapshot] = await Promise.all([
+        getDocs(appointmentsQuery),
+        getDocs(blockedSlotsQuery)
+      ]);
+      
+      const bookedSlots = [];
+      const blockedSlots = [];
+      
+      // Get booked slots from appointments
+      appointmentsSnapshot.forEach((doc) => {
+        const appointment = doc.data();
+        if (appointment.timeSlot) {
+          bookedSlots.push(appointment.timeSlot);
+        }
+      });
+      
+      // Get admin-blocked slots
+      blockedSlotsSnapshot.forEach((doc) => {
+        const blockedSlot = doc.data();
+        if (blockedSlot.timeSlot) {
+          blockedSlots.push(blockedSlot.timeSlot);
+        }
+      });
+      
+
+      
+      // Generate slots and mark availability
+      const slots = generateTimeSlots(selectedDate);
+      const availableSlots = slots.map(slot => ({
+        ...slot,
+        available: slot.available && 
+                  !bookedSlots.includes(slot.label) && 
+                  !blockedSlots.includes(slot.label)
+      }));
+      
+        setAvailableSlots(availableSlots);
+      });
+    } catch (error) {
+      const errorInfo = await handleError(error, {
+        action: 'checking_slot_availability',
+        date: selectedDate?.toISOString()
+      });
+      setError(errorInfo.message);
+    }
+    setLoadingSlots(false);
+  };
+
+  // Preselect service from URL parameters
+  useEffect(() => {
+    const serviceParam = searchParams.get('service');
+    const serviceNameParam = searchParams.get('serviceName');
+    const priceParam = searchParams.get('price');
+    
+    if (serviceParam && serviceNameParam && priceParam) {
+      console.log('URL Params:', { serviceParam, serviceNameParam, priceParam });
+      
+      // Find the matching service in serviceCategories
+      let foundService = null;
+      let foundCategory = null;
+      
+      // Search through all categories
+      Object.entries(serviceCategories).forEach(([categoryKey, category]) => {
+        // Try multiple matching strategies
+        const service = category.services.find(s => {
+          const serviceUrlId = s.name.toLowerCase().replace(/\s+/g, '-');
+          const paramUrlId = serviceParam.toLowerCase();
+          
+          // Strategy 1: Exact match
+          if (serviceUrlId === paramUrlId) return true;
+          
+          // Strategy 2: Check if service name contains key words from param
+          const paramWords = paramUrlId.split('-');
+          const serviceWords = serviceUrlId.split('-');
+          
+          // If "gold" and "interior" are in the param, match with interior GOLD PACKAGE
+          if (paramWords.includes('gold') && paramWords.includes('interior') && 
+              categoryKey === 'interior' && s.name.includes('GOLD')) {
+            return true;
+          }
+          
+          // If "silver" and "interior" are in the param, match with interior SILVER PACKAGE
+          if (paramWords.includes('silver') && paramWords.includes('interior') && 
+              categoryKey === 'interior' && s.name.includes('SILVER')) {
+            return true;
+          }
+          
+          // If "diamond" and "interior" are in the param, match with interior DIAMOND PACKAGE
+          if (paramWords.includes('diamond') && paramWords.includes('interior') && 
+              categoryKey === 'interior' && s.name.includes('DIAMOND')) {
+            return true;
+          }
+          
+          // Similar logic for exterior
+          if (paramWords.includes('gold') && paramWords.includes('exterior') && 
+              categoryKey === 'exterior' && s.name.includes('GOLD')) {
+            return true;
+          }
+          
+          // For polish services
+          if (paramWords.includes('polish') && categoryKey === 'polishing') {
+            if (paramWords.includes('step') && s.name.includes('STEP')) return true;
+            if (paramWords.includes('gold') && paramWords.includes('step') && s.name.includes('GOLD')) return true;
+            if (paramWords.includes('diamond') && s.name.includes('DIAMOND')) return true;
+          }
+          
+          return false;
+        });
+        
+        if (service) {
+          foundService = service;
+          foundCategory = categoryKey;
+          console.log('Found service:', service.name, 'in category:', categoryKey);
+        }
+      });
+      
+      // If service found, preselect it
+      if (foundService && foundCategory) {
+        setFormData(prev => ({
+          ...prev,
+          selectedServices: [{ ...foundService, category: foundCategory }]
+        }));
+        console.log('Service preselected successfully');
+      } else {
+        console.log('No matching service found for:', serviceParam);
+      }
+    }
+  }, [searchParams, serviceCategories]);
+
+  // Fetch user's vehicles (only if logged in)
+  useEffect(() => {
+    if (currentUser) {
+      const vehiclesQuery = query(
+        collection(db, 'vehicles'),
+        where('userId', '==', currentUser.uid)
+      );
+
+      const unsubscribe = onSnapshot(vehiclesQuery, (snapshot) => {
+        const userVehicles = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setVehicles(userVehicles);
+      }, (error) => {
+        console.error('Error fetching vehicles:', error);
+      });
+
+      return () => unsubscribe();
+    } else {
+      // No vehicles for guest users
+      setVehicles([]);
+    }
+  }, [currentUser]);
+
+  // Effect to check availability when date changes
+  useEffect(() => {
+    if (formData.date) {
+      checkSlotAvailability(formData.date);
+      setSelectedSlot(null);
+      setFormData(prev => ({ ...prev, timeSlot: null }));
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [formData.date]);
+
+  // Handle slot selection
+  const handleSlotSelect = (slot) => {
+    if (!slot.available) return;
+    
+    setSelectedSlot(slot);
+    setFormData(prev => ({ 
+      ...prev, 
+      timeSlot: slot.label,
+      time: slot.time // Keep for backward compatibility
+    }));
+  };
 
   const handleServiceSelect = (category, service) => {
     const serviceWithCategory = { ...service, category };
@@ -450,14 +537,18 @@ const BookAppointment = () => {
       const depositAmount = parseFloat(formatCurrency(calculateDepositAmount(formData.estimatedPrice)));
       const remainingBalance = formData.estimatedPrice - depositAmount;
 
+      // Build appointment data - works for both logged in and guest users
       const appointmentData = {
-        userId: currentUser.uid,
-        userEmail: currentUser.email,
-        userName: currentUser.displayName || currentUser.email,
+        // User info - use guest info if not logged in
+        userId: currentUser?.uid || 'guest',
+        userEmail: currentUser?.email || formData.customerEmail,
+        userName: currentUser?.displayName || formData.customerName,
+        userPhone: currentUser ? undefined : formData.customerPhone,
+        isGuestBooking: !currentUser,
         services: formData.selectedServices.map(service => `${service.name} (${serviceCategories[service.category].name})`), // Array of service names with categories
         servicesDetails: formData.selectedServices, // Full service objects for reference
         vehicleType: formData.vehicleType,
-        vehicleId: formData.vehicleId,
+        vehicleId: formData.vehicleId || 'guest-vehicle',
         ...(formData.vehiclePhone ? { vehiclePhone: formData.vehiclePhone } : {}), // Solo incluir si tiene valor
         date: formData.date.toDate(),
         timeSlot: formData.timeSlot,
@@ -477,20 +568,22 @@ const BookAppointment = () => {
 
       const docRef = await addDoc(collection(db, 'appointments'), appointmentData);
       
-      // Create notifications for the appointment
+      // Create notifications for the appointment (only for logged in users)
       try {
-        await createAppointmentConfirmedNotification(currentUser.uid, {
-          ...appointmentData,
-          id: docRef.id
-        });
-        
-        if (paymentResult) {
-          await createPaymentReceivedNotification(currentUser.uid, {
-            id: paymentResult.id,
-            amount: depositAmount,
-            remaining: remainingBalance,
-            service: formData.selectedServices.map(s => `${s.name} (${serviceCategories[s.category].name})`).join(', ')
+        if (currentUser) {
+          await createAppointmentConfirmedNotification(currentUser.uid, {
+            ...appointmentData,
+            id: docRef.id
           });
+          
+          if (paymentResult) {
+            await createPaymentReceivedNotification(currentUser.uid, {
+              id: paymentResult.id,
+              amount: depositAmount,
+              remaining: remainingBalance,
+              service: formData.selectedServices.map(s => `${s.name} (${serviceCategories[s.category].name})`).join(', ')
+            });
+          }
         }
         
         // Send confirmation email if email reminders are enabled
@@ -512,17 +605,22 @@ const BookAppointment = () => {
       
       setSuccess(true);
       setTimeout(() => {
-        navigate('/appointments');
+        // Redirect based on user status
+        if (currentUser) {
+          navigate('/appointments');
+        } else {
+          navigate('/login');
+        }
       }, 2000);
       
     } catch (error) {
       const errorInfo = await handleError(error, {
         action: 'booking_appointment',
         step: 'payment_processing',
-        userId: currentUser.uid
+        userId: currentUser?.uid || 'guest'
       }, {
-        showNotification: true,
-        userId: currentUser.uid
+        showNotification: currentUser ? true : false,
+        userId: currentUser?.uid
       });
       
       setError(errorInfo.message);
@@ -538,7 +636,7 @@ const BookAppointment = () => {
 
   const handleBack = () => {
     if (activeStep === 0) {
-      navigate('/dashboard');
+      navigate(currentUser ? '/dashboard' : '/login');
     } else {
       setActiveStep((prevStep) => prevStep - 1);
     }
@@ -775,6 +873,62 @@ const BookAppointment = () => {
         );
 
       case 2:
+        // If user is not logged in, show customer information form
+        if (!currentUser) {
+          return (
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                  Your Contact Information
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Please provide your contact details so we can confirm your appointment.
+                </Typography>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Full Name"
+                  value={formData.customerName}
+                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                  required
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Email Address"
+                  type="email"
+                  value={formData.customerEmail}
+                  onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                  required
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Phone Number"
+                  type="tel"
+                  value={formData.customerPhone}
+                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                  required
+                  placeholder="(555) 123-4567"
+                />
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Alert severity="info">
+                  💡 Your information will only be used to confirm and manage your appointment.
+                </Alert>
+              </Grid>
+            </Grid>
+          );
+        }
+        
+        // If user is logged in, show vehicle selection
         return (
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -1551,7 +1705,8 @@ const BookAppointment = () => {
               disabled={
                 (activeStep === 0 && formData.selectedServices.length === 0) ||
                 (activeStep === 1 && !formData.vehicleType) ||
-                (activeStep === 2 && !formData.vehicleId) ||
+                (activeStep === 2 && currentUser && !formData.vehicleId) ||
+                (activeStep === 2 && !currentUser && (!formData.customerName?.trim() || !formData.customerEmail?.trim() || !formData.customerPhone?.trim())) ||
                 (activeStep === 3 && (!formData.date || !formData.timeSlot)) ||
                 (activeStep === 4 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
               }

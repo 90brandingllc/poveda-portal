@@ -164,11 +164,7 @@ function App() {
         />
         <Route 
           path="/book-appointment" 
-          element={
-            <ProtectedRoute allowedRoles={['client']}>
-              <BookAppointment />
-            </ProtectedRoute>
-          } 
+          element={<BookAppointment />} 
         />
         <Route 
           path="/appointments" 
@@ -180,19 +176,11 @@ function App() {
         />
         <Route 
           path="/contact" 
-          element={
-            <ProtectedRoute allowedRoles={['client']}>
-              <ContactUs />
-            </ProtectedRoute>
-          } 
+          element={<ContactUs />} 
         />
         <Route 
           path="/get-estimate" 
-          element={
-            <ProtectedRoute allowedRoles={['client']}>
-              <GetEstimate />
-            </ProtectedRoute>
-          }
+          element={<GetEstimate />}
         />
         <Route 
           path="/my-estimates" 
