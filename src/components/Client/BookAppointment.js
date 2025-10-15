@@ -368,16 +368,49 @@ const BookAppointment = () => {
         // Asignar a una categoría basada en el parámetro service
         let serviceCategory = 'packages'; // Por defecto
         
-        // Reglas simples para determinar la categoría
-        if (serviceParam.includes('interior')) serviceCategory = 'interior';
+        // Reglas precisas para determinar la categoría y ajustar precio si es necesario
+        if (serviceParam.includes('interior')) {
+          serviceCategory = 'interior';
+          
+          // Casos especiales para servicios interiores
+          if (serviceParam === 'silver-interior') {
+            // Buscar el servicio Silver Package en la categoría interior para obtener el precio correcto
+            const silverService = serviceCategories.interior.services.find(s => 
+              s.name.toLowerCase().includes('silver') && s.name.toLowerCase().includes('package'));
+            
+            if (silverService) {
+              console.log('Encontrado Silver Package en la categoría interior:', silverService);
+              // Actualizar precio según el servicio encontrado
+              directService.price = silverService.price || price;
+              directService.vehicleTypes = silverService.vehicleTypes || {
+                small: price,
+                suv: price + 10,
+                threeRow: price + 20
+              };
+            }
+          }
+          // Caso especial para gold-interior
+          else if (serviceParam === 'gold-interior') {
+            serviceCategory = 'interior';
+            // Buscar el servicio Gold Package en la categoría interior
+            const goldService = serviceCategories.interior.services.find(s => 
+              s.name.toLowerCase().includes('gold') && s.name.toLowerCase().includes('package'));
+            
+            if (goldService) {
+              console.log('Encontrado Gold Package en la categoría interior:', goldService);
+              // Actualizar precio según el servicio encontrado
+              directService.price = goldService.price || price;
+              directService.vehicleTypes = goldService.vehicleTypes || {
+                small: price,
+                suv: price + 20,
+                threeRow: price + 40
+              };
+            }
+          }
+        }
         else if (serviceParam.includes('exterior')) serviceCategory = 'exterior';
         else if (serviceParam.includes('polish')) serviceCategory = 'polishing';
         else if (serviceParam.includes('package')) serviceCategory = 'packages';
-        
-        // Si es gold-interior, forzar categoría 'interior'
-        if (serviceParam === 'gold-interior') {
-          serviceCategory = 'interior';
-        }
         
         // Crear objeto final con categoría y marcas especiales
         const finalService = {
@@ -394,28 +427,87 @@ const BookAppointment = () => {
         console.log('URL params detected - serviceNameParam:', serviceNameParam);
         console.log('URL params detected - priceParam:', priceParam);
         
-        // Buscar servicio existente que podría coincidir
+        // Buscar servicio existente que podría coincidir para usar sus datos exactos
         let exactMatchFound = false;
+        
+        // BUSCAR COINCIDENCIA EXACTA en el catálogo de servicios de manera consistente
         Object.entries(serviceCategories).forEach(([catKey, category]) => {
           category.services.forEach(service => {
             const serviceName = service.name.toLowerCase().trim();
-            const urlName = serviceNameParam.toLowerCase().trim();
+            const urlName = serviceNameParam ? serviceNameParam.toLowerCase().trim() : '';
             
-            // Búsqueda especial para Gold Interior
-            if (serviceName.includes('gold') && urlName.includes('gold') && 
-                serviceName.includes('interior') && urlName.includes('interior')) {
-              console.log('MATCH FOUND for URL service:', service.name);
-              console.log('Category:', catKey);
+            // Extraer categoría y tipo de la URL
+            let urlCategory = '';
+            let urlServiceType = '';
+            
+            // Extraer categoría basado en el patrón service=xxxx-yyyy
+            if (serviceParam && serviceParam.includes('-')) {
+              const parts = serviceParam.split('-');
+              if (parts.length >= 2) {
+                urlServiceType = parts[0]; // gold, silver, etc.
+                urlCategory = parts[1];   // interior, exterior, etc.
+              }
+            }
+            
+            // CASO 1: Coincidencia por categoría y tipo de servicio
+            if (urlCategory && urlServiceType && 
+                catKey.toLowerCase().includes(urlCategory) && 
+                serviceName.includes(urlServiceType)) {
+              console.log('MATCH FOUND by Category+Type:', service.name, 'in', catKey);
               exactMatchFound = true;
               
-              // Si encontramos una coincidencia exacta, usamos ese servicio en lugar del genérico
-              if (serviceParam === 'gold-interior' && catKey === 'interior') {
-                finalService.name = service.name; // Usar el nombre exacto del servicio encontrado
-                finalService.exactMatchService = service; // Guardar referencia al servicio exacto
+              // Actualizar el servicio final con los datos del servicio real
+              finalService.name = service.name;
+              finalService.price = service.price;
+              finalService.vehicleTypes = service.vehicleTypes;
+              finalService.description = service.description;
+              finalService.exactMatchService = service;
+              finalService.category = catKey;
+            }
+            // CASO 2: Casos especiales para gold-interior y silver-interior (retrocompatibilidad)
+            else if ((serviceParam === 'gold-interior' && 
+                      catKey === 'interior' && 
+                      serviceName.includes('gold')) || 
+                    (serviceParam === 'silver-interior' && 
+                      catKey === 'interior' && 
+                      serviceName.includes('silver'))) {
+              console.log('MATCH FOUND for Special Case:', service.name, 'in', catKey);
+              exactMatchFound = true;
+              
+              // Actualizar el servicio final con los datos del servicio real
+              finalService.name = service.name;
+              finalService.price = service.price;
+              finalService.vehicleTypes = service.vehicleTypes;
+              finalService.description = service.description;
+              finalService.exactMatchService = service;
+              finalService.category = catKey;
+            }
+            // CASO 3: Coincidencia exacta por nombre del servicio
+            else if (urlName && (serviceName === urlName || 
+                                serviceName.includes(urlName) || 
+                                urlName.includes(serviceName))) {
+              // Verificar precio si está disponible para evitar coincidencias múltiples
+              const price = parseInt(priceParam, 10);
+              if (!isNaN(price) && service.price === price) {
+                console.log('MATCH FOUND by Name+Price:', service.name, '($' + service.price + ')', 'in', catKey);
+                exactMatchFound = true;
+                
+                // Actualizar el servicio final con los datos del servicio real
+                finalService.name = service.name;
+                finalService.price = service.price;
+                finalService.vehicleTypes = service.vehicleTypes;
+                finalService.description = service.description;
+                finalService.exactMatchService = service;
+                finalService.category = catKey;
               }
             }
           });
         });
+        
+        // Si no encontramos coincidencia exacta, mostrar advertencia
+        if (!exactMatchFound) {
+          console.warn(`No se encontró una coincidencia exacta para el servicio: ${serviceParam} / ${serviceNameParam}`);
+        }
         
         // Establecer el servicio en el estado (una sola vez)
         setFormData(prev => ({
@@ -864,25 +956,62 @@ const BookAppointment = () => {
                     
                     // Marcado directo por URL para usuarios no logueados
                     if (!currentUser && urlParams.service) {
-                      // Caso especial: Gold Interior
-                      if (urlParams.service === 'gold-interior' && 
-                          key === 'interior' && 
-                          service.name.toLowerCase().includes('gold') && 
-                          service.name.toLowerCase().includes('package')) {
-                        console.log(`✅ URL MATCH (GOLD INTERIOR): ${service.name}`);
+                      // ENFOQUE 1: Comprobación por patrones específicos de servicio
+                      const serviceParam = urlParams.service;
+                      
+                      // Extraer la categoría y tipo de servicio de la URL
+                      let urlCategory = '';
+                      let urlServiceType = '';
+                      
+                      // Extraer categoría basado en el patrón service=xxxx-yyyy
+                      if (serviceParam.includes('-')) {
+                        const parts = serviceParam.split('-');
+                        if (parts.length >= 2) {
+                          urlServiceType = parts[0]; // gold, silver, etc.
+                          urlCategory = parts[1];   // interior, exterior, etc.
+                        }
+                      }
+                      
+                      // CASO 1: Verificar si el servicio actual corresponde a la URL por categoría y tipo
+                      if (urlCategory && urlServiceType && 
+                          key.toLowerCase().includes(urlCategory) && 
+                          service.name.toLowerCase().includes(urlServiceType)) {
+                        console.log(`✅ URL MATCH (CATEGORY+TYPE): ${service.name}`);
                         isSelected = true;
                       }
-                      // Verificar coincidencia por nombre del servicio desde URL
-                      else if (urlParams.serviceName && 
-                              service.name.toLowerCase().trim() === urlParams.serviceName.toLowerCase().trim()) {
-                        console.log(`✅ URL MATCH (NOMBRE EXACTO): ${service.name}`);
+                      // CASO 2: Verificar por parámetros gold-interior y silver-interior (retrocompatibilidad)
+                      else if ((serviceParam === 'gold-interior' && 
+                              key === 'interior' && 
+                              service.name.toLowerCase().includes('gold')) ||
+                            (serviceParam === 'silver-interior' && 
+                              key === 'interior' && 
+                              service.name.toLowerCase().includes('silver'))) {
+                        console.log(`✅ URL MATCH (SPECIAL CASE): ${service.name}`);
                         isSelected = true;
                       }
-                      // Verificación adicional para servicios que contienen el nombre (menos estricta)
-                      else if (urlParams.serviceName && 
-                             service.name.toLowerCase().includes(urlParams.serviceName.toLowerCase())) {
-                        console.log(`✅ URL MATCH (NOMBRE PARCIAL): ${service.name}`);
-                        isSelected = true;
+                      // CASO 3: Verificar por nombre exacto del servicio en la URL
+                      else if (urlParams.serviceName) {
+                        const urlServiceName = urlParams.serviceName.toLowerCase().trim();
+                        const currentServiceName = service.name.toLowerCase().trim();
+                        
+                        // A. Coincidencia exacta por nombre
+                        if (currentServiceName === urlServiceName) {
+                          console.log(`✅ URL MATCH (EXACT NAME): ${service.name}`);
+                          isSelected = true;
+                        }
+                        // B. Coincidencia si el nombre del servicio está contenido en el URL o viceversa
+                        else if (currentServiceName.includes(urlServiceName) || 
+                                urlServiceName.includes(currentServiceName)) {
+                          // Obtener precio para verificar coincidencia exacta
+                          const priceParam = new URLSearchParams(window.location.search).get('price');
+                          const price = parseInt(priceParam, 10);
+                          
+                          // Sólo seleccionar si el precio coincide (evita selecciones múltiples)
+                          if (!isNaN(price) && service.price === price) {
+                            console.log(`✅ URL MATCH (NAME+PRICE): ${service.name} - $${price}`);
+                            isSelected = true;
+                          }
+                        }
                       }
                     }
                     
