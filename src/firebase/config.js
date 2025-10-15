@@ -39,7 +39,8 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const functions = getFunctions(app);
+// Especificar región de functions para el servicio de email
+export const functions = getFunctions(app, process.env.REACT_APP_FIREBASE_FUNCTIONS_REGION || 'us-central1');
 export const storage = getStorage(app);
 
 // Google Auth Provider

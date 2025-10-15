@@ -1,8 +1,5 @@
 const functions = require('firebase-functions');
-const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
-
-admin.initializeApp();
 
 // Email configuration - Poveda Portal email
 const transporter = nodemailer.createTransport({
@@ -13,7 +10,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Function for sending emails - this is the new function we're adding
+// Function for sending emails
 exports.sendEmail = functions.https.onCall(async (data, context) => {
   try {
     const { to, template } = data;

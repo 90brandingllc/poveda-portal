@@ -510,10 +510,12 @@ const BookAppointment = () => {
         }
         
         // Establecer el servicio en el estado (una sola vez)
+        // Para usuarios no logueados que vienen desde URL, forzamos emailReminders a true
         setFormData(prev => ({
           ...prev,
           selectedServices: [finalService],
-          preselectedFromUrl: true
+          preselectedFromUrl: true,
+          emailReminders: !currentUser ? true : prev.emailReminders // Forzar emails para usuarios no logueados
         }));
         
         // Forzar actualización del estado - múltiples veces para garantizar que se aplique
@@ -812,12 +814,34 @@ const BookAppointment = () => {
           }
         }
         
-        // Send confirmation email if email reminders are enabled
-        if (formData.emailReminders) {
+        // Enviar correo electrónico de confirmación
+        // Para usuarios no logueados, siempre enviamos email independientemente de la configuración
+        if (formData.emailReminders || !currentUser) {
           try {
-            await sendAppointmentConfirmationEmail({
+            // Preparar datos para el correo electrónico
+            const emailData = {
               ...appointmentData,
               id: docRef.id
+            };
+            
+            // Determinar qué plantilla usar
+            let templateName = 'appointment_confirmation';
+            
+            // Para usuarios no registrados que vienen por URL, usar plantilla especial
+            if (!currentUser && formData.preselectedFromUrl) {
+              console.log('Enviando correo para usuario no registrado que vino por URL');
+              templateName = 'guest_url_appointment';
+              // Añadir datos adicionales específicos para esta plantilla
+              emailData.fromUrl = true;
+              emailData.urlService = searchParams.get('service');
+              emailData.urlServiceName = searchParams.get('serviceName');
+            }
+            
+            // Enviar un solo correo con el formato correcto
+            console.log(`Enviando correo con plantilla: ${templateName}`);
+            await sendAppointmentConfirmationEmail({
+              ...emailData,
+              template: templateName
             });
           } catch (emailError) {
             console.error('Error sending confirmation email:', emailError);
