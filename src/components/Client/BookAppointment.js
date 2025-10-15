@@ -322,16 +322,22 @@ const BookAppointment = () => {
 
   // Para controlar que el efecto de URL solo se ejecute una vez
   const [urlProcessed, setUrlProcessed] = useState(false);
+  // Para forzar la actualización de la UI cuando cambia la URL
+  const [urlParams, setUrlParams] = useState({ service: null, serviceName: null });
 
-  // Preselect service from URL parameters - con protección contra bucle infinito
+  // Extraer y guardar parámetros de URL para usarlos en la selección visual
   useEffect(() => {
-    // Si ya procesamos esta URL, no hacemos nada más
-    if (urlProcessed) {
-      return;
-    }
-    
     const serviceParam = searchParams.get('service');
     const serviceNameParam = searchParams.get('serviceName');
+    
+    // Guardar parámetros para usarlos en la lógica de selección visual
+    setUrlParams({ service: serviceParam, serviceName: serviceNameParam });
+    
+    // Preselect service from URL parameters - con protección contra bucle infinito
+    if (urlProcessed) {
+      return; // Sólo para evitar cargar múltiples veces el servicio en el estado
+    }
+    
     const priceParam = searchParams.get('price');
     
     if (serviceParam && serviceNameParam && priceParam) {
@@ -378,7 +384,8 @@ const BookAppointment = () => {
           ...directService,
           category: serviceCategory,
           fromUrl: true,   // Marcar que viene de URL
-          urlId: serviceParam  // Guardar el ID del servicio en URL
+          urlId: serviceParam,  // Guardar el ID del servicio en URL
+          manuallySelected: true // Añadir para indicar que debe ser mostrado como seleccionado
         };
         
         // Establecer en el estado
@@ -388,15 +395,24 @@ const BookAppointment = () => {
         console.log('URL params detected - priceParam:', priceParam);
         
         // Buscar servicio existente que podría coincidir
+        let exactMatchFound = false;
         Object.entries(serviceCategories).forEach(([catKey, category]) => {
           category.services.forEach(service => {
             const serviceName = service.name.toLowerCase().trim();
             const urlName = serviceNameParam.toLowerCase().trim();
             
+            // Búsqueda especial para Gold Interior
             if (serviceName.includes('gold') && urlName.includes('gold') && 
                 serviceName.includes('interior') && urlName.includes('interior')) {
               console.log('MATCH FOUND for URL service:', service.name);
               console.log('Category:', catKey);
+              exactMatchFound = true;
+              
+              // Si encontramos una coincidencia exacta, usamos ese servicio en lugar del genérico
+              if (serviceParam === 'gold-interior' && catKey === 'interior') {
+                finalService.name = service.name; // Usar el nombre exacto del servicio encontrado
+                finalService.exactMatchService = service; // Guardar referencia al servicio exacto
+              }
             }
           });
         });
@@ -408,17 +424,23 @@ const BookAppointment = () => {
           preselectedFromUrl: true
         }));
         
-        // Forzar actualización del estado
+        // Forzar actualización del estado - múltiples veces para garantizar que se aplique
         setTimeout(() => {
-          console.log('Forcing update after URL service selection');
+          console.log('Primera actualización después de selección desde URL');
           setForceUpdate(prev => prev + 1);
+          
+          // Segunda actualización para garantizar que se apliquen los estilos
+          setTimeout(() => {
+            console.log('Segunda actualización después de selección desde URL');
+            setForceUpdate(prev => prev + 2);
+          }, 300);
         }, 100);
       }
     } else {
       // Si no hay parámetros de servicio, igual marcamos como procesado
       setUrlProcessed(true);
     }
-  }, [searchParams]); // Solo dependemos de searchParams, NO de urlProcessed
+  }, [searchParams, serviceCategories]); // Dependemos de searchParams y serviceCategories
 
   // Fetch user's vehicles (only if logged in)
   useEffect(() => {
@@ -478,79 +500,102 @@ const BookAppointment = () => {
     const serviceWithCategory = { 
       ...service, 
       category,
-      manuallySelected: true // Marcar que fue seleccionado manualmente
+      manuallySelected: true, // Marcar que fue seleccionado manualmente
+      // Añadimos estos campos para mayor compatibilidad con servicios desde URL
+      fromUser: true,
+      id: `manual_service_${Date.now()}`
     };
     
-    // Lógica de selección, usando coincidencia exacta para usuarios logueados
-    const isSelected = formData.selectedServices.some(s => {
-      // Verificar que tenemos datos válidos
-      if (!s || !s.name) return false;
+    // Verificar si el servicio está seleccionado usando la misma lógica mejorada
+    let isSelected = false;
+    
+    // Buscar el servicio en los seleccionados
+    for (const s of formData.selectedServices) {
+      // Verificar datos válidos
+      if (!s || !s.name) continue;
       
       // Obtener nombres normalizados
       const selectedName = s.name.toLowerCase().trim();
       const cardName = service.name.toLowerCase().trim();
       
-      // Verificar coincidencia exacta
+      // Verificar coincidencia exacta de nombre y categoría
       if (selectedName === cardName && s.category === category) {
-        return true;
+        console.log(`Servicio ya seleccionado: ${s.name} (${s.category})`);
+        isSelected = true;
+        break;
       }
       
-      return false;
-    });
+      // Verificar caso especial Gold Interior desde URL para usuarios no logueados
+      if (!currentUser && s.fromUrl) {
+        const serviceParam = new URLSearchParams(window.location.search).get('service');
+        if (serviceParam === 'gold-interior' && 
+            cardName.includes('gold') && 
+            category === 'interior' && 
+            (cardName.includes('package') || service.name.includes('Package'))) {
+          console.log(`Coincidencia especial Gold Interior: ${s.name} ~ ${service.name}`);
+          isSelected = true;
+          break;
+        }
+      }
+    }
     
-    console.log('Is service selected?', isSelected);
+    console.log('¿Está seleccionado este servicio?:', isSelected);
     
     let updatedServices;
     
     if (isSelected) {
-      // DESELECCIONAR: Remover el servicio si ya estaba seleccionado
-      console.log('Deselecting service');
+      // DESELECCIONAR: Remover el servicio
+      console.log('Deseleccionando servicio...');
       updatedServices = formData.selectedServices.filter(s => {
-        // Verificar que tenemos datos válidos
+        // Verificar datos válidos
         if (!s || !s.name) return true; // Mantener entradas inválidas
         
-        // Obtener nombres normalizados
         const selectedName = s.name.toLowerCase().trim();
         const cardName = service.name.toLowerCase().trim();
         
-        // Si hay coincidencia exacta de nombre y categoría, remover
+        // Caso 1: Coincidencia exacta - remover
         if (selectedName === cardName && s.category === category) {
-          return false; // No mantener este servicio
+          return false;
         }
         
-        // Para usuarios NO logueados, verificar caso especial Gold Interior
-        if (!currentUser) {
+        // Caso 2: Para usuarios no logueados - Gold Interior especial desde URL
+        if (!currentUser && s.fromUrl) {
           const serviceParam = new URLSearchParams(window.location.search).get('service');
-          if (serviceParam === 'gold-interior' && s.fromUrl && 
-              cardName.includes('gold') && category === 'interior') {
-            return false; // Remover coincidencia especial Gold Interior para usuarios no logueados
+          if (serviceParam === 'gold-interior' && 
+              cardName.includes('gold') && 
+              category === 'interior') {
+            return false;
           }
         }
         
         return true; // Mantener todos los demás servicios
       });
     } else {
-      // SELECCIONAR: Agregar el servicio si no estaba seleccionado
-      console.log('Selecting new service');
-      
-      // Permitir seleccionar múltiples servicios principales sin restricciones
-      // Los usuarios pueden combinar servicios de diferentes categorías
+      // SELECCIONAR: Agregar el servicio
+      console.log('Seleccionando nuevo servicio...');
       updatedServices = [...formData.selectedServices, serviceWithCategory];
     }
     
-    console.log('Updated services:', updatedServices);
+    console.log('Servicios actualizados:', updatedServices);
     
-    // Actualizar el estado con un forzado de re-renderizado
+    // Actualizar el estado
     setFormData({
       ...formData,
       selectedServices: updatedServices,
       estimatedPrice: 0, // Se recalculará cuando se seleccione tipo de vehículo
-      // Limpiar la bandera después de la primera interacción
-      preselectedFromUrl: false
+      preselectedFromUrl: false // Limpiar bandera de preselección desde URL
     });
     
-    // Forzar actualización usando la función general
-    setTimeout(triggerRerender, 10);
+    // Forzar múltiples actualizaciones para garantizar que se apliquen los estilos
+    setTimeout(() => {
+      console.log('Primera actualización después de selección manual');
+      setForceUpdate(prev => prev + 1);
+      
+      setTimeout(() => {
+        console.log('Segunda actualización después de selección manual');
+        setForceUpdate(prev => prev + 2);
+      }, 200);
+    }, 50);
   };
 
   const handleVehicleTypeSelect = (vehicleType) => {
@@ -734,7 +779,30 @@ const BookAppointment = () => {
   // Note: handleSubmit is no longer used since booking happens automatically after payment
   // Keeping it for potential future use or fallback scenarios
 
+  // Función para forzar la selección visual correcta
+  const forceSelectionRefresh = () => {
+    if (!currentUser && formData.preselectedFromUrl) {
+      // Si es un usuario no logueado y hay un servicio preseleccionado, reforzar la selección
+      console.log('Forzando refresco de servicios preseleccionados para usuario no logueado');
+      // Forzar una actualización después de un pequeño retraso
+      setTimeout(() => {
+        setForceUpdate(prev => prev + 10);
+      }, 100);
+    }
+  };
+
+  // Llamar al refresco cuando cambian los servicios seleccionados o parámetros de URL
+  useEffect(() => {
+    forceSelectionRefresh();
+    // Forzar múltiples actualizaciones para garantizar que las tarjetas se marquen correctamente
+    setTimeout(() => setForceUpdate(prev => prev + 5), 100);
+    setTimeout(() => setForceUpdate(prev => prev + 10), 300);
+  }, [formData.selectedServices, currentUser, formData.preselectedFromUrl, urlParams]);
+
   const renderStepContent = (step) => {
+    // Forzar refresco al renderizar
+    forceSelectionRefresh();
+    
     switch (step) {
       case 0:
         return (
@@ -744,6 +812,29 @@ const BookAppointment = () => {
                 Select one or more services for your vehicle. You can choose multiple services to combine them.
               </Typography>
             </Grid>
+            
+            {/* Sección de servicios seleccionados - DUPLICADA ARRIBA */}
+            {formData.selectedServices.length > 0 && (
+              <Grid item xs={12}>
+                <Box sx={{ mt: 1, mb: 3, p: 3, bgcolor: '#f8f9fa', borderRadius: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#1976d2' }}>
+                    Selected Services ({formData.selectedServices.length})
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {formData.selectedServices.map((service, idx) => (
+                      <Chip 
+                        key={`top-${idx}`}
+                        label={`${service.name} (${serviceCategories[service.category].name})`}
+                        onDelete={() => handleServiceSelect(service.category, service)}
+                        color="primary"
+                        variant="outlined"
+                        sx={{ mb: 1, maxWidth: '100%' }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              </Grid>
+            )}
             {Object.entries(serviceCategories).map(([key, category]) => (
               <Grid item xs={12} key={key}>
                 <Typography variant="h6" gutterBottom sx={{ 
@@ -758,58 +849,99 @@ const BookAppointment = () => {
                 </Typography>
                 <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                   {category.services.map((service, index) => {
-                    // Lógica para verificar si un servicio está seleccionado (corregida para usuarios logueados)
-                    const isSelected = formData.selectedServices.some(s => {
-                      // Verificar que tenemos datos válidos
-                      if (!s || !s.name) return false;
-                      
-                      // Obtener nombres normalizados para comparación (EXACTA)
-                      const selectedName = s.name.toLowerCase().trim();
-                      const cardName = service.name.toLowerCase().trim();
-                      
-                      // SOLO para usuarios logueados: coincidencia estricta (nombre exacto y categoría)
-                      if (currentUser) {
-                        // Verificar COINCIDENCIA EXACTA para usuarios logueados
-                        return (selectedName === cardName && s.category === key);
+                    // Lógica para verificar si un servicio está seleccionado (corregida para usuarios logueados y no logueados)
+                    // Añadir más información de depuración
+                    console.log(`Verificando selección para: ${service.name} (${key})`);
+                    
+                    // Mostrar servicios seleccionados en este momento
+                    console.log('Servicios actualmente seleccionados:', JSON.stringify(formData.selectedServices));
+                    
+                    // Algoritmo directo para marcar tarjetas desde URL
+                    let isSelected = false;
+                    
+                    // 1. Verificar si viene de URL (solo para usuarios no logueados)
+                    // Usar los parámetros guardados en el estado para evitar múltiples lecturas de URL
+                    
+                    // Marcado directo por URL para usuarios no logueados
+                    if (!currentUser && urlParams.service) {
+                      // Caso especial: Gold Interior
+                      if (urlParams.service === 'gold-interior' && 
+                          key === 'interior' && 
+                          service.name.toLowerCase().includes('gold') && 
+                          service.name.toLowerCase().includes('package')) {
+                        console.log(`✅ URL MATCH (GOLD INTERIOR): ${service.name}`);
+                        isSelected = true;
                       }
-                      
-                      // Para usuarios NO logueados que vienen desde URL
-                      // 1. Coincidencia exacta
-                      if (selectedName === cardName && s.category === key) {
-                        return true;
+                      // Verificar coincidencia por nombre del servicio desde URL
+                      else if (urlParams.serviceName && 
+                              service.name.toLowerCase().trim() === urlParams.serviceName.toLowerCase().trim()) {
+                        console.log(`✅ URL MATCH (NOMBRE EXACTO): ${service.name}`);
+                        isSelected = true;
                       }
-                      
-                      // 2. Caso especial Gold Interior desde URL
-                      const serviceParam = new URLSearchParams(window.location.search).get('service');
-                      if (serviceParam === 'gold-interior' && !currentUser) {
-                        // Si la URL es gold-interior y es Gold Package en Interior
-                        if (cardName.includes('gold') && key === 'interior' && 
-                           (cardName.includes('package') || service.name.includes('Package'))) {
-                          console.log(`Coincidencia Gold Interior URL: ${service.name}`);
-                          return true;
+                      // Verificación adicional para servicios que contienen el nombre (menos estricta)
+                      else if (urlParams.serviceName && 
+                             service.name.toLowerCase().includes(urlParams.serviceName.toLowerCase())) {
+                        console.log(`✅ URL MATCH (NOMBRE PARCIAL): ${service.name}`);
+                        isSelected = true;
+                      }
+                    }
+                    
+                    // 2. Verificación normal por servicios seleccionados
+                    if (!isSelected) {
+                      for (const s of formData.selectedServices) {
+                        // Verificar datos válidos
+                        if (!s || !s.name) continue;
+                        
+                        // Obtener nombres normalizados para comparación
+                        const selectedName = s.name.toLowerCase().trim();
+                        const cardName = service.name.toLowerCase().trim();
+                        
+                        // Coincidencia exacta por nombre y categoría
+                        if (selectedName === cardName && s.category === key) {
+                          isSelected = true;
+                          break;
                         }
                       }
-                      
-                      return false;
-                    });
+                    }
+                    
+                    console.log(`${service.name} (${key}): ${isSelected ? '✅ SELECCIONADO' : '❌ NO'}`);
+                    
                     
                     return (
                       <Grid item xs={12} sm={6} md={4} key={index}>
                         <Card 
                           sx={{ 
                             cursor: 'pointer',
-                            border: isSelected ? '4px solid red' : '1px solid #e0e0e0',
-                            backgroundColor: isSelected ? '#ffeeee' : 'white',
+                            border: isSelected ? '2px solid #ff5555' : '1px solid #e0e0e0',
+                            backgroundColor: isSelected ? '#fff8f8' : 'white',
                             '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
                             height: '100%',
                             borderRadius: { xs: '12px', sm: '16px' },
                             position: 'relative',
-                            transition: 'all 0.2s ease',
-                            transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-                            boxShadow: isSelected ? '0 5px 15px rgba(255, 0, 0, 0.3)' : 'none',
+                            transition: 'all 0.25s ease-in-out',
+                            transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                            boxShadow: isSelected ? '0 5px 15px rgba(255, 0, 0, 0.2)' : 'none',
                             zIndex: isSelected ? 2 : 1,
-                            outline: isSelected ? '1px dashed red' : 'none',
-                            outlineOffset: '3px'
+                            outline: isSelected ? '1px dashed #ff6666' : 'none',
+                            outlineOffset: '2px',
+                            animation: isSelected && !currentUser && urlParams.service ? 'subtlePulse 2s infinite' : 'none',
+                            '@keyframes subtlePulse': {
+                              '0%': { boxShadow: '0 0 0 0 rgba(255, 0, 0, 0.2)' },
+                              '70%': { boxShadow: '0 0 0 8px rgba(255, 0, 0, 0)' },
+                              '100%': { boxShadow: '0 0 0 0 rgba(255, 0, 0, 0)' }
+                            },
+                            // Borde interno más sutil
+                            '&:after': isSelected ? {
+                              content: '""',
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              borderRadius: { xs: '12px', sm: '16px' },
+                              border: '1px solid rgba(255,0,0,0.3)',
+                              pointerEvents: 'none'
+                            } : {}
                           }}
                           onClick={() => handleServiceSelect(key, service)}
                         >
@@ -819,7 +951,7 @@ const BookAppointment = () => {
                                 position: 'absolute',
                                 top: 8,
                                 right: 8,
-                                backgroundColor: 'red',
+                                backgroundColor: '#ff5555',
                                 color: 'white',
                                 borderRadius: '50%',
                                 width: 24,
@@ -827,8 +959,11 @@ const BookAppointment = () => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '0.75rem',
-                                fontWeight: 600
+                                fontSize: '0.85rem',
+                                fontWeight: 500,
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                zIndex: 3,
+                                opacity: 0.9
                               }}
                             >
                               ✓
