@@ -31,11 +31,33 @@ export const sendAppointmentConfirmationEmail = async (appointmentData) => {
       day: 'numeric'
     });
 
+    // Determine template based on user context
+    let templateName = appointmentData.template || 'appointment_confirmation';
+    let additionalData = {};
+    
+    // Si se solicita explícitamente la plantilla guest_url_appointment o es un usuario no logueado desde URL
+    if (templateName === 'guest_url_appointment' || (appointmentData.isGuestBooking && appointmentData.fromUrl)) {
+      console.log('Preparing special email for guest from URL');
+      templateName = 'guest_url_appointment'; // Asegurar que siempre sea esta plantilla
+      
+      // Agregar datos adicionales para este tipo de correo
+      additionalData = {
+        registerUrl: 'https://poveda-portal.vercel.app/register',
+        urlSource: appointmentData.urlService || 'direct link',
+        serviceFromUrl: appointmentData.urlServiceName || 'selected service',
+        // Mensaje especial para usuarios no registrados
+        specialMessage: 'We noticed you booked this appointment from a direct service link. ' + 
+                        'Create an account to keep track of your appointment history and receive updates.'  
+      };
+    }
+    
+    console.log(`Using email template: ${templateName}`);
+
     // Prepare email data
     const emailData = {
       to: appointmentData.userEmail,
       template: {
-        name: 'appointment_confirmation',
+        name: templateName,
         data: {
           name: appointmentData.userName || 'Valued Customer',
           service: Array.isArray(appointmentData.services) ? 
@@ -52,14 +74,16 @@ export const sendAppointmentConfirmationEmail = async (appointmentData) => {
             'the remaining balance',
           estimatedPrice: appointmentData.estimatedPrice ? 
             `$${parseFloat(appointmentData.estimatedPrice).toFixed(2)}` : 
-            'the total'
+            'the total',
+          // Incluir los datos adicionales si existen
+          ...additionalData
         }
       }
     };
     
     // Send the email
     const result = await sendEmail(emailData);
-    console.log('Email sent successfully:', result.data);
+    console.log(`Email (${templateName}) sent successfully to ${appointmentData.userEmail}:`, result.data);
     return result.data;
   } catch (error) {
     console.error('Error sending email:', error);
