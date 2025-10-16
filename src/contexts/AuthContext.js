@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { createWelcomeNotification } from '../utils/notificationService';
+import { linkGuestAppointmentsToUser } from '../utils/appointmentLinkingService';
 import { auth, googleProvider, db } from '../firebase/config';
 
 const AuthContext = createContext();
@@ -49,6 +50,17 @@ export const AuthProvider = ({ children }) => {
           ...additionalData
         });
         setUserRole(role);
+
+        // Link any existing guest appointments to this new account
+        try {
+          const linkedCount = await linkGuestAppointmentsToUser(user.uid, email);
+          if (linkedCount > 0) {
+            console.log(`Successfully linked ${linkedCount} guest appointment(s) to new account`);
+          }
+        } catch (linkingError) {
+          console.error('Error linking guest appointments:', linkingError);
+          // Don't fail registration if linking fails
+        }
 
         // Create welcome notification for new clients
         if (role === 'client') {

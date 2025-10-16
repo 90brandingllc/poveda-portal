@@ -60,10 +60,11 @@ const AppointmentsList = () => {
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
 
   useEffect(() => {
-    let unsubscribe = null;
+    let unsubscribeUserId = null;
+    let unsubscribeEmail = null;
     
     const fetchAppointments = async () => {
-      if (!currentUser?.uid) {
+      if (!currentUser?.uid || !currentUser?.email) {
         console.log('AppointmentsList - No current user, skipping fetch');
         setLoading(false);
         return;
@@ -72,26 +73,58 @@ const AppointmentsList = () => {
       try {
         console.log('AppointmentsList - Fetching appointments for user:', currentUser.uid);
         
-        // Use a targeted query for the user's appointments
-        const appointmentsQuery = query(
+        const allAppointments = new Map(); // Use Map to avoid duplicates
+        
+        // Query 1: Get appointments linked to user ID
+        const appointmentsByUserIdQuery = query(
           collection(db, 'appointments'),
           where('userId', '==', currentUser.uid)
         );
         
-        unsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
-          console.log('AppointmentsList - Got snapshot with', snapshot.size, 'documents for user');
-          
-          const userAppointments = [];
+        // Query 2: Get guest appointments with the same email (in case linking hasn't happened yet)
+        const appointmentsByEmailQuery = query(
+          collection(db, 'appointments'),
+          where('userId', '==', 'guest'),
+          where('userEmail', '==', currentUser.email)
+        );
+        
+        // Subscribe to appointments by userId
+        unsubscribeUserId = onSnapshot(appointmentsByUserIdQuery, (snapshot) => {
+          console.log('AppointmentsList - Got', snapshot.size, 'appointment(s) by userId');
           
           snapshot.forEach((doc) => {
             const data = doc.data();
-            const appointment = { id: doc.id, ...data };
-            userAppointments.push(appointment);
-            console.log('AppointmentsList - Found appointment:', appointment.service, appointment.status, appointment.id);
+            allAppointments.set(doc.id, { id: doc.id, ...data });
           });
           
-          console.log('AppointmentsList - User appointments found:', userAppointments.length);
-          console.log('AppointmentsList - User appointments:', userAppointments);
+          updateAppointmentsList();
+        }, (error) => {
+          console.error('AppointmentsList - Error fetching appointments by userId:', error);
+          setLoading(false);
+        });
+        
+        // Subscribe to guest appointments by email
+        unsubscribeEmail = onSnapshot(appointmentsByEmailQuery, (snapshot) => {
+          console.log('AppointmentsList - Got', snapshot.size, 'guest appointment(s) by email');
+          
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            // Only add if not already in the map (avoid duplicates)
+            if (!allAppointments.has(doc.id)) {
+              allAppointments.set(doc.id, { id: doc.id, ...data });
+            }
+          });
+          
+          updateAppointmentsList();
+        }, (error) => {
+          console.error('AppointmentsList - Error fetching guest appointments:', error);
+          setLoading(false);
+        });
+        
+        const updateAppointmentsList = () => {
+          const userAppointments = Array.from(allAppointments.values());
+          
+          console.log('AppointmentsList - Total appointments found:', userAppointments.length);
           
           // Sort by creation date (newest first)
           userAppointments.sort((a, b) => {
@@ -102,20 +135,7 @@ const AppointmentsList = () => {
           
           setAppointments(userAppointments);
           setLoading(false);
-        }, (error) => {
-          console.error('AppointmentsList - Error fetching appointments:', error);
-          console.error('AppointmentsList - Error code:', error.code);
-          console.error('AppointmentsList - Error message:', error.message);
-          
-          // If there's a permission error, try a fallback approach
-          if (error.code === 'permission-denied') {
-            console.log('AppointmentsList - Permission denied, checking auth state');
-            console.log('AppointmentsList - Current user:', currentUser);
-            console.log('AppointmentsList - Auth state:', currentUser ? 'logged in' : 'not logged in');
-          }
-          
-          setLoading(false);
-        });
+        };
         
       } catch (error) {
         console.error('AppointmentsList - Error setting up listener:', error);
@@ -126,8 +146,11 @@ const AppointmentsList = () => {
     fetchAppointments();
 
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
+      if (unsubscribeUserId) {
+        unsubscribeUserId();
+      }
+      if (unsubscribeEmail) {
+        unsubscribeEmail();
       }
     };
   }, [currentUser]);
