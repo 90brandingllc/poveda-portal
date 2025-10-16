@@ -919,6 +919,64 @@ const BookAppointment = () => {
                     ))}
                   </Box>
                 </Box>
+
+                {/* Navigation Buttons - Después de la card de servicios seleccionados */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  mb: 4,
+                  gap: 2
+                }}>
+                  <Button
+                    onClick={handleBack}
+                    variant="outlined"
+                    size="large"
+                    sx={{
+                      borderRadius: '12px',
+                      borderColor: '#cbd5e1',
+                      color: '#475569',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '1rem',
+                      py: 1.5,
+                      px: 4,
+                      '&:hover': {
+                        borderColor: '#94a3b8',
+                        backgroundColor: '#f8fafc'
+                      }
+                    }}
+                  >
+                    {activeStep === 0 ? 'Back to Dashboard' : 'Back'}
+                  </Button>
+                  
+                  <Button
+                    variant="contained"
+                    onClick={handleNext}
+                    size="large"
+                    disabled={formData.selectedServices.length === 0}
+                    sx={{
+                      borderRadius: '12px',
+                      background: '#1e40af',
+                      color: 'white',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      py: 1.5,
+                      px: 4,
+                      boxShadow: '0 4px 12px rgba(30, 64, 175, 0.3)',
+                      '&:hover': {
+                        background: '#1e3a8a',
+                        boxShadow: '0 6px 16px rgba(30, 64, 175, 0.4)'
+                      },
+                      '&:disabled': {
+                        background: '#cbd5e1',
+                        color: '#64748b'
+                      }
+                    }}
+                  >
+                    Next
+                  </Button>
+                </Box>
               </Grid>
             )}
             {Object.entries(serviceCategories).map(([key, category]) => (
@@ -2101,21 +2159,30 @@ const BookAppointment = () => {
 
         {renderStepContent(activeStep)}
 
+        {/* Navigation Buttons - Modernos como en la imagen */}
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           mt: 4,
-          gap: { xs: 2, sm: 0 },
-          flexDirection: { xs: 'column', sm: 'row' }
+          gap: 2
         }}>
           <Button
             onClick={handleBack}
             variant="outlined"
-            size={window.innerWidth < 600 ? 'medium' : 'large'}
+            size="large"
             sx={{
-              order: { xs: 2, sm: 1 },
-              fontSize: { xs: '0.875rem', sm: '1rem' },
-              py: { xs: 1, sm: 1.5 }
+              borderRadius: '12px',
+              borderColor: '#cbd5e1',
+              color: '#475569',
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '1rem',
+              py: 1.5,
+              px: 4,
+              '&:hover': {
+                borderColor: '#94a3b8',
+                backgroundColor: '#f8fafc'
+              }
             }}
           >
             {activeStep === 0 ? 'Back to Dashboard' : 'Back'}
@@ -2126,13 +2193,20 @@ const BookAppointment = () => {
               <Button
                 variant="contained"
                 disabled={true}
-                size={window.innerWidth < 600 ? 'medium' : 'large'}
+                size="large"
                 sx={{
-                  background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
+                  borderRadius: '12px',
+                  background: '#10b981',
+                  color: 'white',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  py: 1.5,
+                  px: 4,
                   opacity: 0.8,
-                  order: { xs: 1, sm: 2 },
-                  fontSize: { xs: '0.875rem', sm: '1rem' },
-                  py: { xs: 1, sm: 1.5 }
+                  '&:hover': {
+                    background: '#059669'
+                  }
                 }}
               >
                 {loading ? '🔄 Booking Appointment...' : '✅ Appointment Booked!'}
@@ -2141,14 +2215,17 @@ const BookAppointment = () => {
               <Button
                 variant="outlined"
                 disabled={true}
-                size={window.innerWidth < 600 ? 'medium' : 'large'}
+                size="large"
                 sx={{
-                  borderColor: '#1565c0',
-                  color: '#1565c0',
-                  opacity: 0.6,
-                  order: { xs: 1, sm: 2 },
-                  fontSize: { xs: '0.875rem', sm: '1rem' },
-                  py: { xs: 1, sm: 1.5 }
+                  borderRadius: '12px',
+                  borderColor: '#1e40af',
+                  color: '#1e40af',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  py: 1.5,
+                  px: 4,
+                  opacity: 0.6
                 }}
               >
                 💳 Complete Payment to Book
@@ -2158,7 +2235,7 @@ const BookAppointment = () => {
             <Button
               variant="contained"
               onClick={handleNext}
-              size={window.innerWidth < 600 ? 'medium' : 'large'}
+              size="large"
               disabled={
                 (activeStep === 0 && formData.selectedServices.length === 0) ||
                 (activeStep === 1 && !formData.vehicleType) ||
@@ -2168,13 +2245,23 @@ const BookAppointment = () => {
                 (activeStep === 4 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
               }
               sx={{
-                background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+                borderRadius: '12px',
+                background: '#1e40af',
+                color: 'white',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '1rem',
+                py: 1.5,
+                px: 4,
+                boxShadow: '0 4px 12px rgba(30, 64, 175, 0.3)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #0d47a1 0%, #01579b 100%)'
+                  background: '#1e3a8a',
+                  boxShadow: '0 6px 16px rgba(30, 64, 175, 0.4)'
                 },
-                order: { xs: 1, sm: 2 },
-                fontSize: { xs: '0.875rem', sm: '1rem' },
-                py: { xs: 1, sm: 1.5 }
+                '&:disabled': {
+                  background: '#cbd5e1',
+                  color: '#64748b'
+                }
               }}
             >
               Next
