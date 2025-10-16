@@ -6,8 +6,24 @@ import {
   createEstimateDeclinedNotification
 } from './notificationService';
 import { sendAppointmentStatusEmail, sendAppointmentConfirmationEmail } from './emailService';
-import { doc, getDoc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
+
+/**
+ * Get admin user IDs to send them notifications
+ * @returns {Promise<string[]>} Array of admin user IDs
+ */
+const getAdminUserIds = async () => {
+  try {
+    const usersRef = collection(db, 'users');
+    const adminQuery = query(usersRef, where('role', '==', 'admin'));
+    const adminSnapshot = await getDocs(adminQuery);
+    return adminSnapshot.docs.map(doc => doc.id);
+  } catch (error) {
+    console.error('Error getting admin users:', error);
+    return [];
+  }
+};
 
 /**
  * A centralized service to handle notification triggers throughout the application
@@ -134,6 +150,30 @@ export const handleAppointmentStatusChange = async (appointmentId, newStatus, ap
             console.error('Error sending email notification:', emailError);
           }
         }
+      } else if (newStatus === 'cancelled') {
+        // Handle cancelled appointments - notify the user
+        const dateDisplay = normalizedData.date instanceof Date ? 
+          normalizedData.date.toLocaleDateString() : 'the scheduled date';
+          
+        await createNotification(
+          normalizedData.userId,
+          'Appointment Cancelled',
+          `Your appointment for ${Array.isArray(normalizedData.services) ? normalizedData.services.join(', ') : (normalizedData.service || 'requested service')} on ${dateDisplay} has been cancelled.`,
+          'info',
+          {
+            type: 'appointment_cancelled',
+            appointmentId: appointmentId,
+          }
+        );
+        
+        // Send cancellation email if user has email
+        if (normalizedData.userEmail) {
+          try {
+            await sendAppointmentStatusEmail(normalizedData, newStatus);
+          } catch (emailError) {
+            console.error('Error sending cancellation email notification:', emailError);
+          }
+        }
       }
       
       console.log(`Successfully sent notifications for appointment ${appointmentId}`);
@@ -171,7 +211,7 @@ export const listenForAppointmentStatusChanges = (onStatusChange = null) => {
         const status = appointment.status;
         
         // Only handle certain status changes
-        if (['approved', 'rejected', 'completed'].includes(status)) {
+        if (['approved', 'rejected', 'completed', 'cancelled'].includes(status)) {
           console.log(`Detected status change to ${status} for appointment ${appointment.id}`);
           
           // Trigger notifications
@@ -240,8 +280,61 @@ export const handleEstimateStatusChange = async (estimateId, newStatus, estimate
   }
 };
 
+/**
+ * Handles appointment cancellation from client side
+ * Sends notifications to admin users
+ * @param {string} appointmentId - The ID of the appointment
+ * @param {Object} appointmentData - The appointment data
+ * @param {string} cancelledBy - Who cancelled: 'client' or 'admin'
+ * @returns {Promise<boolean>} - Whether notifications were successfully sent
+ */
+export const handleAppointmentCancellation = async (appointmentId, appointmentData, cancelledBy = 'client') => {
+  try {
+    console.log(`Processing appointment cancellation by ${cancelledBy} for appointment ${appointmentId}`);
+    
+    const dateDisplay = appointmentData.date instanceof Date ? 
+      appointmentData.date.toLocaleDateString() : 
+      (appointmentData.date?.toDate ? appointmentData.date.toDate().toLocaleDateString() : 'the scheduled date');
+    
+    const services = Array.isArray(appointmentData.services) ? 
+      appointmentData.services.join(', ') : 
+      (appointmentData.service || 'requested service');
+    
+    if (cancelledBy === 'client') {
+      // Client cancelled - notify all admins
+      const adminIds = await getAdminUserIds();
+      console.log(`Found ${adminIds.length} admin(s) to notify about client cancellation`);
+      
+      for (const adminId of adminIds) {
+        await createNotification(
+          adminId,
+          '⚠️ Appointment Cancelled by Client',
+          `${appointmentData.userName || 'A client'} cancelled their appointment for ${services} scheduled on ${dateDisplay} at ${appointmentData.timeSlot || appointmentData.time || 'scheduled time'}.`,
+          'warning',
+          {
+            type: 'appointment_cancelled_by_client',
+            appointmentId: appointmentId,
+            userId: appointmentData.userId,
+            userName: appointmentData.userName
+          }
+        );
+      }
+      console.log('✅ Admin notifications sent for client cancellation');
+    } else if (cancelledBy === 'admin') {
+      // Admin cancelled - notify the client (already handled by handleAppointmentStatusChange)
+      console.log('Admin cancellation - client notification will be handled by status change');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in handleAppointmentCancellation:', error);
+    return false;
+  }
+};
+
 export default {
   handleAppointmentStatusChange,
   listenForAppointmentStatusChanges,
-  handleEstimateStatusChange
+  handleEstimateStatusChange,
+  handleAppointmentCancellation
 };

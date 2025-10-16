@@ -317,6 +317,7 @@ const ManageAppointments = () => {
       case 'approved': return '#2e7d32';
       case 'completed': return '#1976d2';
       case 'rejected': return '#d32f2f';
+      case 'cancelled': return '#757575';
       default: return '#757575';
     }
   };
@@ -879,34 +880,68 @@ const ManageAppointments = () => {
                             View
                           </Button>
                           {appointment.status === 'approved' && (
-                            <Button
-                              onClick={async () => {
-                                const exists = await verifyAppointmentExists(appointment.id);
-                                if (exists) {
-                                  handleStatusChange(appointment.id, 'completed');
-                                } else {
-                                  setSnackbar({
-                                    open: true,
-                                    message: 'La cita ya no existe en la base de datos.',
-                                    severity: 'error'
-                                  });
-                                }
-                              }}
-                              variant="contained"
-                              size="small"
-                              startIcon={!isSmallMobile && <CheckCircle />}
-                              sx={{
-                                bgcolor: '#1976d2',
-                                '&:hover': { bgcolor: '#1565c0' },
-                                fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
-                                minWidth: isSmallMobile ? 75 : 'auto',
-                                px: isSmallMobile ? 1.5 : 1.5,
-                                py: isSmallMobile ? 0.5 : 0.5,
-                                height: isSmallMobile ? 28 : 32
-                              }}
-                            >
-                              {isSmallMobile ? 'Complete' : 'Complete'}
-                            </Button>
+                            <>
+                              <Button
+                                onClick={async () => {
+                                  const exists = await verifyAppointmentExists(appointment.id);
+                                  if (exists) {
+                                    handleStatusChange(appointment.id, 'completed');
+                                  } else {
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'La cita ya no existe en la base de datos.',
+                                      severity: 'error'
+                                    });
+                                  }
+                                }}
+                                variant="contained"
+                                size="small"
+                                startIcon={!isSmallMobile && <CheckCircle />}
+                                sx={{
+                                  bgcolor: '#1976d2',
+                                  '&:hover': { bgcolor: '#1565c0' },
+                                  fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
+                                  minWidth: isSmallMobile ? 75 : 'auto',
+                                  px: isSmallMobile ? 1.5 : 1.5,
+                                  py: isSmallMobile ? 0.5 : 0.5,
+                                  height: isSmallMobile ? 28 : 32
+                                }}
+                              >
+                                {isSmallMobile ? 'Complete' : 'Complete'}
+                              </Button>
+                              <Button
+                                onClick={async () => {
+                                  const exists = await verifyAppointmentExists(appointment.id);
+                                  if (exists) {
+                                    handleStatusChange(appointment.id, 'cancelled');
+                                  } else {
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'La cita ya no existe en la base de datos.',
+                                      severity: 'error'
+                                    });
+                                  }
+                                }}
+                                variant="outlined"
+                                size="small"
+                                startIcon={!isSmallMobile && <Cancel />}
+                                sx={{
+                                  fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
+                                  minWidth: isSmallMobile ? 65 : 'auto',
+                                  px: isSmallMobile ? 1.5 : 1.5,
+                                  py: isSmallMobile ? 0.5 : 0.5,
+                                  height: isSmallMobile ? 28 : 32,
+                                  borderColor: '#757575',
+                                  color: '#757575',
+                                  '&:hover': {
+                                    borderColor: '#616161',
+                                    bgcolor: 'rgba(117, 117, 117, 0.04)'
+                                  }
+                                }}
+                              >
+                                {isSmallMobile ? 'Cancel' : 'Cancel'}
+                              </Button>
+                            </>
                           )}
                           {/* Botón para eliminar cita */}
                           <Button
@@ -1067,25 +1102,46 @@ const ManageAppointments = () => {
                             <Visibility />
                           </IconButton>
                           {appointment.status === 'approved' && (
-                            <IconButton
-                              onClick={async () => {
-                                const exists = await verifyAppointmentExists(appointment.id);
-                                if (exists) {
-                                  handleStatusChange(appointment.id, 'completed');
-                                } else {
-                                  setSnackbar({
-                                    open: true,
-                                    message: 'La cita ya no existe en la base de datos.',
-                                    severity: 'error'
-                                  });
-                                }
-                              }}
-                              sx={{ color: '#1976d2' }}
-                              size="small"
-                              title="Marcar como completada"
-                            >
-                              <CheckCircle />
-                            </IconButton>
+                            <>
+                              <IconButton
+                                onClick={async () => {
+                                  const exists = await verifyAppointmentExists(appointment.id);
+                                  if (exists) {
+                                    handleStatusChange(appointment.id, 'completed');
+                                  } else {
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'La cita ya no existe en la base de datos.',
+                                      severity: 'error'
+                                    });
+                                  }
+                                }}
+                                sx={{ color: '#1976d2' }}
+                                size="small"
+                                title="Marcar como completada"
+                              >
+                                <CheckCircle />
+                              </IconButton>
+                              <IconButton
+                                onClick={async () => {
+                                  const exists = await verifyAppointmentExists(appointment.id);
+                                  if (exists) {
+                                    handleStatusChange(appointment.id, 'cancelled');
+                                  } else {
+                                    setSnackbar({
+                                      open: true,
+                                      message: 'La cita ya no existe en la base de datos.',
+                                      severity: 'error'
+                                    });
+                                  }
+                                }}
+                                sx={{ color: '#757575' }}
+                                size="small"
+                                title="Cancelar cita"
+                              >
+                                <Cancel />
+                              </IconButton>
+                            </>
                           )}
                           {/* Botón para eliminar cita */}
                           <IconButton
@@ -1321,16 +1377,29 @@ const ManageAppointments = () => {
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
                 {selectedAppointment?.status === 'approved' && (
-                  <Button 
-                    onClick={() => {
-                      handleStatusChange(selectedAppointment.id, 'completed');
-                      setDetailsDialogOpen(false);
-                    }}
-                    variant="contained" 
-                    color="primary"
-                  >
-                    Mark Complete
-                  </Button>
+                  <>
+                    <Button 
+                      onClick={() => {
+                        handleStatusChange(selectedAppointment.id, 'cancelled');
+                        setDetailsDialogOpen(false);
+                      }}
+                      variant="outlined" 
+                      color="inherit"
+                      startIcon={<Cancel />}
+                    >
+                      Cancel Appointment
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        handleStatusChange(selectedAppointment.id, 'completed');
+                        setDetailsDialogOpen(false);
+                      }}
+                      variant="contained" 
+                      color="primary"
+                    >
+                      Mark Complete
+                    </Button>
+                  </>
                 )}
               </Box>
             </Box>
