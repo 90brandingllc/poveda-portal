@@ -219,7 +219,8 @@ const BookAppointment = () => {
     }
   };
 
-  // Generate time slots for business hours (9 AM - 5 PM, Monday to Friday)
+  // Generate time slots for business hours (7 AM - 4 PM, Monday to Friday)
+  // Slots are spaced 3 hours apart: 7 AM, 10 AM, 1 PM, 4 PM
   const generateTimeSlots = (selectedDate) => {
     if (!selectedDate) return [];
     
@@ -231,8 +232,9 @@ const BookAppointment = () => {
       return []; // No slots on weekends
     }
     
-    // Generate 1-hour slots from 9 AM to 5 PM
-    for (let hour = 9; hour < 17; hour++) {
+    // Generate slots every 3 hours starting from 7 AM
+    // Available slots: 7 AM, 10 AM, 1 PM, 4 PM
+    for (let hour = 7; hour <= 16; hour += 3) {
       const slotTime = date.hour(hour).minute(0).second(0);
       
       // Don't show past time slots for today

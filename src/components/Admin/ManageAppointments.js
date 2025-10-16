@@ -710,41 +710,103 @@ const ManageAppointments = () => {
 
                         {/* Service & Vehicle Info */}
                         <Box sx={{ mb: 1.5 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                          {/* Servicios - Mejorado para múltiples servicios */}
+                          <Box sx={{ mb: 1 }}>
                             <Typography 
-                              variant={isSmallMobile ? "body2" : "body1"} 
+                              variant="caption" 
                               sx={{ 
-                                fontWeight: 'bold', 
-                                fontSize: isSmallMobile ? '0.85rem' : '0.95rem',
-                                flex: 1
+                                fontSize: isSmallMobile ? '0.65rem' : '0.7rem',
+                                fontWeight: 600,
+                                color: '#666',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                mb: 0.5,
+                                display: 'block'
                               }}
                             >
-                              {appointment.service || appointment.serviceType || 'Car Detailing'}
+                              Servicios:
+                            </Typography>
+                            {Array.isArray(appointment.services) && appointment.services.length > 0 ? (
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
+                                {appointment.services.map((service, idx) => (
+                                  <Chip
+                                    key={idx}
+                                    label={service}
+                                    size="small"
+                                    sx={{
+                                      height: isSmallMobile ? 20 : 22,
+                                      fontSize: isSmallMobile ? '0.65rem' : '0.7rem',
+                                      bgcolor: '#f5f5f5',
+                                      color: '#1976d2',
+                                      fontWeight: 500,
+                                      '& .MuiChip-label': {
+                                        px: isSmallMobile ? 0.75 : 1,
+                                        py: 0
+                                      }
+                                    }}
+                                  />
+                                ))}
+                              </Box>
+                            ) : (
+                              <Typography 
+                                variant={isSmallMobile ? "body2" : "body1"} 
+                                sx={{ 
+                                  fontWeight: 'bold', 
+                                  fontSize: isSmallMobile ? '0.8rem' : '0.9rem',
+                                  color: '#1976d2',
+                                  mb: 0.5
+                                }}
+                              >
+                                {appointment.service || appointment.serviceType || 'Car Detailing'}
+                              </Typography>
+                            )}
+                          </Box>
+                          
+                          {/* Precio */}
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                            <Typography 
+                              variant="caption"
+                              sx={{ 
+                                fontSize: isSmallMobile ? '0.65rem' : '0.7rem',
+                                fontWeight: 600,
+                                color: '#666'
+                              }}
+                            >
+                              Precio Total:
                             </Typography>
                             <Typography 
                               variant={isSmallMobile ? "subtitle1" : "h6"} 
                               sx={{ 
                                 fontWeight: 'bold', 
                                 color: '#2e7d32',
-                                fontSize: isSmallMobile ? '0.9rem' : '1.1rem',
-                                ml: 1
+                                fontSize: isSmallMobile ? '0.95rem' : '1.1rem'
                               }}
                             >
                               ${appointment.finalPrice || appointment.estimatedPrice || 'TBD'}
                             </Typography>
                           </Box>
                           
-                          <Typography 
-                            variant="caption"
-                            color="text.secondary" 
-                            sx={{ 
-                              mb: 0.75,
-                              fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
-                              display: 'block'
-                            }}
-                          >
-                            🚗 {appointment.vehicleType} {appointment.vehicleYear} {appointment.vehicleMake}
-                          </Typography>
+                          {/* Información del vehículo */}
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            gap: 0.5,
+                            mb: 0.75,
+                            p: 0.75,
+                            bgcolor: '#f8f9fa',
+                            borderRadius: 1
+                          }}>
+                            <Typography 
+                              variant="caption"
+                              sx={{ 
+                                fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
+                                color: '#555',
+                                fontWeight: 500
+                              }}
+                            >
+                              🚗 {appointment.vehicleType} {appointment.vehicleYear} {appointment.vehicleMake}
+                            </Typography>
+                          </Box>
                           
                           <Box sx={{ 
                             display: 'flex', 
@@ -930,12 +992,38 @@ const ManageAppointments = () => {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body1">
-                          {appointment.service || appointment.serviceType || 'Car Detailing'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {appointment.vehicleType} {appointment.vehicleYear} {appointment.vehicleMake}
-                        </Typography>
+                        {Array.isArray(appointment.services) && appointment.services.length > 0 ? (
+                          <Box>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5, maxWidth: 250 }}>
+                              {appointment.services.map((service, idx) => (
+                                <Chip
+                                  key={idx}
+                                  label={service}
+                                  size="small"
+                                  sx={{
+                                    height: 22,
+                                    fontSize: '0.7rem',
+                                    bgcolor: '#f5f5f5',
+                                    color: '#1976d2',
+                                    fontWeight: 500
+                                  }}
+                                />
+                              ))}
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                              {appointment.vehicleType} {appointment.vehicleYear} {appointment.vehicleMake}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Box>
+                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                              {appointment.service || appointment.serviceType || 'Car Detailing'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {appointment.vehicleType} {appointment.vehicleYear} {appointment.vehicleMake}
+                            </Typography>
+                          </Box>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
@@ -1093,9 +1181,31 @@ const ManageAppointments = () => {
                     Service Information
                   </Typography>
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body1">
-                      <strong>Service:</strong> {selectedAppointment.service || selectedAppointment.serviceType}
-                    </Typography>
+                    {Array.isArray(selectedAppointment.services) && selectedAppointment.services.length > 0 ? (
+                      <Box sx={{ mb: 1.5 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                          Services:
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {selectedAppointment.services.map((service, idx) => (
+                            <Chip
+                              key={idx}
+                              label={service}
+                              size="small"
+                              sx={{
+                                bgcolor: '#e3f2fd',
+                                color: '#1976d2',
+                                fontWeight: 500
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Typography variant="body1" sx={{ mb: 1 }}>
+                        <strong>Service:</strong> {selectedAppointment.service || selectedAppointment.serviceType}
+                      </Typography>
+                    )}
                     <Typography variant="body1">
                       <strong>Package:</strong> {selectedAppointment.package || selectedAppointment.category || 'Standard'}
                     </Typography>
