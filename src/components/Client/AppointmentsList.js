@@ -32,7 +32,7 @@ import {
   Delete
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import ClientLayout from '../Layout/ClientLayout';
 import { Link } from 'react-router-dom';
@@ -40,6 +40,7 @@ import { DatePicker, DesktopTimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { handleAppointmentCancellation, handleAppointmentStatusChange } from '../../utils/notificationTriggers';
 
 const AppointmentsList = () => {
   const { currentUser } = useAuth();
@@ -162,6 +163,7 @@ const AppointmentsList = () => {
       case 'approved': return '#2e7d32';
       case 'completed': return '#1976d2';
       case 'rejected': return '#d32f2f';
+      case 'cancelled': return '#757575';
       default: return '#757575';
     }
   };
@@ -173,6 +175,7 @@ const AppointmentsList = () => {
       case 'approved': return <CheckCircle />;
       case 'completed': return <Star />;
       case 'rejected': return <Cancel />;
+      case 'cancelled': return <Cancel />;
       default: return <Schedule />;
     }
   };
@@ -246,8 +249,37 @@ const AppointmentsList = () => {
     try {
       console.log('Cancelling appointment:', appointmentToCancel.id);
       
-      // Delete the appointment from Firestore
-      await deleteDoc(doc(db, 'appointments', appointmentToCancel.id));
+      const appointmentRef = doc(db, 'appointments', appointmentToCancel.id);
+      
+      // Get full appointment data before updating
+      const appointmentSnap = await getDoc(appointmentRef);
+      if (!appointmentSnap.exists()) {
+        throw new Error('Appointment not found');
+      }
+      
+      const fullAppointmentData = {
+        id: appointmentToCancel.id,
+        ...appointmentSnap.data()
+      };
+      
+      // Update status to 'cancelled' instead of deleting
+      await updateDoc(appointmentRef, {
+        status: 'cancelled',
+        cancelledAt: serverTimestamp(),
+        cancelledBy: 'client',
+        updatedAt: serverTimestamp()
+      });
+      
+      console.log('Appointment status changed to cancelled');
+      
+      // Send notifications to admin users
+      try {
+        await handleAppointmentCancellation(appointmentToCancel.id, fullAppointmentData, 'client');
+        console.log('Admin notified about cancellation');
+      } catch (notificationError) {
+        console.error('Error sending admin notification:', notificationError);
+        // Don't fail the whole operation if notification fails
+      }
       
       setSnackbar({
         open: true,

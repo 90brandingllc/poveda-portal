@@ -219,27 +219,34 @@ const BookAppointment = () => {
     }
   };
 
-  // Generate time slots for business hours (7 AM - 4 PM, Monday to Friday)
-  // Slots are spaced 3 hours apart: 7 AM, 10 AM, 1 PM, 4 PM
+  // Generate time slots based on day of week
+  // Monday to Friday: 7am, 9am, 12pm, 3pm, 6pm
+  // Saturday and Sunday: 7am, 9am, 12pm, 3pm, 6pm, 9pm
   const generateTimeSlots = (selectedDate) => {
     if (!selectedDate) return [];
     
     const slots = [];
     const date = dayjs(selectedDate);
+    const dayOfWeek = date.day(); // 0 = Sunday, 6 = Saturday
     
-    // Check if it's a weekend
-    if (date.day() === 0 || date.day() === 6) {
-      return []; // No slots on weekends
+    // Define available hours based on day of week
+    let availableHours;
+    
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      // Weekend: 7am, 9am, 12pm, 3pm, 6pm, 9pm
+      availableHours = [7, 9, 12, 15, 18, 21];
+    } else {
+      // Weekday (Monday to Friday): 7am, 9am, 12pm, 3pm, 6pm
+      availableHours = [7, 9, 12, 15, 18];
     }
     
-    // Generate slots every 3 hours starting from 7 AM
-    // Available slots: 7 AM, 10 AM, 1 PM, 4 PM
-    for (let hour = 7; hour <= 16; hour += 3) {
+    // Generate slots for available hours
+    availableHours.forEach(hour => {
       const slotTime = date.hour(hour).minute(0).second(0);
       
       // Don't show past time slots for today
       if (date.isSame(dayjs(), 'day') && slotTime.isBefore(dayjs())) {
-        continue;
+        return; // Skip this slot
       }
       
       slots.push({
@@ -247,7 +254,7 @@ const BookAppointment = () => {
         label: slotTime.format('h:mm A'),
         available: true // Will be updated when checking against booked appointments
       });
-    }
+    });
     
     return slots;
   };
@@ -1517,8 +1524,8 @@ const BookAppointment = () => {
                   minDate={dayjs()}
                   maxDate={dayjs().add(30, 'day')}
                   shouldDisableDate={(date) => {
-                    // Disable weekends
-                    return date.day() === 0 || date.day() === 6;
+                    // No longer disabling weekends - all days available
+                    return false;
                   }}
                   renderInput={(params) => (
                     <TextField 

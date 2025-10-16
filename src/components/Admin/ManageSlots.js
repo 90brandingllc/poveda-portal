@@ -123,24 +123,47 @@ const ManageSlots = () => {
     'Wheel & Tire Detail'
   ];
 
-  // Generate time slots for business hours (9 AM - 5 PM)
-  const generateTimeSlots = () => {
+  // Generate time slots based on day of week
+  // Monday to Friday: 7am, 9am, 12pm, 3pm, 6pm
+  // Saturday and Sunday: 7am, 9am, 12pm, 3pm, 6pm, 9pm
+  // If no date is provided, return all possible slots (for week view)
+  const generateTimeSlots = (date = null) => {
     const slots = [];
-    // Generate 1-hour slots from 9 AM to 5 PM
-    for (let hour = 9; hour < 17; hour++) {
+    let availableHours;
+    
+    if (date === null || date === undefined) {
+      // No specific date - return all possible time slots (for week view)
+      availableHours = [7, 9, 12, 15, 18, 21];
+    } else {
+      // Specific date provided - return slots for that day
+      const checkDate = dayjs(date);
+      const dayOfWeek = checkDate.day(); // 0 = Sunday, 6 = Saturday
+      
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        // Weekend: 7am, 9am, 12pm, 3pm, 6pm, 9pm
+        availableHours = [7, 9, 12, 15, 18, 21];
+      } else {
+        // Weekday (Monday to Friday): 7am, 9am, 12pm, 3pm, 6pm
+        availableHours = [7, 9, 12, 15, 18];
+      }
+    }
+    
+    // Generate slots for available hours
+    availableHours.forEach(hour => {
       slots.push({
         hour: hour,
         label: dayjs().hour(hour).minute(0).format('h:mm A'),
         time: `${hour}:00`
       });
-    }
+    });
+    
     return slots;
   };
 
-  // Get week days for calendar view
+  // Get week days for calendar view (including weekends now)
   const getWeekDays = () => {
     const days = [];
-    for (let i = 1; i <= 5; i++) { // Monday to Friday only
+    for (let i = 0; i < 7; i++) { // Sunday to Saturday (full week)
       const day = currentWeek.add(i, 'day');
       days.push(day);
     }
@@ -373,6 +396,36 @@ const ManageSlots = () => {
 
   // Render calendar cell content with mobile optimization
   const renderCalendarCell = (date, timeSlot) => {
+    // Check if this time slot is valid for this day of the week
+    const dayOfWeek = dayjs(date).day();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    
+    // 9pm (21:00) only available on weekends
+    if (timeSlot.hour === 21 && !isWeekend) {
+      return (
+        <Box
+          sx={{
+            height: '100%',
+            minHeight: isMobile ? 80 : 60,
+            p: isMobile ? 1.5 : 1,
+            bgcolor: '#f5f5f5',
+            border: '1px solid #e0e0e0',
+            borderRadius: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <Typography 
+            variant="caption" 
+            sx={{ color: '#9e9e9e', fontSize: isMobile ? '0.75rem' : '0.65rem' }}
+          >
+            N/A
+          </Typography>
+        </Box>
+      );
+    }
+    
     const appointment = getAppointmentForSlot(date, timeSlot.label);
     const blockedSlot = getBlockedSlotForTime(date, timeSlot.label);
     
@@ -760,16 +813,7 @@ const ManageSlots = () => {
 
               {/* Time Slots for Selected Day */}
               <Stack spacing={2}>
-                {generateTimeSlots().map((timeSlot) => {
-                  // Skip weekends
-                  if (selectedDate.day() === 0 || selectedDate.day() === 6) {
-                    return (
-                      <Alert key={timeSlot.hour} severity="info">
-                        <Typography>Closed on weekends</Typography>
-                      </Alert>
-                    );
-                  }
-
+                {generateTimeSlots(selectedDate).map((timeSlot) => {
                   return (
                     <Card key={timeSlot.hour} sx={{ border: '1px solid #e0e0e0' }}>
                       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
