@@ -43,6 +43,7 @@ import { calculateDepositAmount, formatCurrency } from '../../services/stripeSer
 import { createAppointmentConfirmedNotification, createPaymentReceivedNotification } from '../../utils/notificationService';
 import { sendAppointmentConfirmationEmail } from '../../utils/emailService';
 import { handleError, withRetry } from '../../utils/errorHandler';
+import { handleAppointmentStatusChange } from '../../utils/notificationTriggers';
 import { LoadingSpinner, FormLoadingOverlay } from '../LoadingState';
 import ClientLayout from '../Layout/ClientLayout';
 
@@ -771,8 +772,9 @@ const BookAppointment = () => {
         userId: currentUser?.uid || 'guest',
         userEmail: currentUser?.email || formData.customerEmail,
         userName: currentUser?.displayName || formData.customerName,
-        userPhone: currentUser ? undefined : formData.customerPhone,
+        ...(!currentUser && formData.customerPhone ? { userPhone: formData.customerPhone } : {}), // Solo incluir userPhone para usuarios no logueados
         isGuestBooking: !currentUser,
+        bookingSource: formData.preselectedFromUrl ? 'web_url' : 'portal', // Identificar si viene desde URL
         services: formData.selectedServices.map(service => `${service.name} (${serviceCategories[service.category].name})`), // Array of service names with categories
         servicesDetails: formData.selectedServices, // Full service objects for reference
         vehicleType: formData.vehicleType,
@@ -790,63 +792,29 @@ const BookAppointment = () => {
         remainingBalance: remainingBalance,
         paymentStatus: 'deposit_paid',
         paymentId: paymentResult.id,
-        status: 'pending', // Requires admin approval
-        createdAt: serverTimestamp()
+        status: 'approved', // Automatically approved - no admin confirmation needed
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
 
       const docRef = await addDoc(collection(db, 'appointments'), appointmentData);
       
-      // Create notifications for the appointment (only for logged in users)
+      // Send automatic approval notifications
       try {
-        if (currentUser) {
-          await createAppointmentConfirmedNotification(currentUser.uid, {
-            ...appointmentData,
-            id: docRef.id
-          });
-          
-          if (paymentResult) {
-            await createPaymentReceivedNotification(currentUser.uid, {
-              id: paymentResult.id,
-              amount: depositAmount,
-              remaining: remainingBalance,
-              service: formData.selectedServices.map(s => `${s.name} (${serviceCategories[s.category].name})`).join(', ')
-            });
-          }
-        }
+        // Trigger notification system for approved status
+        await handleAppointmentStatusChange(docRef.id, 'approved', {
+          ...appointmentData,
+          id: docRef.id
+        });
         
-        // Enviar correo electrónico de confirmación
-        // Para usuarios no logueados, siempre enviamos email independientemente de la configuración
-        if (formData.emailReminders || !currentUser) {
-          try {
-            // Preparar datos para el correo electrónico
-            const emailData = {
-              ...appointmentData,
-              id: docRef.id
-            };
-            
-            // Determinar qué plantilla usar
-            let templateName = 'appointment_confirmation';
-            
-            // Para usuarios no registrados que vienen por URL, usar plantilla especial
-            if (!currentUser && formData.preselectedFromUrl) {
-              console.log('Enviando correo para usuario no registrado que vino por URL');
-              templateName = 'guest_url_appointment';
-              // Añadir datos adicionales específicos para esta plantilla
-              emailData.fromUrl = true;
-              emailData.urlService = searchParams.get('service');
-              emailData.urlServiceName = searchParams.get('serviceName');
-            }
-            
-            // Enviar un solo correo con el formato correcto
-            console.log(`Enviando correo con plantilla: ${templateName}`);
-            await sendAppointmentConfirmationEmail({
-              ...emailData,
-              template: templateName
-            });
-          } catch (emailError) {
-            console.error('Error sending confirmation email:', emailError);
-            // Don't fail if email sending fails
-          }
+        // Create payment notification for logged in users
+        if (currentUser && paymentResult) {
+          await createPaymentReceivedNotification(currentUser.uid, {
+            id: paymentResult.id,
+            amount: depositAmount,
+            remaining: remainingBalance,
+            service: formData.selectedServices.map(s => `${s.name} (${serviceCategories[s.category].name})`).join(', ')
+          });
         }
       } catch (notificationError) {
         console.error('Error creating notifications:', notificationError);

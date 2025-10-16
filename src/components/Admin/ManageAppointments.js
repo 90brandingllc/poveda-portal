@@ -335,10 +335,8 @@ const ManageAppointments = () => {
           const aptDate = apt.date?.toDate ? apt.date.toDate() : new Date(apt.date);
           return aptDate >= today && aptDate < tomorrow;
         });
-      case 2: return appointments.filter(apt => apt.status === 'pending');
-      case 3: return appointments.filter(apt => apt.status === 'approved');
-      case 4: return appointments.filter(apt => apt.status === 'completed');
-      case 5: return appointments.filter(apt => apt.status === 'rejected');
+      case 2: return appointments.filter(apt => apt.status === 'approved');
+      case 3: return appointments.filter(apt => apt.status === 'completed');
       default: return appointments;
     }
   };
@@ -357,10 +355,8 @@ const ManageAppointments = () => {
     return {
       all: appointments.length,
       today: todaysAppointments.length,
-      pending: appointments.filter(apt => apt.status === 'pending').length,
       approved: appointments.filter(apt => apt.status === 'approved').length,
-      completed: appointments.filter(apt => apt.status === 'completed').length,
-      rejected: appointments.filter(apt => apt.status === 'rejected').length
+      completed: appointments.filter(apt => apt.status === 'completed').length
     };
   };
 
@@ -466,33 +462,6 @@ const ManageAppointments = () => {
               }}>
                 <Typography 
                   variant={isMobile ? "h5" : "h4"} 
-                  sx={{ fontWeight: 'bold', color: '#ed6c02' }}
-                >
-                  {counts.pending}
-                </Typography>
-                <Typography 
-                  variant={isMobile ? "caption" : "body2"} 
-                  color="text.secondary"
-                >
-                  {isMobile ? 'Pending' : 'Pending Approval'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={6} md={3} sx={{ width: '100%' }}>
-            <Card sx={{ 
-              width: '100%',
-              minWidth: 0
-            }}>
-              <CardContent sx={{ 
-                textAlign: 'center', 
-                py: isMobile ? 1 : 2,
-                px: isMobile ? 0.5 : 2,
-                '&:last-child': { pb: isMobile ? 1 : 2 },
-                minWidth: 0
-              }}>
-                <Typography 
-                  variant={isMobile ? "h5" : "h4"} 
                   sx={{ fontWeight: 'bold', color: '#2e7d32' }}
                 >
                   {counts.approved}
@@ -501,7 +470,7 @@ const ManageAppointments = () => {
                   variant={isMobile ? "caption" : "body2"} 
                   color="text.secondary"
                 >
-                  Approved
+                  {isMobile ? 'Scheduled' : 'Scheduled'}
                 </Typography>
               </CardContent>
             </Card>
@@ -564,10 +533,8 @@ const ManageAppointments = () => {
           >
             <Tab label={isMobile ? `All (${counts.all})` : `All (${counts.all})`} />
             <Tab label={isMobile ? `Today (${counts.today})` : `Today (${counts.today})`} />
-            <Tab label={isMobile ? `Pending (${counts.pending})` : `Pending (${counts.pending})`} />
-            <Tab label={isMobile ? `Approved (${counts.approved})` : `Approved (${counts.approved})`} />
-            <Tab label={isMobile ? `Done (${counts.completed})` : `Completed (${counts.completed})`} />
-            <Tab label={isMobile ? `Rejected (${counts.rejected})` : `Rejected (${counts.rejected})`} />
+            <Tab label={isMobile ? `Scheduled (${counts.approved})` : `Scheduled (${counts.approved})`} />
+            <Tab label={isMobile ? `Completed (${counts.completed})` : `Completed (${counts.completed})`} />
           </Tabs>
         </Paper>
 
@@ -592,7 +559,9 @@ const ManageAppointments = () => {
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#999' }}>
                     {tabValue === 0 ? 'No appointments have been created yet.' : 
-                     tabValue === 1 ? 'No appointments scheduled for today.' : 
+                     tabValue === 1 ? 'No appointments scheduled for today.' :
+                     tabValue === 2 ? 'No scheduled appointments.' :
+                     tabValue === 3 ? 'No completed appointments.' :
                      'No appointments match the selected filter.'}
                   </Typography>
                 </Box>
@@ -670,6 +639,23 @@ const ManageAppointments = () => {
                               <Email fontSize="small" sx={{ fontSize: isSmallMobile ? '0.8rem' : '0.9rem', opacity: 0.8 }} />
                               {appointment.userEmail || appointment.customerEmail}
                             </Typography>
+                            {appointment.bookingSource === 'web_url' && (
+                              <Chip 
+                                label="Usuario desde página web"
+                                size="small"
+                                sx={{
+                                  mt: 0.5,
+                                  height: 18,
+                                  fontSize: '0.65rem',
+                                  bgcolor: '#e3f2fd',
+                                  color: '#1976d2',
+                                  fontWeight: 500,
+                                  '& .MuiChip-label': {
+                                    px: 1
+                                  }
+                                }}
+                              />
+                            )}
                             {appointment.customerPhone && (
                               <Typography 
                                 variant="caption"
@@ -830,66 +816,6 @@ const ManageAppointments = () => {
                           >
                             View
                           </Button>
-                          {appointment.status === 'pending' && (
-                            <>
-                              <Button
-                                onClick={async () => {
-                                  const exists = await verifyAppointmentExists(appointment.id);
-                                  if (exists) {
-                                    handleStatusChange(appointment.id, 'approved');
-                                  } else {
-                                    setSnackbar({
-                                      open: true,
-                                      message: 'La cita ya no existe en la base de datos.',
-                                      severity: 'error'
-                                    });
-                                  }
-                                }}
-                                variant="contained"
-                                size="small"
-                                sx={{ 
-                                  bgcolor: '#2e7d32', 
-                                  '&:hover': { bgcolor: '#1b5e20' },
-                                  fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
-                                  minWidth: isSmallMobile ? 65 : 'auto',
-                                  px: isSmallMobile ? 1.5 : 1.5,
-                                  py: isSmallMobile ? 0.5 : 0.5,
-                                  height: isSmallMobile ? 28 : 32
-                                }}
-                                startIcon={!isSmallMobile && <CheckCircle />}
-                              >
-                                {isSmallMobile ? 'Approve' : 'Approve'}
-                              </Button>
-                              <Button
-                                onClick={async () => {
-                                  const exists = await verifyAppointmentExists(appointment.id);
-                                  if (exists) {
-                                    handleStatusChange(appointment.id, 'rejected');
-                                  } else {
-                                    setSnackbar({
-                                      open: true,
-                                      message: 'La cita ya no existe en la base de datos.',
-                                      severity: 'error'
-                                    });
-                                  }
-                                }}
-                                variant="contained"
-                                size="small"
-                                sx={{ 
-                                  bgcolor: '#d32f2f', 
-                                  '&:hover': { bgcolor: '#c62828' },
-                                  fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
-                                  minWidth: isSmallMobile ? 55 : 'auto',
-                                  px: isSmallMobile ? 1.5 : 1.5,
-                                  py: isSmallMobile ? 0.5 : 0.5,
-                                  height: isSmallMobile ? 28 : 32
-                                }}
-                                startIcon={!isSmallMobile && <Cancel />}
-                              >
-                                {isSmallMobile ? 'Reject' : 'Reject'}
-                              </Button>
-                            </>
-                          )}
                           {appointment.status === 'approved' && (
                             <Button
                               onClick={async () => {
@@ -975,6 +901,20 @@ const ManageAppointments = () => {
                             <Email fontSize="small" sx={{ color: '#666', opacity: 0.8 }} />
                             {appointment.userEmail || appointment.customerEmail}
                           </Typography>
+                          {appointment.bookingSource === 'web_url' && (
+                            <Chip 
+                              label="Usuario desde página web"
+                              size="small"
+                              sx={{
+                                mt: 0.5,
+                                height: 20,
+                                fontSize: '0.7rem',
+                                bgcolor: '#e3f2fd',
+                                color: '#1976d2',
+                                fontWeight: 500
+                              }}
+                            />
+                          )}
                           {appointment.customerPhone && (
                             <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                               <Phone fontSize="small" sx={{ color: '#666', opacity: 0.8 }} />
@@ -1038,48 +978,6 @@ const ManageAppointments = () => {
                           >
                             <Visibility />
                           </IconButton>
-                          {appointment.status === 'pending' && (
-                            <>
-                              <IconButton
-                                onClick={async () => {
-                                  const exists = await verifyAppointmentExists(appointment.id);
-                                  if (exists) {
-                                    handleStatusChange(appointment.id, 'approved');
-                                  } else {
-                                    setSnackbar({
-                                      open: true,
-                                      message: 'La cita ya no existe en la base de datos.',
-                                      severity: 'error'
-                                    });
-                                  }
-                                }}
-                                sx={{ color: '#2e7d32' }}
-                                size="small"
-                                title="Aprobar cita"
-                              >
-                                <CheckCircle />
-                              </IconButton>
-                              <IconButton
-                                onClick={async () => {
-                                  const exists = await verifyAppointmentExists(appointment.id);
-                                  if (exists) {
-                                    handleStatusChange(appointment.id, 'rejected');
-                                  } else {
-                                    setSnackbar({
-                                      open: true,
-                                      message: 'La cita ya no existe en la base de datos.',
-                                      severity: 'error'
-                                    });
-                                  }
-                                }}
-                                sx={{ color: '#d32f2f' }}
-                                size="small"
-                                title="Rechazar cita"
-                              >
-                                <Cancel />
-                              </IconButton>
-                            </>
-                          )}
                           {appointment.status === 'approved' && (
                             <IconButton
                               onClick={async () => {
@@ -1122,7 +1020,9 @@ const ManageAppointments = () => {
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#999' }}>
                           {tabValue === 0 ? 'No appointments have been created yet.' : 
-                           tabValue === 1 ? 'No appointments scheduled for today.' : 
+                           tabValue === 1 ? 'No appointments scheduled for today.' :
+                           tabValue === 2 ? 'No scheduled appointments.' :
+                           tabValue === 3 ? 'No completed appointments.' :
                            'No appointments match the selected filter.'}
                         </Typography>
                       </TableCell>
@@ -1310,30 +1210,6 @@ const ManageAppointments = () => {
               
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
-                {selectedAppointment?.status === 'pending' && (
-                  <>
-                    <Button 
-                      onClick={() => {
-                        handleStatusChange(selectedAppointment.id, 'approved');
-                        setDetailsDialogOpen(false);
-                      }}
-                      variant="contained" 
-                      color="success"
-                    >
-                      Approve
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        handleStatusChange(selectedAppointment.id, 'rejected');
-                        setDetailsDialogOpen(false);
-                      }}
-                      variant="contained" 
-                      color="error"
-                    >
-                      Reject
-                    </Button>
-                  </>
-                )}
                 {selectedAppointment?.status === 'approved' && (
                   <Button 
                     onClick={() => {
