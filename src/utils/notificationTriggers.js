@@ -5,7 +5,7 @@ import {
   createEstimateApprovedNotification,
   createEstimateDeclinedNotification
 } from './notificationService';
-import { sendAppointmentStatusEmail } from './emailService';
+import { sendAppointmentStatusEmail, sendAppointmentConfirmationEmail } from './emailService';
 import { doc, getDoc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -73,9 +73,43 @@ export const handleAppointmentStatusChange = async (appointmentId, newStatus, ap
     // Create appropriate notification based on status
     try {
       if (newStatus === 'approved') {
-        await createAppointmentConfirmedNotification(normalizedData.userId, normalizedData);
+        // Only create in-app notification for logged-in users (not guests)
+        if (normalizedData.userId && normalizedData.userId !== 'guest') {
+          await createAppointmentConfirmedNotification(normalizedData.userId, normalizedData);
+        }
+        
+        // ALWAYS send email notification for approved appointments (both logged in and guests)
+        if (normalizedData.userEmail) {
+          try {
+            console.log(`Sending confirmation email to ${normalizedData.userEmail}, isGuestBooking: ${normalizedData.isGuestBooking}`);
+            
+            // Always use appointment_confirmation template for all users
+            // This ensures consistent email format for everyone
+            await sendAppointmentConfirmationEmail({
+              ...normalizedData,
+              template: 'appointment_confirmation'
+            });
+            
+            console.log(`✅ Confirmation email sent successfully to ${normalizedData.userEmail}`);
+          } catch (emailError) {
+            console.error('❌ Error sending confirmation email:', emailError);
+            console.error('Email error details:', emailError.message);
+            // Don't fail if email sending fails
+          }
+        } else {
+          console.warn('⚠️ No email address provided for appointment confirmation');
+        }
       } else if (newStatus === 'completed') {
         await createServiceCompletedNotification(normalizedData.userId, normalizedData);
+        
+        // Send completion email if enabled
+        if (normalizedData.emailReminders && normalizedData.userEmail) {
+          try {
+            await sendAppointmentStatusEmail(normalizedData, newStatus);
+          } catch (emailError) {
+            console.error('Error sending email notification:', emailError);
+          }
+        }
       } else if (newStatus === 'rejected') {
         // Custom notification for rejected appointments
         const dateDisplay = normalizedData.date instanceof Date ? 
@@ -91,15 +125,14 @@ export const handleAppointmentStatusChange = async (appointmentId, newStatus, ap
             appointmentId: appointmentId,
           }
         );
-      }
-      
-      // Send email notification if enabled
-      if (normalizedData.emailReminders && normalizedData.userEmail) {
-        try {
-          await sendAppointmentStatusEmail(normalizedData, newStatus);
-        } catch (emailError) {
-          console.error('Error sending email notification:', emailError);
-          // Don't fail if email sending fails
+        
+        // Send rejection email if enabled
+        if (normalizedData.emailReminders && normalizedData.userEmail) {
+          try {
+            await sendAppointmentStatusEmail(normalizedData, newStatus);
+          } catch (emailError) {
+            console.error('Error sending email notification:', emailError);
+          }
         }
       }
       
