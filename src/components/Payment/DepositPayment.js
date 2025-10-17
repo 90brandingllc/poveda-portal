@@ -12,21 +12,57 @@ import {
 } from '@mui/material';
 import {
   CreditCard,
-  AccountBalance
+  AccountBalance,
+  Apple,
+  PhoneIphone,
+  CloudUpload,
+  CheckCircle,
+  AttachFile
 } from '@mui/icons-material';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getStripe, calculateDepositAmount, formatCurrency } from '../../services/stripeService';
+import { storage } from '../../firebase/config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError, customerName, customerEmail }) => {
   const stripe = useStripe();
   const elements = useElements();
+  const { currentUser } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState(0); // 0: Card, 1: Zelle
+  const [paymentMethod, setPaymentMethod] = useState(0); // 0: Card, 1: Zelle, 2: Apple Pay
+  const [applePayAvailable, setApplePayAvailable] = useState(false);
+  const [zelleReceipt, setZelleReceipt] = useState(null);
+  const [receiptUploading, setReceiptUploading] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState('');
 
   const depositAmount = calculateDepositAmount(servicePrice);
   const depositDisplay = formatCurrency(depositAmount);
   const remainingAmount = servicePrice - parseFloat(depositDisplay);
+
+  // Check if Apple Pay is available on load
+  React.useEffect(() => {
+    const checkApplePay = async () => {
+      if (!stripe) return;
+      
+      const paymentRequest = stripe.paymentRequest({
+        country: 'US',
+        currency: 'usd',
+        total: {
+          label: 'Deposit Payment',
+          amount: depositAmount,
+        },
+        requestPayerName: true,
+        requestPayerEmail: true,
+      });
+
+      const canMakePayment = await paymentRequest.canMakePayment();
+      setApplePayAvailable(!!canMakePayment?.applePay);
+    };
+
+    checkApplePay();
+  }, [stripe, depositAmount]);
 
   const handleCardPayment = async (event) => {
     event.preventDefault();
@@ -105,7 +141,56 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     setIsProcessing(false);
   };
 
+  const handleReceiptUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!validTypes.includes(file.type)) {
+      setError('❌ Only images (JPG, PNG, GIF) and PDF files are allowed');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('❌ File size must be less than 5MB');
+      return;
+    }
+
+    setReceiptUploading(true);
+    setError('');
+
+    try {
+      const userId = currentUser?.uid || 'guest';
+      const timestamp = Date.now();
+      const fileName = `zelle_receipt_${timestamp}_${file.name}`;
+      const storageRef = ref(storage, `payment-receipts/${userId}/${fileName}`);
+
+      console.log('Uploading receipt to:', `payment-receipts/${userId}/${fileName}`);
+      
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      
+      console.log('✅ Receipt uploaded successfully:', downloadUrl);
+      
+      setZelleReceipt(file);
+      setReceiptUrl(downloadUrl);
+      setReceiptUploading(false);
+    } catch (err) {
+      console.error('Error uploading receipt:', err);
+      setError(`❌ Failed to upload receipt: ${err.message}`);
+      setReceiptUploading(false);
+    }
+  };
+
   const handleZellePayment = async () => {
+    // Validate that receipt is uploaded
+    if (!zelleReceipt || !receiptUrl) {
+      setError('❌ Please upload your Zelle payment receipt first');
+      return;
+    }
+
     setIsProcessing(true);
     setError('');
 
@@ -113,15 +198,18 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
       // Simulate Zelle payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock successful Zelle payment (ficticio - para uso interno)
+      // Mock successful Zelle payment with receipt URL
       const mockPaymentResult = {
         id: `zelle_${Math.random().toString(36).substr(2, 9)}`,
         status: 'succeeded',
         amount: depositAmount,
         payment_method: 'zelle',
-        method: 'zelle'
+        method: 'zelle',
+        receiptUrl: receiptUrl,
+        receiptFileName: zelleReceipt.name
       };
 
+      console.log('✅ Zelle payment confirmed with receipt:', mockPaymentResult);
       onPaymentSuccess(mockPaymentResult);
     } catch (err) {
       setError('Zelle payment failed. Please try again.');
@@ -129,6 +217,92 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     }
 
     setIsProcessing(false);
+  };
+
+  const handleApplePayment = async () => {
+    if (!stripe) {
+      setError('Stripe is not initialized. Please check your configuration.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError('');
+
+    try {
+      // Create Payment Request
+      const paymentRequest = stripe.paymentRequest({
+        country: 'US',
+        currency: 'usd',
+        total: {
+          label: `Deposit - ${servicePackage || 'Service'}`,
+          amount: depositAmount,
+        },
+        requestPayerName: true,
+        requestPayerEmail: true,
+      });
+
+      // Create Payment Intent on backend
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const functions = getFunctions();
+      const createPaymentIntentFn = httpsCallable(functions, 'createPaymentIntent');
+      
+      const paymentIntentResult = await createPaymentIntentFn({
+        amount: depositAmount,
+        currency: 'usd',
+        metadata: {
+          servicePackage: servicePackage || 'Auto Detailing Service',
+          servicePrice: servicePrice,
+          depositAmount: depositDisplay,
+          customerEmail: customerEmail || 'customer@example.com',
+          customerName: customerName || 'Customer',
+          paymentMethod: 'apple_pay'
+        }
+      });
+
+      const { clientSecret } = paymentIntentResult.data;
+
+      // Handle payment method
+      paymentRequest.on('paymentmethod', async (ev) => {
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          clientSecret,
+          { payment_method: ev.paymentMethod.id },
+          { handleActions: false }
+        );
+
+        if (confirmError) {
+          ev.complete('fail');
+          setError(confirmError.message);
+          onPaymentError(confirmError);
+          setIsProcessing(false);
+        } else {
+          ev.complete('success');
+          
+          if (paymentIntent.status === 'succeeded') {
+            const paymentResult = {
+              id: paymentIntent.id,
+              status: paymentIntent.status,
+              amount: paymentIntent.amount,
+              payment_method: ev.paymentMethod.id,
+              method: 'apple_pay',
+              created: paymentIntent.created,
+              currency: paymentIntent.currency
+            };
+
+            onPaymentSuccess(paymentResult);
+          }
+          setIsProcessing(false);
+        }
+      });
+
+      // Show Apple Pay sheet
+      paymentRequest.show();
+
+    } catch (err) {
+      console.error('Apple Pay error:', err);
+      setError(err.message || 'Apple Pay failed. Please try again.');
+      onPaymentError(err);
+      setIsProcessing(false);
+    }
   };
 
   const cardElementOptions = {
@@ -361,18 +535,29 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   label: 'Credit/Debit Card', 
                   color: '#1565c0', 
                   desc: 'Visa, Mastercard, Amex',
-                  badge: 'Secure & Instant'
+                  badge: 'Secure & Instant',
+                  available: true
                 },
                 { 
                   id: 1, 
-                  icon: <AccountBalance />, 
+                  icon: <PhoneIphone />, 
                   label: 'Zelle', 
                   color: '#6b21a8', 
                   desc: 'Fast Bank Transfer',
-                  badge: 'Internal Use'
+                  badge: 'Quick Pay',
+                  available: true
+                },
+                { 
+                  id: 2, 
+                  icon: <Apple />, 
+                  label: 'Apple Pay', 
+                  color: '#000000', 
+                  desc: 'One-tap checkout',
+                  badge: applePayAvailable ? 'Available' : 'Not Available',
+                  available: applePayAvailable
                 }
-              ].map((method) => (
-                <Grid item xs={12} sm={6} key={method.id}>
+              ].filter(method => method.available).map((method) => (
+                <Grid item xs={12} sm={6} md={4} key={method.id}>
                   <Paper
                     elevation={paymentMethod === method.id ? 6 : 2}
                     sx={{
@@ -469,21 +654,25 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                         position: 'absolute',
                         top: -10,
                         left: 16,
-                        backgroundColor: method.id === 0 ? '#10b981' : '#6b21a8',
+                        backgroundColor: method.id === 0 ? '#10b981' : method.id === 1 ? '#6b21a8' : '#000000',
                         color: 'white',
                         px: 2,
                         py: 0.75,
                         borderRadius: '20px',
                         fontSize: '0.7rem',
                         fontWeight: 700,
-                        boxShadow: method.id === 0 ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 4px 12px rgba(107, 33, 168, 0.4)',
+                        boxShadow: method.id === 0 ? '0 4px 12px rgba(16, 185, 129, 0.4)' : 
+                                  method.id === 1 ? '0 4px 12px rgba(107, 33, 168, 0.4)' : 
+                                  '0 4px 12px rgba(0, 0, 0, 0.4)',
                         border: '2px solid rgba(255, 255, 255, 0.9)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 0.5,
                         letterSpacing: '0.5px'
                       }}>
-                        <Box component="span" sx={{ fontSize: '0.9rem' }}>{method.id === 0 ? '🔒' : '⚡'}</Box>
+                        <Box component="span" sx={{ fontSize: '0.9rem' }}>
+                          {method.id === 0 ? '🔒' : method.id === 1 ? '⚡' : '🍎'}
+                        </Box>
                         {method.badge}
                       </Box>
                     )}
@@ -628,13 +817,13 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                 alignItems: 'center',
                 gap: 1
               }}>
-                <AccountBalance fontSize="small" />
-                Zelle Transfer - Internal Use
+                <PhoneIphone fontSize="small" />
+                Pay with Zelle
               </Typography>
               
-              <Alert severity="warning" sx={{ mb: 3, borderRadius: '12px' }}>
+              <Alert severity="info" icon={<Box component="span" sx={{ fontSize: '1.3rem' }}>📱</Box>} sx={{ mb: 3, borderRadius: '12px' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  <strong>⚡ For Internal Use Only</strong> - This payment method is for authorized staff to process manual Zelle transfers.
+                  <strong>Fast & Secure</strong> - Send your deposit directly from your bank app using Zelle.
                 </Typography>
               </Alert>
               
@@ -645,18 +834,142 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                 background: 'linear-gradient(135deg, rgba(107, 33, 168, 0.03) 0%, rgba(107, 33, 168, 0.08) 100%)',
                 border: '2px solid rgba(107, 33, 168, 0.2)'
               }}>
-                <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: '#0f172a' }}>
-                  Zelle Transfer Instructions:
+                <Typography variant="body2" sx={{ mb: 2, fontWeight: 700, color: '#6b21a8', fontSize: '1rem' }}>
+                  📲 Send ${depositDisplay} via Zelle to:
                 </Typography>
-                <Typography variant="body2" sx={{ mb: 1, color: '#64748b' }}>
-                  • Customer sends $50.00 to Zelle account
+                
+                <Box sx={{ 
+                  p: 2.5, 
+                  bgcolor: 'white', 
+                  borderRadius: '12px',
+                  border: '2px dashed #6b21a8',
+                  mb: 2
+                }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PhoneIphone sx={{ color: '#6b21a8' }} />
+                    614-653-5882
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#64748b' }}>
+                    Poveda Premium Auto Care
+                  </Typography>
+                </Box>
+
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', mb: 1.5 }}>
+                  📝 Instructions:
                 </Typography>
-                <Typography variant="body2" sx={{ mb: 1, color: '#64748b' }}>
-                  • Verify receipt before confirming
+                <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                  <Typography component="li" variant="body2" sx={{ mb: 1, color: '#64748b' }}>
+                    Open your bank app and select Zelle
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ mb: 1, color: '#64748b' }}>
+                    Send <strong>${depositDisplay}</strong> to <strong>614-653-5882</strong>
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ mb: 1, color: '#64748b' }}>
+                    Add your name in the memo/note field
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ color: '#64748b' }}>
+                    Click the button below once sent
+                  </Typography>
+                </Box>
+              </Paper>
+              
+              {/* Upload Receipt Section */}
+              <Paper variant="outlined" sx={{ 
+                p: 3, 
+                mb: 3, 
+                borderRadius: '16px',
+                background: receiptUrl ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%)' : 'linear-gradient(135deg, rgba(107, 33, 168, 0.03) 0%, rgba(107, 33, 168, 0.08) 100%)',
+                border: receiptUrl ? '2px solid rgba(16, 185, 129, 0.3)' : '2px dashed rgba(107, 33, 168, 0.3)',
+                textAlign: 'center'
+              }}>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: receiptUrl ? '#10b981' : '#6b21a8', mb: 2, fontSize: '1rem' }}>
+                  {receiptUrl ? '✅ Receipt Uploaded!' : '📎 Upload Payment Receipt (Required)'}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b' }}>
-                  • Reference: Booking ID will be generated
-                </Typography>
+                
+                {receiptUrl ? (
+                  <Box>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: 1,
+                      mb: 2,
+                      p: 2,
+                      bgcolor: 'white',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(16, 185, 129, 0.2)'
+                    }}>
+                      <CheckCircle sx={{ color: '#10b981', fontSize: '2rem' }} />
+                      <Box sx={{ textAlign: 'left' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                          {zelleReceipt?.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          {(zelleReceipt?.size / 1024).toFixed(2)} KB
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        borderColor: '#10b981',
+                        color: '#10b981',
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        '&:hover': {
+                          borderColor: '#059669',
+                          bgcolor: 'rgba(16, 185, 129, 0.04)'
+                        }
+                      }}
+                    >
+                      Change Receipt
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*,.pdf"
+                        onChange={handleReceiptUpload}
+                        disabled={receiptUploading}
+                      />
+                    </Button>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Button
+                      component="label"
+                      variant="contained"
+                      startIcon={receiptUploading ? <CircularProgress size={20} color="inherit" /> : <CloudUpload />}
+                      disabled={receiptUploading}
+                      sx={{
+                        py: 1.5,
+                        px: 4,
+                        borderRadius: '12px',
+                        background: 'linear-gradient(135deg, #6b21a8 0%, #581c87 100%)',
+                        boxShadow: '0 4px 12px rgba(107, 33, 168, 0.3)',
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        textTransform: 'none',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #581c87 0%, #4c1d95 100%)',
+                          boxShadow: '0 6px 16px rgba(107, 33, 168, 0.4)',
+                        }
+                      }}
+                    >
+                      {receiptUploading ? 'Uploading...' : 'Choose File'}
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*,.pdf"
+                        onChange={handleReceiptUpload}
+                        disabled={receiptUploading}
+                      />
+                    </Button>
+                    <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#64748b' }}>
+                      Accepted formats: JPG, PNG, GIF, PDF (max 5MB)
+                    </Typography>
+                  </Box>
+                )}
               </Paper>
               
               <Button
@@ -664,7 +977,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                 size="large"
                 fullWidth
                 onClick={handleZellePayment}
-                disabled={isProcessing}
+                disabled={isProcessing || !receiptUrl}
                 sx={{
                   py: 2,
                   borderRadius: '16px',
@@ -685,12 +998,94 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                 {isProcessing ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
                     <CircularProgress size={22} color="inherit" />
-                    <Typography sx={{ fontWeight: 600 }}>Processing Zelle Transfer...</Typography>
+                    <Typography sx={{ fontWeight: 600 }}>Processing...</Typography>
+                  </Box>
+                ) : receiptUrl ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                    <Box component="span" sx={{ fontSize: '1.3rem' }}>✅</Box>
+                    <Typography sx={{ fontWeight: 600 }}>Confirm Payment</Typography>
                   </Box>
                 ) : (
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
-                    <Box component="span" sx={{ fontSize: '1.3rem' }}>⚡</Box>
-                    <Typography sx={{ fontWeight: 600 }}>Confirm Zelle Payment ${depositDisplay}</Typography>
+                    <Box component="span" sx={{ fontSize: '1.3rem' }}>📎</Box>
+                    <Typography sx={{ fontWeight: 600 }}>Upload Receipt First</Typography>
+                  </Box>
+                )}
+              </Button>
+            </Box>
+          )}
+
+          {paymentMethod === 2 && (
+            <Box>
+              <Typography variant="subtitle2" sx={{ 
+                mb: 2, 
+                fontWeight: 600, 
+                color: '#000000',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <Apple fontSize="small" />
+                Pay with Apple Pay
+              </Typography>
+              
+              <Alert severity="success" icon={<Box component="span" sx={{ fontSize: '1.3rem' }}>🍎</Box>} sx={{ mb: 3, borderRadius: '12px' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  <strong>One-Tap Checkout</strong> - Fast, secure, and private payment with Face ID or Touch ID.
+                </Typography>
+              </Alert>
+              
+              <Paper variant="outlined" sx={{ 
+                p: 3, 
+                mb: 3, 
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.05) 100%)',
+                border: '2px solid rgba(0, 0, 0, 0.1)'
+              }}>
+                <Box sx={{ textAlign: 'center', py: 2 }}>
+                  <Apple sx={{ fontSize: '4rem', mb: 2 }} />
+                  <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                    Click the button below to complete your payment with Apple Pay
+                  </Typography>
+                </Box>
+              </Paper>
+              
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                onClick={handleApplePayment}
+                disabled={isProcessing || !applePayAvailable}
+                sx={{
+                  py: 2,
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                  boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3)',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  textTransform: 'none',
+                  letterSpacing: '0.2px',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #1a1a1a 0%, #333333 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 20px rgba(0, 0, 0, 0.4)',
+                  },
+                  '&:disabled': {
+                    background: '#e2e8f0',
+                    color: '#94a3b8'
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {isProcessing ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                    <CircularProgress size={22} color="inherit" />
+                    <Typography sx={{ fontWeight: 600 }}>Processing...</Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                    <Apple />
+                    <Typography sx={{ fontWeight: 600 }}>Pay ${depositDisplay}</Typography>
                   </Box>
                 )}
               </Button>
