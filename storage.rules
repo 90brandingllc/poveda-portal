@@ -63,6 +63,29 @@ service firebase.storage {
       allow read: if request.auth != null;
     }
     
+    // Rules for payment receipts (Zelle, etc)
+    match /payment-receipts/{userId}/{fileName} {
+      // Allow authenticated users to upload receipts to their own folder
+      allow create: if request.auth != null && 
+                   request.auth.uid == userId &&
+                   // Validate file size (max 5MB for receipts)
+                   request.resource.size <= 5 * 1024 * 1024 &&
+                   // Validate file type (images and PDFs)
+                   (request.resource.contentType.matches('image/.*') ||
+                    request.resource.contentType == 'application/pdf');
+      
+      // Allow users to read their own receipts
+      allow read: if request.auth != null && 
+                 request.auth.uid == userId;
+      
+      // Allow admins to read all receipts
+      allow read: if request.auth != null;
+      
+      // Allow users to delete their own receipts
+      allow delete: if request.auth != null && 
+                   request.auth.uid == userId;
+    }
+    
     // Deny all other access
     match /{allPaths=**} {
       allow read, write: if false;

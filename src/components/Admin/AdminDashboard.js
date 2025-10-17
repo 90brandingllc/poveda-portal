@@ -80,10 +80,14 @@ const AdminDashboard = () => {
     );
 
     const unsubscribeEstimates = onSnapshot(
-      query(collection(db, 'estimates'), orderBy('createdAt', 'desc'), limit(5)),
+      query(collection(db, 'estimates'), orderBy('lastUpdated', 'desc'), limit(5)),
       (snapshot) => {
-        const estimates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setRecentEstimates(estimates);
+        const estimatesData = [];
+        snapshot.forEach((doc) => {
+          estimatesData.push({ id: doc.id, ...doc.data() });
+        });
+        console.log('Dashboard - Loaded estimates:', estimatesData.length);
+        setRecentEstimates(estimatesData);
       }
     );
 

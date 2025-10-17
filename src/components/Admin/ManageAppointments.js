@@ -39,7 +39,10 @@ import {
   LocationOn,
   DirectionsCar,
   ArrowBack,
-  Delete
+  Delete,
+  Receipt,
+  ImageOutlined,
+  PictureAsPdf
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase/config';
@@ -72,6 +75,8 @@ const ManageAppointments = () => {
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [tabValue, setTabValue] = useState(0);
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const [currentReceipt, setCurrentReceipt] = useState(null);
 
   // Check URL parameters to set initial tab
   useEffect(() => {
@@ -90,6 +95,24 @@ const ManageAppointments = () => {
         snapshot.forEach((doc) => {
           appointmentsData.push({ id: doc.id, ...doc.data() });
         });
+        
+        // Debug: Check for receipts
+        console.log('📊 Total appointments loaded:', appointmentsData.length);
+        const withReceipts = appointmentsData.filter(apt => apt.paymentReceiptUrl);
+        console.log('📄 Appointments with receipts:', withReceipts.length);
+        
+        if (withReceipts.length > 0) {
+          console.log('✅ Receipts found:');
+          withReceipts.forEach(apt => {
+            console.log(`  - ID: ${apt.id}`);
+            console.log(`    Method: ${apt.paymentMethod}`);
+            console.log(`    Receipt: ${apt.paymentReceiptUrl?.substring(0, 50)}...`);
+          });
+        } else {
+          console.log('⚠️ No appointments have paymentReceiptUrl field yet');
+          console.log('💡 To see receipts: Create a new appointment with Zelle payment and upload a receipt');
+        }
+        
         setAppointments(appointmentsData);
         setLoading(false);
       }
@@ -235,6 +258,23 @@ const ManageAppointments = () => {
   const handleViewDetails = (appointment) => {
     setSelectedAppointment(normalizeAppointmentData(appointment));
     setDetailsDialogOpen(true);
+  };
+
+  // Function to view payment receipt
+  const handleViewReceipt = (appointment) => {
+    if (appointment.paymentReceiptUrl) {
+      setCurrentReceipt({
+        url: appointment.paymentReceiptUrl,
+        fileName: appointment.paymentReceiptFileName || 'receipt',
+        paymentMethod: appointment.paymentMethod || 'zelle'
+      });
+      setReceiptDialogOpen(true);
+    }
+  };
+
+  const handleCloseReceiptDialog = () => {
+    setReceiptDialogOpen(false);
+    setCurrentReceipt(null);
   };
 
   // Function to start the deletion process
@@ -879,6 +919,29 @@ const ManageAppointments = () => {
                           >
                             View
                           </Button>
+                          {appointment.paymentReceiptUrl && (
+                            <Button
+                              onClick={() => handleViewReceipt(appointment)}
+                              variant="outlined"
+                              size="small"
+                              startIcon={!isSmallMobile && <Receipt />}
+                              sx={{
+                                fontSize: isSmallMobile ? '0.7rem' : '0.75rem',
+                                minWidth: isSmallMobile ? 55 : 'auto',
+                                px: isSmallMobile ? 1.5 : 1.5,
+                                py: isSmallMobile ? 0.5 : 0.5,
+                                height: isSmallMobile ? 28 : 32,
+                                borderColor: '#6b21a8',
+                                color: '#6b21a8',
+                                '&:hover': {
+                                  borderColor: '#581c87',
+                                  bgcolor: 'rgba(107, 33, 168, 0.04)'
+                                }
+                              }}
+                            >
+                              {isSmallMobile ? 'Receipt' : 'Receipt'}
+                            </Button>
+                          )}
                           {appointment.status === 'approved' && (
                             <>
                               <Button
@@ -1101,6 +1164,16 @@ const ManageAppointments = () => {
                           >
                             <Visibility />
                           </IconButton>
+                          {appointment.paymentReceiptUrl && (
+                            <IconButton
+                              onClick={() => handleViewReceipt(appointment)}
+                              sx={{ color: '#6b21a8' }}
+                              size="small"
+                              title="Ver comprobante de pago"
+                            >
+                              <Receipt />
+                            </IconButton>
+                          )}
                           {appointment.status === 'approved' && (
                             <>
                               <IconButton
@@ -1471,6 +1544,114 @@ const ManageAppointments = () => {
               startIcon={<Delete />}
             >
               Delete Appointment
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Receipt Viewer Dialog */}
+        <Dialog
+          open={receiptDialogOpen}
+          onClose={handleCloseReceiptDialog}
+          maxWidth="md"
+          fullWidth
+          fullScreen={isMobile}
+        >
+          <DialogTitle sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            bgcolor: '#6b21a8',
+            color: 'white'
+          }}>
+            <Receipt />
+            Payment Receipt - {currentReceipt?.paymentMethod?.toUpperCase() || 'ZELLE'}
+          </DialogTitle>
+          <DialogContent sx={{ pt: 3 }}>
+            {currentReceipt && (
+              <Box>
+                <Typography variant="body2" sx={{ mb: 2, color: '#64748b' }}>
+                  <strong>File:</strong> {currentReceipt.fileName}
+                </Typography>
+                
+                {/* Check if it's an image or PDF */}
+                {currentReceipt.url && (
+                  currentReceipt.fileName.toLowerCase().endsWith('.pdf') ? (
+                    // PDF Viewer
+                    <Box>
+                      <Box sx={{ 
+                        p: 2, 
+                        mb: 2, 
+                        bgcolor: '#f1f5f9', 
+                        borderRadius: 2,
+                        textAlign: 'center' 
+                      }}>
+                        <PictureAsPdf sx={{ fontSize: '4rem', color: '#d32f2f', mb: 1 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                          PDF Receipt
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          href={currentReceipt.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          startIcon={<PictureAsPdf />}
+                          sx={{
+                            bgcolor: '#d32f2f',
+                            '&:hover': { bgcolor: '#c62828' }
+                          }}
+                        >
+                          Open PDF in New Tab
+                        </Button>
+                      </Box>
+                      <iframe
+                        src={currentReceipt.url}
+                        width="100%"
+                        height="600px"
+                        title="Payment Receipt PDF"
+                        style={{ border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                      />
+                    </Box>
+                  ) : (
+                    // Image Viewer
+                    <Box sx={{ 
+                      textAlign: 'center',
+                      p: 2,
+                      bgcolor: '#f8f9fa',
+                      borderRadius: 2
+                    }}>
+                      <img 
+                        src={currentReceipt.url} 
+                        alt="Payment Receipt" 
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '70vh',
+                          objectFit: 'contain',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }} 
+                      />
+                      <Button
+                        variant="outlined"
+                        href={currentReceipt.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startIcon={<ImageOutlined />}
+                        sx={{ mt: 2 }}
+                      >
+                        Open Full Size
+                      </Button>
+                    </Box>
+                  )
+                )}
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 3 }}>
+            <Button 
+              onClick={handleCloseReceiptDialog}
+              variant="contained"
+            >
+              Close
             </Button>
           </DialogActions>
         </Dialog>

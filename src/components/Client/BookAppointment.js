@@ -801,6 +801,11 @@ const BookAppointment = () => {
         remainingBalance: remainingBalance,
         paymentStatus: 'deposit_paid',
         paymentId: paymentResult.id,
+        paymentMethod: paymentResult.method || 'card',
+        ...(paymentResult.receiptUrl && { 
+          paymentReceiptUrl: paymentResult.receiptUrl,
+          paymentReceiptFileName: paymentResult.receiptFileName 
+        }),
         status: 'approved', // Automatically approved - no admin confirmation needed
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()

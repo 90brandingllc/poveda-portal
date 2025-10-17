@@ -182,26 +182,42 @@ const ManageTickets = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!ticketToDelete) return;
+    if (!ticketToDelete) {
+      console.warn('No ticket selected for deletion');
+      return;
+    }
 
     try {
-      await deleteDoc(doc(db, 'tickets', ticketToDelete.id));
+      console.log('Attempting to delete ticket:', ticketToDelete.id);
+      
+      const ticketRef = doc(db, 'tickets', ticketToDelete.id);
+      await deleteDoc(ticketRef);
+      
+      console.log('✅ Ticket deleted successfully:', ticketToDelete.id);
       
       setSnackbar({
         open: true,
-        message: 'Ticket deleted successfully!',
+        message: '✅ Ticket deleted successfully!',
         severity: 'success'
       });
       
       setDeleteConfirmOpen(false);
       setTicketToDelete(null);
     } catch (error) {
-      console.error('Error deleting ticket:', error);
+      console.error('❌ Error deleting ticket:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        ticketId: ticketToDelete?.id
+      });
+      
       setSnackbar({
         open: true,
-        message: 'Failed to delete ticket.',
+        message: `❌ Failed to delete ticket: ${error.message}`,
         severity: 'error'
       });
+      
+      // Don't close dialog on error so user can see what happened
     }
   };
 

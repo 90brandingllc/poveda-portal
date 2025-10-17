@@ -59,9 +59,9 @@ service cloud.firestore {
       allow read: if request.auth != null && 
                  request.auth.uid == resource.data.userId;
       
-      // Admins can read and update all tickets
-      allow read, update: if request.auth != null && 
-                         getUserRole(request.auth.uid) == 'admin';
+      // Admins can read, update, and delete all tickets
+      allow read, update, delete: if request.auth != null && 
+                                 getUserRole(request.auth.uid) == 'admin';
     }
     
     // Estimates rules
