@@ -313,6 +313,11 @@ exports.sendStatusUpdate = functions.firestore
         statusMessage = 'Unfortunately, we couldn\'t accommodate your appointment at this time.';
         statusColor = '#d32f2f';
         break;
+      case 'cancelled':
+        subject = 'Appointment Cancelled - POVEDA PREMIUM AUTO CARE';
+        statusMessage = 'Your appointment has been cancelled as requested.';
+        statusColor = '#9e9e9e';
+        break;
       default:
         return null;
     }
@@ -377,8 +382,93 @@ exports.sendStatusUpdate = functions.firestore
     };
 
     try {
+      // Send email to user
       await transporter.sendMail(mailOptions);
-      console.log(`Status update email sent for appointment ${context.params.appointmentId}`);
+      console.log(`Status update email sent to user for appointment ${context.params.appointmentId}`);
+      
+      // ✅ NUEVO: Si la cita fue cancelada, enviar email adicional al soporte
+      if (after.status === 'cancelled') {
+        const cancelledBy = after.cancelledBy || 'Unknown';
+        const cancelledAt = after.cancelledAt ? new Date(after.cancelledAt.toDate()).toLocaleString() : 'N/A';
+        
+        const supportMailOptions = {
+          from: 'POVEDA PORTAL SYSTEM <povedaportal@gmail.com>',
+          to: 'support@povedapremiumautocare.com',
+          subject: `🚨 APPOINTMENT CANCELLED - ${after.userName}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%); color: white; padding: 30px; text-align: center;">
+                <h1 style="margin: 0; font-size: 28px;">🚨 APPOINTMENT CANCELLED</h1>
+                <p style="margin: 10px 0 0 0; font-size: 16px;">A customer has cancelled their appointment</p>
+              </div>
+              
+              <div style="padding: 30px; background: #f8f9fa;">
+                <div style="background: #ff9800; color: white; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                  <h2 style="margin: 0;">CANCELLATION ALERT</h2>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #d32f2f;">
+                  <h3 style="color: #d32f2f; margin-top: 0;">Customer Information</h3>
+                  <p><strong>Name:</strong> ${after.userName}</p>
+                  <p><strong>Email:</strong> ${after.userEmail}</p>
+                  <p><strong>Phone:</strong> ${after.phoneNumber || 'N/A'}</p>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1976d2;">
+                  <h3 style="color: #1976d2; margin-top: 0;">Appointment Details</h3>
+                  <p><strong>Service:</strong> ${after.service}</p>
+                  <p><strong>Date:</strong> ${after.date ? new Date(after.date.toDate()).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD'}</p>
+                  <p><strong>Time:</strong> ${after.time || 'TBD'}</p>
+                  <p><strong>Location:</strong> ${after.address ? `${after.address.street}, ${after.address.city}, ${after.address.state} ${after.address.zipCode}` : 'N/A'}</p>
+                  <p><strong>Price:</strong> $${after.finalPrice || after.estimatedPrice || 'N/A'}</p>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9e9e9e;">
+                  <h3 style="color: #9e9e9e; margin-top: 0;">Cancellation Details</h3>
+                  <p><strong>Cancelled By:</strong> <span style="text-transform: uppercase; font-weight: bold;">${cancelledBy}</span></p>
+                  <p><strong>Cancelled At:</strong> ${cancelledAt}</p>
+                  <p><strong>Previous Status:</strong> ${before.status}</p>
+                </div>
+                
+                ${after.notes ? `
+                  <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0; color: #e65100;"><strong>Customer Notes:</strong></p>
+                    <p style="margin: 5px 0 0 0;">${after.notes}</p>
+                  </div>
+                ` : ''}
+                
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 0; color: #1976d2;"><strong>💡 Next Steps:</strong></p>
+                  <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                    <li>Review the cancellation reason (if provided)</li>
+                    <li>Update your calendar/schedule</li>
+                    <li>Consider following up with the customer if needed</li>
+                    ${after.paymentStatus === 'paid' ? '<li style="color: #d32f2f; font-weight: bold;">⚠️ Payment was received - verify refund policy</li>' : ''}
+                  </ul>
+                </div>
+                
+                <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                  This is an automated notification from the POVEDA Portal System.
+                  <br>Appointment ID: ${context.params.appointmentId}
+                </p>
+              </div>
+              
+              <div style="background: #1976d2; color: white; padding: 20px; text-align: center;">
+                <p style="margin: 0; font-size: 14px;">© 2024 POVEDA PREMIUM AUTO CARE - Internal System Notification</p>
+              </div>
+            </div>
+          `
+        };
+        
+        try {
+          await transporter.sendMail(supportMailOptions);
+          console.log(`✅ Cancellation notification email sent to support@povedapremiumautocare.com for appointment ${context.params.appointmentId}`);
+        } catch (supportEmailError) {
+          console.error('❌ Error sending cancellation notification to support:', supportEmailError);
+          // Don't fail the whole function if support email fails
+        }
+      }
+      
     } catch (error) {
       console.error('Error sending status update email:', error);
     }
@@ -621,7 +711,7 @@ exports.send2HourReminder = functions.pubsub
             
             console.log(`2h reminder sent for appointment ${doc.id}`);
             return true;
-          } catch (error) {
+  } catch (error) {
             console.error(`Error sending 2h reminder for appointment ${doc.id}:`, error);
             return false;
           }
