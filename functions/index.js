@@ -259,10 +259,139 @@ exports.sendAppointmentConfirmation = functions.firestore
         };
 
         await transporter.sendMail(mailOptions);
-        console.log('Appointment confirmation email sent successfully');
+        console.log('Appointment confirmation email sent to user successfully');
       } catch (error) {
-        console.error('Error sending email:', error);
+        console.error('Error sending email to user:', error);
       }
+    }
+
+    // ✅ NUEVO: Enviar email a todos los administradores
+    try {
+      // Buscar todos los usuarios con role 'admin'
+      const adminsSnapshot = await admin.firestore()
+        .collection('users')
+        .where('role', '==', 'admin')
+        .get();
+      
+      if (!adminsSnapshot.empty) {
+        console.log(`Found ${adminsSnapshot.size} admin(s), sending notification emails...`);
+        
+        // Enviar email a cada administrador
+        const adminEmailPromises = adminsSnapshot.docs.map(async (adminDoc) => {
+          const adminData = adminDoc.data();
+          const adminEmail = adminData.email;
+          
+          if (!adminEmail) {
+            console.warn(`Admin ${adminDoc.id} has no email address`);
+            return;
+          }
+          
+          const adminMailOptions = {
+            from: 'POVEDA PORTAL SYSTEM <povedaportal@gmail.com>',
+            to: adminEmail,
+            subject: `🆕 NEW APPOINTMENT REQUEST - ${appointment.userName}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); color: white; padding: 30px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 28px;">🆕 NEW APPOINTMENT REQUEST</h1>
+                  <p style="margin: 10px 0 0 0; font-size: 16px;">A new customer has requested an appointment</p>
+                </div>
+                
+                <div style="padding: 30px; background: #f8f9fa;">
+                  <div style="background: #2196f3; color: white; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                    <h2 style="margin: 0;">NEW APPOINTMENT ALERT</h2>
+                  </div>
+                  
+                  <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2196f3;">
+                    <h3 style="color: #1976d2; margin-top: 0;">Customer Information</h3>
+                    <p><strong>Name:</strong> ${appointment.userName}</p>
+                    <p><strong>Email:</strong> ${appointment.userEmail}</p>
+                    <p><strong>Phone:</strong> ${appointment.phoneNumber || 'N/A'}</p>
+                  </div>
+                  
+                  <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">
+                    <h3 style="color: #4caf50; margin-top: 0;">Appointment Details</h3>
+                    <p><strong>Service:</strong> ${appointment.service}</p>
+                    <p><strong>Category:</strong> ${appointment.category || 'N/A'}</p>
+                    <p><strong>Date:</strong> ${appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD'}</p>
+                    <p><strong>Time:</strong> ${appointment.time || 'TBD'}</p>
+                    <p><strong>Location:</strong> ${appointment.address ? `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 'N/A'}</p>
+                    <p><strong>Price:</strong> <span style="color: #4caf50; font-size: 1.2em; font-weight: bold;">$${appointment.finalPrice || appointment.estimatedPrice || 'N/A'}</span></p>
+                  </div>
+                  
+                  ${appointment.vehicleInfo ? `
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
+                      <h3 style="color: #ff9800; margin-top: 0;">🚗 Vehicle Information</h3>
+                      <p><strong>Make:</strong> ${appointment.vehicleInfo.make || 'N/A'}</p>
+                      <p><strong>Model:</strong> ${appointment.vehicleInfo.model || 'N/A'}</p>
+                      <p><strong>Year:</strong> ${appointment.vehicleInfo.year || 'N/A'}</p>
+                      <p><strong>Color:</strong> ${appointment.vehicleInfo.color || 'N/A'}</p>
+                    </div>
+                  ` : ''}
+                  
+                  ${appointment.notes ? `
+                    <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                      <p style="margin: 0; color: #e65100;"><strong>📝 Customer Notes:</strong></p>
+                      <p style="margin: 5px 0 0 0;">${appointment.notes}</p>
+                    </div>
+                  ` : ''}
+                  
+                  <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9c27b0;">
+                    <h3 style="color: #9c27b0; margin-top: 0;">💳 Payment Information</h3>
+                    <p><strong>Payment Status:</strong> <span style="color: ${appointment.paymentStatus === 'paid' ? '#4caf50' : '#ff9800'}; font-weight: bold; text-transform: uppercase;">${appointment.paymentStatus || 'PENDING'}</span></p>
+                    ${appointment.paymentMethod ? `<p><strong>Payment Method:</strong> ${appointment.paymentMethod}</p>` : ''}
+                    ${appointment.paymentId ? `<p><strong>Payment ID:</strong> ${appointment.paymentId}</p>` : ''}
+                    ${appointment.depositAmount ? `<p><strong>Deposit Amount:</strong> $${appointment.depositAmount}</p>` : ''}
+                  </div>
+                  
+                  <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0; color: #1976d2;"><strong>💡 Next Steps:</strong></p>
+                    <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                      <li>Review the appointment details</li>
+                      <li>Check your calendar availability</li>
+                      <li><strong>Approve or reject the appointment in the admin portal</strong></li>
+                      <li>Customer will be notified automatically</li>
+                    </ul>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://poveda-portal.vercel.app/admin/appointments" 
+                       style="display: inline-block; background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                      🔍 VIEW IN ADMIN PORTAL
+                    </a>
+                  </div>
+                  
+                  <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                    This is an automated notification from the POVEDA Portal System.
+                    <br>Appointment ID: ${appointmentId}
+                    <br>Created: ${new Date().toLocaleString()}
+                  </p>
+                </div>
+                
+                <div style="background: #1976d2; color: white; padding: 20px; text-align: center;">
+                  <p style="margin: 0; font-size: 14px;">© 2024 POVEDA PREMIUM AUTO CARE - Internal System Notification</p>
+                </div>
+              </div>
+            `
+          };
+          
+          try {
+            await transporter.sendMail(adminMailOptions);
+            console.log(`✅ New appointment notification sent to admin: ${adminEmail}`);
+          } catch (emailError) {
+            console.error(`❌ Error sending email to admin ${adminEmail}:`, emailError);
+          }
+        });
+        
+        await Promise.all(adminEmailPromises);
+        console.log('✅ All admin notification emails sent successfully');
+        
+      } else {
+        console.warn('⚠️ No admin users found in the system');
+      }
+    } catch (adminEmailError) {
+      console.error('❌ Error sending admin notification emails:', adminEmailError);
+      // Don't fail the whole function if admin emails fail
     }
 
     // Create Google Calendar event for admin
