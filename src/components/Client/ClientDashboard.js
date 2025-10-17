@@ -20,7 +20,6 @@ import {
 import {
   Search,
   Notifications,
-  WbSunny,
   DirectionsCar,
   AccessTime,
   Description,
@@ -36,6 +35,7 @@ import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, s
 import { db } from '../../firebase/config';
 import ClientLayout from '../Layout/ClientLayout';
 import { generateSampleData } from '../../utils/generateSampleData';
+import WeatherWidget from '../WeatherWidget';
 
 const ClientDashboard = () => {
   const { currentUser, logout } = useAuth();
@@ -526,204 +526,110 @@ const ClientDashboard = () => {
           </Box>
         </Menu>
 
-        {/* Dashboard Grid */}
-        <Grid container spacing={{ xs: 3, sm: 6 }}>
-          {/* Weather Card */}
-          <Grid item xs={12} md={6}>
+        {/* Quick Stats Row */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={6} sm={3}>
             <Card sx={{ 
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 249, 255, 0.85) 100%)', 
-              backdropFilter: 'blur(10px)',
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+              color: 'white',
               borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.7)',
-              boxShadow: '0 10px 30px rgba(8, 145, 178, 0.08)',
-              overflow: 'hidden',
-              position: 'relative',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column'
+              boxShadow: '0 8px 24px rgba(30, 58, 138, 0.3)',
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'translateY(-4px)' }
             }}>
-              <CardHeader
-                title={
-                  <Typography sx={{ 
-                    fontSize: { xs: '1.125rem', md: '1.25rem' },
-                    fontWeight: 700,
-                    color: '#334155',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5
-                  }}>
-                    <Box component="span" sx={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '10px',
-                      background: 'linear-gradient(135deg, #fde68a 0%, #fbbf24 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)'
-                    }}>
-                      <WbSunny sx={{ fontSize: '1.25rem', color: '#92400e' }} />
-                    </Box>
-                    Today's Weather
-                  </Typography>
-                }
-                sx={{ pb: 0 }}
-              />
-              <CardContent sx={{ pt: 2, pb: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', sm: 'row' }, 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  gap: 3,
-                  position: 'relative',
-                  zIndex: 1
-                }}>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    alignItems: { xs: 'center', sm: 'flex-start' },
-                    position: 'relative' 
-                  }}>
-                    <Box sx={{ 
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 2, sm: 3 },
-                      mb: 2
-                    }}>
-                      <WbSunny sx={{ 
-                        fontSize: { xs: '3.5rem', sm: '4.5rem' }, 
-                        color: '#fbbf24',
-                        filter: 'drop-shadow(0 4px 12px rgba(251, 191, 36, 0.4))',
-                        animation: 'pulse 2s infinite ease-in-out',
-                        '@keyframes pulse': {
-                          '0%': { opacity: 0.9, transform: 'scale(0.98)' },
-                          '50%': { opacity: 1, transform: 'scale(1.02)' },
-                          '100%': { opacity: 0.9, transform: 'scale(0.98)' },
-                        }
-                      }} />
-                      <Box>
-                        <Typography sx={{ 
-                          fontSize: { xs: '2.5rem', sm: '3.5rem' }, 
-                          fontWeight: 800,
-                          lineHeight: 1,
-                          color: '#1e293b',
-                          letterSpacing: '-1px',
-                          mb: 0.5
-                        }}>72°F</Typography>
-                        <Typography sx={{ 
-                          fontSize: { xs: '1rem', sm: '1.125rem' }, 
-                          fontWeight: 600, 
-                          color: '#475569',
-                          ml: 0.5
-                        }}>Sunny</Typography>
-                      </Box>
-                    </Box>
-                    
-                    <Box sx={{
-                      background: 'rgba(255,255,255,0.6)',
-                      backdropFilter: 'blur(5px)',
-                      borderRadius: '12px',
-                      p: 1.5,
-                      px: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
-                      border: '1px solid rgba(255,255,255,0.8)',
-                      width: { xs: '100%', sm: 'auto' }
-                    }}>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography sx={{ fontSize: '0.7rem', color: '#64748b', mb: 0.5 }}>HUMIDITY</Typography>
-                        <Typography sx={{ fontWeight: 700, color: '#0891b2' }}>45%</Typography>
-                      </Box>
-                      
-                      <Box sx={{ height: '30px', width: '1px', background: 'rgba(203, 213, 225, 0.6)' }} />
-                      
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography sx={{ fontSize: '0.7rem', color: '#64748b', mb: 0.5 }}>WIND</Typography>
-                        <Typography sx={{ fontWeight: 700, color: '#0891b2' }}>5 mph</Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                  
-                  <Box sx={{ 
-                    textAlign: { xs: 'center', sm: 'right' },
-                    background: 'linear-gradient(135deg, rgba(8, 145, 178, 0.15) 0%, rgba(6, 182, 212, 0.08) 100%)',
-                    backdropFilter: 'blur(5px)',
-                    borderRadius: '12px',
-                    p: 2,
-                    minWidth: { xs: '100%', sm: '180px' },
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
-                    border: '1px solid rgba(255,255,255,0.8)'
-                  }}>
-                    <Typography sx={{ 
-                      fontSize: '0.875rem', 
-                      color: '#0e7490',
-                      fontWeight: 600,
-                      mb: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: { xs: 'center', sm: 'flex-end' },
-                      gap: 0.5
-                    }}>
-                      <Box component="span" sx={{ 
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        background: '#0891b2',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '0.6rem',
-                        fontWeight: 'bold'
-                      }}>✓</Box>
-                      Perfect for detailing!
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.875rem', color: '#475569' }}>
-                      Low humidity and mild winds create ideal conditions for your car service today
-                    </Typography>
-                  </Box>
-                </Box>
-                
-                {/* Decorative Elements */}
-                <Box sx={{ 
-                  position: 'absolute', 
-                  bottom: '-20px', 
-                  right: '-20px', 
-                  width: '150px', 
-                  height: '150px', 
-                  background: 'radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0) 70%)',
-                  borderRadius: '50%',
-                  zIndex: 0
-                }} />
-                <Box sx={{ 
-                  position: 'absolute', 
-                  top: '30px', 
-                  right: '20px', 
-                  width: '30px', 
-                  height: '30px', 
-                  background: 'radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0) 70%)',
-                  borderRadius: '50%',
-                  zIndex: 0
-                }} />
-                <Box sx={{ 
-                  position: 'absolute', 
-                  bottom: '50px', 
-                  left: '20px', 
-                  width: '50px', 
-                  height: '50px', 
-                  background: 'radial-gradient(circle, rgba(8, 145, 178, 0.05) 0%, rgba(8, 145, 178, 0) 70%)',
-                  borderRadius: '50%',
-                  zIndex: 0
-                }} />
+              <CardContent sx={{ p: 3 }}>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.9, mb: 1 }}>
+                  TOTAL APPOINTMENTS
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5 }}>
+                  {stats.totalAppointments}
+                </Typography>
+                <Typography sx={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                  All time
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
 
+          <Grid item xs={6} sm={3}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
+              color: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 8px 24px rgba(8, 145, 178, 0.3)',
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'translateY(-4px)' }
+            }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.9, mb: 1 }}>
+                  PENDING
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5 }}>
+                  {stats.pendingAppointments}
+                </Typography>
+                <Typography sx={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                  Awaiting approval
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={6} sm={3}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, #334155 0%, #475569 100%)',
+              color: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 8px 24px rgba(51, 65, 85, 0.3)',
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'translateY(-4px)' }
+            }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.9, mb: 1 }}>
+                  COMPLETED
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5 }}>
+                  {stats.completedAppointments}
+                </Typography>
+                <Typography sx={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                  Services done
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={6} sm={3}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, #0c4a6e 0%, #075985 100%)',
+              color: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 8px 24px rgba(12, 74, 110, 0.3)',
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'translateY(-4px)' }
+            }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.9, mb: 1 }}>
+                  TOTAL SPENT
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5 }}>
+                  ${stats.totalSpent.toFixed(0)}
+                </Typography>
+                <Typography sx={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                  Lifetime value
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Dashboard Grid */}
+        <Grid container spacing={{ xs: 3, sm: 4 }}>
+          {/* Weather Widget - Integrated */}
+          <Grid item xs={12}>
+            <WeatherWidget appointments={appointments} />
+          </Grid>
+
           {/* Upcoming Appointments */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={8}>
             <Card sx={{ 
               background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 249, 255, 0.85) 100%)', 
               backdropFilter: 'blur(10px)',
@@ -949,187 +855,124 @@ const ClientDashboard = () => {
             </Card>
           </Grid>
 
-          {/* Stats Cards */}
-          <Grid item xs={12} md={3}>
-            <Stack spacing={{ xs: 3, sm: 4 }}>
-              {/* Today's Appointments Card */}
+          {/* Quick Actions Sidebar */}
+          <Grid item xs={12} md={4}>
+            <Stack spacing={3}>
+              {/* Quick Actions Card */}
               <Card sx={{ 
-                background: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)', 
+                background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
+                color: 'white',
                 borderRadius: '16px',
-                border: '1px solid rgba(233, 213, 255, 0.8)',
-                boxShadow: '0 10px 30px rgba(139, 92, 246, 0.1)',
+                boxShadow: '0 10px 30px rgba(30, 64, 175, 0.35)',
                 overflow: 'hidden',
                 position: 'relative'
               }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ 
-                      width: 48, 
-                      height: 48, 
-                      background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)', 
-                      borderRadius: '12px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      boxShadow: '0 6px 16px rgba(139, 92, 246, 0.25)'
-                    }}>
-                      <AccessTime sx={{ color: 'white', fontSize: '1.5rem' }} />
-                    </Box>
-                    <Box>
-                      <Typography sx={{ 
-                        fontSize: '0.75rem', 
-                        color: '#7c3aed', 
-                        fontWeight: 700,
-                        letterSpacing: '0.05em',
-                        mb: 0.5
-                      }}>
-                        TODAY'S APPOINTMENTS
-                      </Typography>
-                      <Typography sx={{ 
-                        fontSize: '2.2rem', 
-                        fontWeight: 800, 
-                        color: '#5b21b6',
-                        lineHeight: 1,
-                        display: 'flex',
-                        alignItems: 'flex-end',
-                        gap: 1
-                      }}>
-                        {stats.pendingAppointments}
-                        <Typography component="span" sx={{ 
-                          fontSize: '0.9rem', 
-                          fontWeight: 500, 
-                          color: '#7c3aed',
-                          pb: 0.5
-                        }}>
-                          scheduled
-                        </Typography>
-                      </Typography>
-                    </Box>
-                  </Box>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography sx={{ 
+                    fontSize: '0.85rem', 
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    mb: 3,
+                    opacity: 0.9
+                  }}>
+                    QUICK ACTIONS
+                  </Typography>
                   
-                  {/* Decorative circles */}
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    top: '-20px', 
-                    right: '-20px', 
-                    width: '100px', 
-                    height: '100px', 
-                    background: 'radial-gradient(circle, rgba(167, 139, 250, 0.2) 0%, rgba(167, 139, 250, 0) 70%)',
-                    borderRadius: '50%',
-                    zIndex: 0
-                  }} />
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    bottom: '-10px', 
-                    left: '30px', 
-                    width: '60px', 
-                    height: '60px', 
-                    background: 'radial-gradient(circle, rgba(167, 139, 250, 0.15) 0%, rgba(167, 139, 250, 0) 70%)',
-                    borderRadius: '50%',
-                    zIndex: 0
-                  }} />
-                </CardContent>
-              </Card>
-
-              {/* Pending Estimates Card */}
-              <Card sx={{ 
-                background: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)', 
-                borderRadius: '16px',
-                border: '1px solid rgba(254, 215, 170, 0.8)',
-                boxShadow: '0 10px 30px rgba(249, 115, 22, 0.1)',
-                overflow: 'hidden',
-                position: 'relative'
-              }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ 
-                      width: 48, 
-                      height: 48, 
-                      background: 'linear-gradient(135deg, #fb923c 0%, #f97316 100%)', 
-                      borderRadius: '12px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      boxShadow: '0 6px 16px rgba(249, 115, 22, 0.25)'
-                    }}>
-                      <Description sx={{ color: 'white', fontSize: '1.5rem' }} />
-                    </Box>
-                    <Box>
-                      <Typography sx={{ 
-                        fontSize: '0.75rem', 
-                        color: '#ea580c', 
-                        fontWeight: 700,
-                        letterSpacing: '0.05em',
-                        mb: 0.5
-                      }}>
-                        PENDING ESTIMATES
-                      </Typography>
-                      <Typography sx={{ 
-                        fontSize: '2.2rem', 
-                        fontWeight: 800, 
-                        color: '#9a3412',
-                        lineHeight: 1,
-                        display: 'flex',
-                        alignItems: 'flex-end',
-                        gap: 1
-                      }}>
-                        {stats.pendingEstimates}
-                        <Typography component="span" sx={{ 
-                          fontSize: '0.9rem', 
-                          fontWeight: 500, 
-                          color: '#c2410c',
-                          pb: 0.5
-                        }}>
-                          in progress
-                        </Typography>
-                      </Typography>
-                    </Box>
-                  </Box>
-                  
-                  {/* Decorative circles */}
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    bottom: '-20px', 
-                    right: '-10px', 
-                    width: '90px', 
-                    height: '90px', 
-                    background: 'radial-gradient(circle, rgba(251, 146, 60, 0.2) 0%, rgba(251, 146, 60, 0) 70%)',
-                    borderRadius: '50%',
-                    zIndex: 0
-                  }} />
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    top: '10px', 
-                    left: '20px', 
-                    width: '40px', 
-                    height: '40px', 
-                    background: 'radial-gradient(circle, rgba(251, 146, 60, 0.15) 0%, rgba(251, 146, 60, 0) 70%)',
-                    borderRadius: '50%',
-                    zIndex: 0
-                  }} />
+                  <Stack spacing={2}>
+                    <Button
+                      component={Link}
+                      to="/book-appointment"
+                      fullWidth
+                      sx={{
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(10px)',
+                        color: 'white',
+                        fontWeight: 600,
+                        borderRadius: '12px',
+                        py: 1.5,
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        '&:hover': {
+                          background: 'rgba(255, 255, 255, 0.3)',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)'
+                        },
+                        transition: 'all 0.2s ease',
+                        textTransform: 'none'
+                      }}
+                    >
+                      📅 Book Appointment
+                    </Button>
+                    
+                    <Button
+                      component={Link}
+                      to="/get-estimate"
+                      fullWidth
+                      sx={{
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(10px)',
+                        color: 'white',
+                        fontWeight: 600,
+                        borderRadius: '12px',
+                        py: 1.5,
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        '&:hover': {
+                          background: 'rgba(255, 255, 255, 0.3)',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)'
+                        },
+                        transition: 'all 0.2s ease',
+                        textTransform: 'none'
+                      }}
+                    >
+                      💰 Get Estimate
+                    </Button>
+                    
+                    <Button
+                      component={Link}
+                      to="/support"
+                      fullWidth
+                      sx={{
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(10px)',
+                        color: 'white',
+                        fontWeight: 600,
+                        borderRadius: '12px',
+                        py: 1.5,
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        '&:hover': {
+                          background: 'rgba(255, 255, 255, 0.3)',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)'
+                        },
+                        transition: 'all 0.2s ease',
+                        textTransform: 'none'
+                      }}
+                    >
+                      💬 Contact Support
+                    </Button>
+                  </Stack>
                 </CardContent>
               </Card>
 
               {/* Leave a Review Card */}
               <Card sx={{ 
-                background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', 
+                background: 'linear-gradient(135deg, #334155 0%, #1e293b 100%)',
+                color: 'white',
                 borderRadius: '16px',
-                border: '1px solid rgba(167, 243, 208, 0.8)',
-                boxShadow: '0 10px 30px rgba(16, 185, 129, 0.1)',
+                boxShadow: '0 10px 30px rgba(51, 65, 85, 0.35)',
                 overflow: 'hidden',
                 position: 'relative'
               }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, position: 'relative', zIndex: 1 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                     <Box sx={{ 
                       width: 48, 
                       height: 48, 
-                      background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)', 
+                      background: 'rgba(255, 255, 255, 0.15)', 
                       borderRadius: '12px', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
-                      boxShadow: '0 6px 16px rgba(16, 185, 129, 0.25)',
                       fontSize: '1.8rem'
                     }}>
                       ⭐
@@ -1137,18 +980,16 @@ const ClientDashboard = () => {
                     <Box>
                       <Typography sx={{ 
                         fontSize: '0.75rem', 
-                        color: '#059669', 
                         fontWeight: 700,
                         letterSpacing: '0.05em',
-                        mb: 0.5
+                        mb: 0.5,
+                        opacity: 0.9
                       }}>
                         SHARE YOUR EXPERIENCE
                       </Typography>
                       <Typography sx={{ 
-                        fontSize: '1.2rem', 
-                        fontWeight: 800, 
-                        color: '#065f46',
-                        lineHeight: 1.2
+                        fontSize: '1.1rem', 
+                        fontWeight: 800
                       }}>
                         Leave a Review
                       </Typography>
@@ -1162,207 +1003,162 @@ const ClientDashboard = () => {
                     variant="contained"
                     fullWidth
                     sx={{
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      color: 'white',
-                      fontWeight: 600,
-                      borderRadius: '10px',
-                      padding: '10px 0',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      color: '#1e293b',
+                      fontWeight: 700,
+                      borderRadius: '12px',
+                      py: 1.5,
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                        background: 'white',
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 18px rgba(16, 185, 129, 0.35)'
+                        boxShadow: '0 6px 18px rgba(0, 0, 0, 0.2)'
                       },
                       transition: 'all 0.2s ease',
-                      textTransform: 'none',
-                      fontSize: '0.95rem'
+                      textTransform: 'none'
                     }}
                   >
-                    Write Review
+                    Write Review Now
                   </Button>
-                  
-                  {/* Decorative circles */}
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    top: '-20px', 
-                    left: '-20px', 
-                    width: '90px', 
-                    height: '90px', 
-                    background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0) 70%)',
-                    borderRadius: '50%',
-                    zIndex: 0
-                  }} />
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    bottom: '10px', 
-                    right: '20px', 
-                    width: '70px', 
-                    height: '70px', 
-                    background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0) 70%)',
-                    borderRadius: '50%',
-                    zIndex: 0
-                  }} />
                 </CardContent>
               </Card>
             </Stack>
           </Grid>
 
-          {/* Service Reminder */}
-          <Grid item xs={12} md={9}>
+          {/* Service Reminder Banner */}
+          <Grid item xs={12}>
             <Card sx={{ 
-              background: 'linear-gradient(135deg, #0891b2 0%, #0284c7 100%)', 
+              background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)', 
               borderRadius: '16px',
-              border: '1px solid rgba(6, 182, 212, 0.3)',
-              boxShadow: '0 15px 40px rgba(6, 182, 212, 0.25)', 
+              boxShadow: '0 10px 30px rgba(8, 145, 178, 0.35)', 
               color: 'white',
               position: 'relative',
-              overflow: 'hidden',
-              height: '100%'
+              overflow: 'hidden'
             }}>
-              <CardContent sx={{ p: { xs: 4, sm: 6 }, height: '100%', position: 'relative', zIndex: 1 }}>
+              <CardContent sx={{ p: { xs: 3, sm: 4 }, position: 'relative', zIndex: 1 }}>
                 <Box sx={{ 
                   display: 'flex', 
                   flexDirection: { xs: 'column', sm: 'row' }, 
                   justifyContent: 'space-between', 
-                  alignItems: { xs: 'flex-start', sm: 'center' },
-                  height: '100%',
-                  gap: { xs: 4, sm: 0 }
+                  alignItems: 'center',
+                  gap: 3
                 }}>
-                  <Box>
+                  <Box sx={{ flex: 1 }}>
                     <Typography sx={{ 
-                      color: 'rgba(255, 255, 255, 0.9)', 
-                      mb: 1.5, 
-                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                      fontWeight: 600,
-                      letterSpacing: '0.05em',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.1em',
+                      mb: 1.5,
+                      opacity: 0.95
                     }}>
-                      <Box component="span" sx={{ 
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '8px',
-                        background: 'rgba(255, 255, 255, 0.2)',
-                        backdropFilter: 'blur(5px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 8px rgba(255, 255, 255, 0.2)'
-                      }}>
-                        <Schedule sx={{ fontSize: '1rem', color: 'white' }} />
-                      </Box>
-                      REMINDER
+                      🚗 KEEP YOUR CAR LOOKING FRESH
                     </Typography>
                     
                     <Typography variant="h4" sx={{ 
                       fontWeight: 800, 
-                      mb: 3, 
-                      fontSize: { xs: '1.75rem', sm: '2.25rem' },
-                      lineHeight: 1.2,
-                      letterSpacing: '-0.01em',
-                      textShadow: '0 2px 10px rgba(0,0,0,0.15)'
+                      mb: 2, 
+                      fontSize: { xs: '1.5rem', sm: '2rem' },
+                      lineHeight: 1.2
                     }}>
-                      Schedule your next
-                      <br />
-                      service appointment
+                      Ready for your next detail?
                     </Typography>
                     
-                    <Button
-                      component={Link}
-                      to="/book-appointment"
-                      sx={{
-                        background: 'rgba(255, 255, 255, 0.95)', 
-                        color: '#0891b2', 
-                        fontWeight: 700,
-                        borderRadius: '12px',
-                        px: { xs: 4, sm: 5 },
-                        py: 1.5,
-                        fontSize: '0.95rem',
-                        textTransform: 'none',
-                        boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)',
-                        '&:hover': { 
-                          background: 'white',
-                          transform: 'translateY(-3px)',
-                          boxShadow: '0 12px 25px rgba(0, 0, 0, 0.2)'
-                        },
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      Book now
-                    </Button>
+                    <Typography sx={{ 
+                      fontSize: '1rem',
+                      mb: 3,
+                      opacity: 0.9,
+                      maxWidth: '500px'
+                    }}>
+                      Book your appointment today and keep your vehicle in pristine condition
+                    </Typography>
+                    
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                      <Button
+                        component={Link}
+                        to="/book-appointment"
+                        sx={{
+                          background: 'white', 
+                          color: '#0891b2', 
+                          fontWeight: 700,
+                          borderRadius: '12px',
+                          px: 4,
+                          py: 1.5,
+                          fontSize: '1rem',
+                          textTransform: 'none',
+                          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
+                          '&:hover': { 
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.2)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        Book Appointment
+                      </Button>
+                      
+                      <Button
+                        component={Link}
+                        to="/services"
+                        sx={{
+                          background: 'rgba(255, 255, 255, 0.2)', 
+                          color: 'white',
+                          border: '2px solid rgba(255, 255, 255, 0.5)',
+                          fontWeight: 600,
+                          borderRadius: '12px',
+                          px: 4,
+                          py: 1.5,
+                          fontSize: '1rem',
+                          textTransform: 'none',
+                          backdropFilter: 'blur(10px)',
+                          '&:hover': { 
+                            background: 'rgba(255, 255, 255, 0.3)',
+                            transform: 'translateY(-2px)',
+                            borderColor: 'rgba(255, 255, 255, 0.8)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        View Services
+                      </Button>
+                    </Stack>
                   </Box>
                   
                   <Box sx={{ 
-                    position: 'relative', 
-                    display: { xs: 'none', md: 'block' },
-                    width: '250px',
-                    height: '200px'
+                    display: { xs: 'none', md: 'flex' },
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '180px',
+                    height: '180px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(10px)',
+                    border: '3px solid rgba(255, 255, 255, 0.3)'
                   }}>
-                    {/* Car illustration or visual element */}
-                    <Box sx={{ 
-                      position: 'absolute',
-                      top: '-20px',
-                      right: '-10px',
-                      width: '240px',
-                      height: '180px',
-                      borderRadius: '24px',
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      backdropFilter: 'blur(8px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 15px 35px rgba(0, 0, 0, 0.15)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      transform: 'rotate(-5deg)'
-                    }}>
-                      <DirectionsCar sx={{ fontSize: '6rem', color: 'white', opacity: 0.9 }} />
-                    </Box>
+                    <DirectionsCar sx={{ fontSize: '5rem', color: 'white', opacity: 0.9 }} />
                   </Box>
                 </Box>
                 
                 {/* Decorative Elements */}
                 <Box sx={{ 
                   position: 'absolute', 
-                  bottom: '-40px', 
-                  left: '-30px', 
-                  width: '180px', 
-                  height: '180px', 
-                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%)',
-                  borderRadius: '50%',
-                  zIndex: 0
-                }} />
-                <Box sx={{ 
-                  position: 'absolute', 
-                  top: '-30px', 
-                  right: '40px', 
-                  width: '120px', 
-                  height: '120px', 
+                  bottom: '-50px', 
+                  right: '-50px', 
+                  width: '200px', 
+                  height: '200px', 
                   background: 'radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%)',
                   borderRadius: '50%',
                   zIndex: 0
                 }} />
                 <Box sx={{ 
                   position: 'absolute', 
-                  top: '50%', 
-                  left: '20%', 
-                  width: '15px', 
-                  height: '15px', 
-                  background: 'rgba(255, 255, 255, 0.6)',
+                  top: '-30px', 
+                  left: '30%', 
+                  width: '100px', 
+                  height: '100px', 
+                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%)',
                   borderRadius: '50%',
-                  zIndex: 0,
-                  boxShadow: '0 0 15px rgba(255, 255, 255, 0.8)'
-                }} />
-                <Box sx={{ 
-                  position: 'absolute', 
-                  top: '30%', 
-                  right: '15%', 
-                  width: '10px', 
-                  height: '10px', 
-                  background: 'rgba(255, 255, 255, 0.6)',
-                  borderRadius: '50%',
-                  zIndex: 0,
-                  boxShadow: '0 0 15px rgba(255, 255, 255, 0.8)'
+                  zIndex: 0
                 }} />
               </CardContent>
             </Card>

@@ -12,11 +12,13 @@ A comprehensive car detailing service client portal built with React, Firebase, 
 - **Role-based Access Control** (Client & Admin)
 - **Secure Session Management**
 
-### 🌤️ Weather Integration
+### 🌤️ Weather Integration (FREE API)
 - **Real-time Weather Display** - Current conditions with location
 - **Appointment Weather Forecasts** - Weather for upcoming appointment days
 - **Smart Geolocation** - Automatic location detection
 - **Modern Glassmorphism UI** - Beautiful weather cards
+- **Smart Caching System** - Minimizes API calls (30min cache for current, 2h for forecasts)
+- **FREE OpenWeatherMap API** - Up to 1,000 calls/day at no cost
 
 ### 👤 Client Portal
 - **📊 Dashboard** - Overview with stats and quick actions
@@ -121,6 +123,47 @@ cd functions
 npm install
 firebase deploy --only functions
 ```
+
+## 🌤️ Weather API Setup (GRATIS)
+
+### ¿Tiene costo la API?
+**NO, es completamente GRATIS** con el plan gratuito de OpenWeatherMap:
+- ✅ **1,000 llamadas por día** - Más que suficiente para un portal de clientes
+- ✅ **Clima actual** - Temperatura, humedad, viento, descripción
+- ✅ **Pronóstico de 5 días** - Clima para citas futuras
+- ✅ **Sin tarjeta de crédito requerida** - Para el plan gratuito
+
+### Configuración en 3 pasos:
+
+1. **Obtener API Key GRATIS**
+   - Ve a [OpenWeatherMap](https://openweathermap.org/api)
+   - Crea una cuenta gratuita
+   - Ve a "API Keys" y copia tu clave
+   - ⏱️ La activación toma ~10 minutos
+
+2. **Agregar a tu archivo `.env`**
+   ```env
+   REACT_APP_WEATHER_API_KEY=tu_clave_aqui
+   ```
+
+3. **Reiniciar la aplicación**
+   ```bash
+   npm start
+   ```
+
+### Sistema de Caché Inteligente
+Para maximizar el uso gratuito, el widget implementa:
+- **Clima actual**: Cache de 30 minutos
+- **Pronósticos**: Cache de 2 horas
+- **Resultado**: ~10-20 llamadas por día (muy por debajo del límite de 1,000)
+
+### Funcionalidades del Widget
+- 🌡️ Temperatura en tiempo real
+- 💨 Velocidad del viento
+- 💧 Humedad
+- 📅 Pronóstico para próximas citas
+- 📍 Detección automática de ubicación
+- 🔄 Botón de actualización manual
 
 ## 📦 Build for Production
 

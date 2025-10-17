@@ -16,7 +16,8 @@ import {
   Air,
   Opacity,
   Schedule,
-  LocationOn
+  LocationOn,
+  Refresh
 } from '@mui/icons-material';
 import { weatherService } from '../services/weatherService';
 
@@ -31,20 +32,28 @@ const WeatherWidget = ({ appointments = [] }) => {
   const [appointmentWeather, setAppointmentWeather] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Memoize appointment data to prevent unnecessary effect re-runs
-  const appointmentDeps = useMemo(() => 
-    appointments.map(apt => ({ id: apt.id, date: apt.date, status: apt.status })),
-    [appointments]
-  );
+  // Only track the IDs and dates of approved appointments
+  const appointmentDeps = useMemo(() => {
+    const approved = appointments.filter(apt => apt.status === 'approved' || apt.status === 'confirmed');
+    return approved
+      .map(apt => `${apt.id}-${apt.date?.toDate?.()?.getTime() || apt.date}`)
+      .sort()
+      .join(',');
+  }, [appointments]);
 
   const loadWeatherData = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      console.log('🌤️ Loading weather data...');
+
       // Get user's location
       const location = await weatherService.getUserLocation();
+      console.log('📍 Location:', location);
       
       // Fetch current weather
       const current = await weatherService.getCurrentWeather(location.lat, location.lon);
@@ -58,34 +67,49 @@ const WeatherWidget = ({ appointments = [] }) => {
 
       // Check for upcoming appointments (within next 5 days)
       const upcomingAppointments = appointments.filter(apt => {
-        if (apt.status !== 'approved') return false;
-        const aptDate = new Date(apt.date);
+        if (apt.status !== 'approved' && apt.status !== 'confirmed') return false;
+        const aptDate = apt.date?.toDate ? apt.date.toDate() : new Date(apt.date);
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const fiveDaysFromNow = new Date(today.getTime() + (5 * 24 * 60 * 60 * 1000));
         return aptDate >= today && aptDate <= fiveDaysFromNow;
+      }).sort((a, b) => {
+        const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+        const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+        return dateA - dateB;
       });
+
+      console.log('📅 Upcoming appointments:', upcomingAppointments.length);
 
       if (upcomingAppointments.length > 0) {
         // Get forecast for appointment weather
-        const appointmentDates = upcomingAppointments.map(apt => apt.date);
+        const appointmentDates = upcomingAppointments.map(apt => 
+          apt.date?.toDate ? apt.date.toDate() : new Date(apt.date)
+        );
         const forecast = await weatherService.getForecast(location.lat, location.lon, appointmentDates);
         const nextAppointment = upcomingAppointments[0]; // Get the nearest appointment
-        const appointmentWeatherData = weatherService.getWeatherForDate(forecast, nextAppointment.date);
+        const nextAptDate = nextAppointment.date?.toDate ? nextAppointment.date.toDate() : new Date(nextAppointment.date);
+        const appointmentWeatherData = weatherService.getWeatherForDate(forecast, nextAptDate);
+        
+        console.log('🌦️ Appointment weather:', appointmentWeatherData);
         
         if (appointmentWeatherData) {
           setAppointmentWeather({
             ...appointmentWeatherData,
-            appointmentDate: new Date(nextAppointment.date),
+            appointmentDate: nextAptDate,
             appointmentTime: nextAppointment.time
           });
+        } else {
+          setAppointmentWeather(null);
         }
       } else {
         // Clear appointment weather if no upcoming appointments
+        console.log('ℹ️ No upcoming appointments');
         setAppointmentWeather(null);
       }
 
     } catch (err) {
-      console.error('Weather loading error:', err);
+      console.error('❌ Weather loading error:', err);
       setError('Weather data unavailable');
     } finally {
       setLoading(false);
@@ -93,8 +117,20 @@ const WeatherWidget = ({ appointments = [] }) => {
   };
 
   useEffect(() => {
+    console.log('🔄 Weather widget effect triggered');
+    console.log('📊 Appointments count:', appointments.length);
+    console.log('🔑 Appointment deps:', appointmentDeps);
     loadWeatherData();
   }, [appointmentDeps]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    console.log('🔄 Manual refresh triggered');
+    // Clear cache to force fresh data
+    weatherService.clearCache();
+    await loadWeatherData();
+    setRefreshing(false);
+  };
 
   const getWeatherIcon = (description) => {
     const desc = description?.toLowerCase() || '';
@@ -219,16 +255,48 @@ const WeatherWidget = ({ appointments = [] }) => {
                   Current Weather
                 </Typography>
               </Stack>
-              <Chip 
-                label="Live" 
-                size="small" 
-                sx={{ 
-                  backgroundColor: '#10b981', 
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '0.75rem'
-                }} 
-              />
+              <Stack direction="row" spacing={1}>
+                <Chip 
+                  label="Live" 
+                  size="small" 
+                  sx={{ 
+                    backgroundColor: '#10b981', 
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.75rem'
+                  }} 
+                />
+                <Box
+                  onClick={handleRefresh}
+                  sx={{
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.5)',
+                      transform: 'rotate(180deg)'
+                    }
+                  }}
+                >
+                  <Refresh 
+                    sx={{ 
+                      color: '#667eea', 
+                      fontSize: 18,
+                      animation: refreshing ? 'spin 1s linear infinite' : 'none',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }} 
+                  />
+                </Box>
+              </Stack>
             </Box>
 
             {/* Main Weather Info */}
