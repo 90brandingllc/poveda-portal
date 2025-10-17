@@ -14,37 +14,46 @@ service cloud.firestore {
     
     // Appointments rules
     match /appointments/{appointmentId} {
-      // Users can create appointments
+      // ✅ AUTHENTICATED users can create appointments
       allow create: if request.auth != null && 
                    request.auth.uid == request.resource.data.userId;
       
-      // Users can read their own appointments, admins can read all
+      // ✅ GUEST users can create appointments (from web)
+      allow create: if request.resource.data.userId == 'guest' &&
+                   request.resource.data.userEmail != null &&
+                   request.resource.data.isGuestBooking == true;
+      
+      // ✅ Authenticated users can read their own appointments
       allow read: if request.auth != null && 
                  request.auth.uid == resource.data.userId;
       
-      // Separate rule for admin access
+      // ✅ Authenticated users can read guest appointments with their email
+      allow read: if request.auth != null && 
+                 resource.data.userId == 'guest' &&
+                 resource.data.userEmail == request.auth.email;
+      
+      // ✅ Admins can read all appointments
       allow read: if request.auth != null && 
                  getUserRole(request.auth.uid) == 'admin';
       
-      // Allow authenticated users to read appointments for slot availability checking
-      // This allows reading appointment data to check if time slots are taken
+      // ✅ Allow authenticated users to read appointments for slot availability checking
       allow read: if request.auth != null;
       
-      // Users can update their own pending appointments (for rescheduling)
+      // ✅ Users can update their own pending/approved appointments (for cancellation/rescheduling)
       allow update: if request.auth != null && 
                    request.auth.uid == resource.data.userId &&
-                   resource.data.status == 'pending';
+                   (resource.data.status == 'pending' || resource.data.status == 'approved');
       
-      // Admins can update any appointment
+      // ✅ Admins can update any appointment
       allow update: if request.auth != null && 
                    getUserRole(request.auth.uid) == 'admin';
       
-      // Users can delete their own pending appointments (for cancellation)
+      // ✅ Users can delete their own pending appointments (for cancellation)
       allow delete: if request.auth != null && 
                    request.auth.uid == resource.data.userId &&
                    resource.data.status == 'pending';
       
-      // Admins can delete any appointment
+      // ✅ Admins can delete any appointment
       allow delete: if request.auth != null && 
                    getUserRole(request.auth.uid) == 'admin';
     }

@@ -72,7 +72,13 @@ const AppointmentsList = () => {
       }
 
       try {
-        console.log('AppointmentsList - Fetching appointments for user:', currentUser.uid);
+        console.log('========================================');
+        console.log('🔍 APPOINTMENTS DIAGNOSIS');
+        console.log('========================================');
+        console.log('✅ Current User ID:', currentUser.uid);
+        console.log('✅ Current User Email:', currentUser.email);
+        console.log('✅ Current User Name:', currentUser.displayName);
+        console.log('========================================');
         
         const allAppointments = new Map(); // Use Map to avoid duplicates
         
@@ -91,25 +97,35 @@ const AppointmentsList = () => {
         
         // Subscribe to appointments by userId
         unsubscribeUserId = onSnapshot(appointmentsByUserIdQuery, (snapshot) => {
-          console.log('AppointmentsList - Got', snapshot.size, 'appointment(s) by userId');
+          console.log('📋 Query 1 Result (by userId):', snapshot.size, 'appointment(s)');
           
           snapshot.forEach((doc) => {
             const data = doc.data();
+            console.log('  ➜ Appointment ID:', doc.id);
+            console.log('    - Status:', data.status);
+            console.log('    - Date:', data.date?.toDate?.()?.toLocaleDateString() || data.date);
+            console.log('    - Services:', data.services?.join?.(', ') || data.service);
+            console.log('    - UserId match:', data.userId === currentUser.uid ? '✅' : '❌');
             allAppointments.set(doc.id, { id: doc.id, ...data });
           });
           
           updateAppointmentsList();
         }, (error) => {
-          console.error('AppointmentsList - Error fetching appointments by userId:', error);
+          console.error('❌ Error fetching appointments by userId:', error);
+          console.error('Error code:', error.code);
+          console.error('Error message:', error.message);
           setLoading(false);
         });
         
         // Subscribe to guest appointments by email
         unsubscribeEmail = onSnapshot(appointmentsByEmailQuery, (snapshot) => {
-          console.log('AppointmentsList - Got', snapshot.size, 'guest appointment(s) by email');
+          console.log('📋 Query 2 Result (guest by email):', snapshot.size, 'appointment(s)');
           
           snapshot.forEach((doc) => {
             const data = doc.data();
+            console.log('  ➜ Guest Appointment ID:', doc.id);
+            console.log('    - Status:', data.status);
+            console.log('    - Email match:', data.userEmail === currentUser.email ? '✅' : '❌');
             // Only add if not already in the map (avoid duplicates)
             if (!allAppointments.has(doc.id)) {
               allAppointments.set(doc.id, { id: doc.id, ...data });
@@ -118,14 +134,36 @@ const AppointmentsList = () => {
           
           updateAppointmentsList();
         }, (error) => {
-          console.error('AppointmentsList - Error fetching guest appointments:', error);
+          console.error('❌ Error fetching guest appointments:', error);
+          console.error('Error code:', error.code);
+          console.error('Error message:', error.message);
           setLoading(false);
         });
         
         const updateAppointmentsList = () => {
           const userAppointments = Array.from(allAppointments.values());
           
-          console.log('AppointmentsList - Total appointments found:', userAppointments.length);
+          console.log('========================================');
+          console.log('📊 FINAL RESULTS');
+          console.log('Total appointments found:', userAppointments.length);
+          console.log('========================================');
+          
+          if (userAppointments.length > 0) {
+            userAppointments.forEach((apt, index) => {
+              console.log(`${index + 1}. ID: ${apt.id}`);
+              console.log(`   Status: ${apt.status}`);
+              console.log(`   Services: ${apt.services?.join?.(', ') || apt.service}`);
+              console.log(`   Date: ${apt.date?.toDate?.()?.toLocaleDateString() || apt.date}`);
+              console.log('---');
+            });
+          } else {
+            console.log('⚠️  NO APPOINTMENTS FOUND!');
+            console.log('This could mean:');
+            console.log('1. No appointments exist for this user');
+            console.log('2. Firestore security rules are blocking the query');
+            console.log('3. UserId mismatch in database');
+          }
+          console.log('========================================');
           
           // Sort by creation date (newest first)
           userAppointments.sort((a, b) => {
@@ -139,7 +177,8 @@ const AppointmentsList = () => {
         };
         
       } catch (error) {
-        console.error('AppointmentsList - Error setting up listener:', error);
+        console.error('❌ CRITICAL ERROR setting up listener:', error);
+        console.error('Error stack:', error.stack);
         setLoading(false);
       }
     };
