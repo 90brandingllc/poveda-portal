@@ -98,58 +98,24 @@ const BookAppointment = () => {
     : ['Select Services', 'Select Vehicle Type', 'Your Information', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
 
   // Service categories definition (moved up for URL parameter processing)
+  // ✅ ORDEN ACTUALIZADO según especificaciones del cliente
   const serviceCategories = {
-    interior: {
-      name: 'INTERIOR SERVICES',
-      services: [
-        { 
-          name: 'SILVER PACKAGE', 
-          price: 75, 
-          description: 'Perfect for keeping your vehicle clean and presentable on a daily basis',
-          details: 'Air blow, full vacuuming, plastic shine, carpet mat cleaning, trunk cleaning, interior glass cleaning',
-          vehicleTypes: { small: 75, suv: 85, threeRow: 95 }
-        },
-        { 
-          name: 'GOLD PACKAGE', 
-          price: 145, 
-          description: 'A complete cleaning to make your interior look like new',
-          details: 'Deep cleaning of seats/carpets/headliner, window cleaning, extractor/steam, plastic conditioning, air freshener',
-          vehicleTypes: { small: 145, suv: 165, threeRow: 185 }
-        },
-        { 
-          name: 'DIAMOND PACKAGE', 
-          price: 225, 
-          description: 'For vehicles with high dirt levels or challenging conditions (50%+ stains, heavy pet hair, strong odors)',
-          details: 'All Gold services + intensive stain/odor treatment + deep decontamination + surface restoration',
-          vehicleTypes: { small: 225, suv: 245, threeRow: 265 }
-        }
-      ]
-    },
+    // 1️⃣ PRIMERO: INTERIOR ADD-ONS
     interior_addons: {
-      name: 'INTERIOR PACKAGE ADD-ONS',
+      name: 'INTERIOR ADD-ONS',
       services: [
-        { name: 'Light Pet Hair', price: 25, description: 'Professional removal of light pet hair' },
-        { name: 'Heavy Pet Hair', price: 50, description: 'Intensive removal of heavy pet hair' },
-        { name: 'Baby Seat', price: 25, description: 'Thorough cleaning of baby car seats' },
-        { name: 'Full Cleaning for Dirty Headliners', price: 50, description: 'Deep cleaning of headliner surfaces' },
-        { name: 'Engine', price: 40, description: 'Thorough cleaning of engine compartment' },
+        { name: 'Light Pet Hair Removal', price: 25, description: 'Professional removal of light pet hair' },
+        { name: 'Heavy Pet Hair Removal', price: 50, description: 'Intensive removal of heavy pet hair' },
+        { name: 'Baby Seat Deep Cleaning', price: 25, description: 'Thorough deep cleaning of baby car seats' },
+        { name: 'Full Headliner Cleaning', price: 50, description: 'Deep cleaning for dirty ceilings' },
+        { name: 'Engine Cleaning', price: 40, description: 'Thorough cleaning of engine compartment' },
         { name: 'Headlight Restoration', price: 70, description: 'Restore clarity and visibility' }
       ]
     },
-    exterior: {
-      name: 'EXTERIOR SERVICES',
-      services: [
-        { 
-          name: 'GOLD PACKAGE', 
-          price: 55, 
-          description: 'Ideal for keeping your vehicle exterior clean, protected, and presentable',
-          details: 'Two-bucket wash, wheel cleaning, tire shine, wheel well cleaning, exterior glass, gas cap, hand-dry',
-          vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
-        }
-      ]
-    },
+    
+    // 2️⃣ SEGUNDO: EXTERIOR ADD-ONS
     exterior_addons: {
-      name: 'EXTERIOR PACKAGE ADD-ONS',
+      name: 'EXTERIOR ADD-ONS',
       services: [
         { name: 'Headlight Restoration', price: 70, description: 'Restore clarity and visibility' },
         { name: 'Plastic Restoration', price: 30, description: 'Restore faded plastic trim' },
@@ -158,91 +124,133 @@ const BookAppointment = () => {
         { name: 'Ceramic Protection (3 months) + Clay Bar', price: 75, description: 'Short-term ceramic coating with clay bar treatment' }
       ]
     },
-    polishing: {
-      name: 'POLISHING & CERAMIC COATING SERVICES',
-      services: [
-        { 
-          name: 'SILVER PACKAGE', 
-          price: 220, 
-          description: 'Light cleaning and correction to remove small imperfections and enhance shine',
-          details: '1 step polishing, shine enhancement, light scratch removal',
-          vehicleTypes: { small: 220, suv: 240, threeRow: 270 }
-        },
-        { 
-          name: 'GOLD PACKAGE', 
-          price: 300, 
-          description: 'Deeper treatment to correct noticeable defects and restore uniform, glossy finish',
-          details: '2 polishing steps, moderate scratch/oxidation removal, preparation for ceramic/sealant',
-          vehicleTypes: { small: 300, suv: 320, threeRow: 350 }
-        },
-        { 
-          name: 'DIAMOND PACKAGE', 
-          price: 650, 
-          description: 'Maximum protection and long-lasting shine with ceramic coating',
-          details: '2 polishing steps + high-durability ceramic coating (3-year protection)',
-          vehicleTypes: { small: 650, suv: 750, threeRow: 850 }
-        }
-      ]
-    },
+    
+    // 3️⃣ TERCERO: PREMIUM PACKAGES (4 paquetes distintos)
     packages: {
-      name: 'VIEW PACKAGES',
+      name: 'PREMIUM PACKAGES',
       services: [
         { 
-          name: 'SILVER MAINTENANCE PACKAGE', 
+          name: 'MAINTENANCE PACKAGE', 
           price: 110, 
           description: 'Basic interior and exterior maintenance',
           details: 'Basic cleaning and maintenance for both interior and exterior',
           vehicleTypes: { small: 110, suv: 130, threeRow: 150 }
         },
         { 
-          name: 'GOLD FULL CLEANING PACKAGE', 
+          name: 'GOLD FULL DETAIL', 
           price: 185, 
-          description: 'Complete interior and exterior cleaning',
+          description: 'Complete interior and exterior detail',
           details: 'Deep cleaning for both interior and exterior surfaces',
           vehicleTypes: { small: 185, suv: 210, threeRow: 240 }
         },
         { 
-          name: 'XTREME FULL RENOVATION PACKAGE', 
-          price: 450, 
-          description: 'Complete renovation and restoration for your vehicle',
-          details: 'Intensive cleaning, restoration and protection for both interior and exterior',
-          vehicleTypes: { small: 450, suv: 480, threeRow: 520 }
+          name: 'XTREME FULL RENOVATION - 3-Month Ceramic Protection', 
+          price: 475, 
+          description: 'Complete renovation with 3-month ceramic protection',
+          details: 'Intensive cleaning, restoration and 3-month ceramic protection',
+          vehicleTypes: { small: 475, suv: 515, threeRow: 565 }
         },
         { 
-          name: 'XTREME FULL RENOVATION WITH 5-YEAR CERAMIC PACKAGE', 
-          price: 765, 
-          description: 'Complete renovation with long-lasting ceramic protection',
+          name: 'XTREME FULL RENOVATION - 5-Year Ceramic Coating', 
+          price: 799, 
+          description: 'Complete renovation with premium 5-year ceramic coating',
           details: 'Full renovation package plus premium 5-year ceramic coating protection',
-          vehicleTypes: { small: 765, suv: 800, threeRow: 850 }
+          vehicleTypes: { small: 799, suv: 899, threeRow: 999 }
+        }
+      ]
+    },
+    
+    // 4️⃣ CUARTO: INTERIOR PACKAGES
+    interior: {
+      name: 'INTERIOR PACKAGES',
+      services: [
+        { 
+          name: 'SILVER', 
+          price: 75, 
+          description: 'Perfect for keeping your vehicle clean and presentable on a daily basis',
+          details: 'Air blow, full vacuuming, plastic shine, carpet mat cleaning, trunk cleaning, interior glass cleaning',
+          vehicleTypes: { small: 75, suv: 85, threeRow: 95 }
+        },
+        { 
+          name: 'GOLD', 
+          price: 145, 
+          description: 'A complete cleaning to make your interior look like new',
+          details: 'Deep cleaning of seats/carpets/headliner, window cleaning, extractor/steam, plastic conditioning, air freshener',
+          vehicleTypes: { small: 145, suv: 165, threeRow: 185 }
+        },
+        { 
+          name: 'DIAMOND', 
+          price: 225, 
+          description: 'For vehicles with high dirt levels or challenging conditions (50%+ stains, heavy pet hair, strong odors)',
+          details: 'All Gold services + intensive stain/odor treatment + deep decontamination + surface restoration',
+          vehicleTypes: { small: 225, suv: 245, threeRow: 265 }
+        }
+      ]
+    },
+    
+    // 5️⃣ QUINTO: EXTERIOR PACKAGES
+    exterior: {
+      name: 'EXTERIOR PACKAGES',
+      services: [
+        { 
+          name: 'GOLD', 
+          price: 55, 
+          description: 'Ideal for keeping your vehicle exterior clean, protected, and presentable',
+          details: 'Two-bucket wash, wheel cleaning, tire shine, wheel well cleaning, exterior glass, gas cap, hand-dry',
+          vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
+        }
+      ]
+    },
+    
+    // 6️⃣ SEXTO: POLISHING & CERAMIC COATING
+    polishing: {
+      name: 'POLISHING & CERAMIC COATING',
+      services: [
+        { 
+          name: 'EXTERIOR POLISH', 
+          price: 220, 
+          description: 'Light cleaning and correction to remove small imperfections and enhance shine',
+          details: '1 step polishing, shine enhancement, light scratch removal',
+          vehicleTypes: { small: 220, suv: 240, threeRow: 270 }
+        },
+        { 
+          name: 'GOLD', 
+          price: 300, 
+          description: 'Deeper treatment to correct noticeable defects and restore uniform, glossy finish',
+          details: '2 polishing steps, moderate scratch/oxidation removal, preparation for ceramic/sealant',
+          vehicleTypes: { small: 300, suv: 320, threeRow: 350 }
+        },
+        { 
+          name: 'DIAMOND', 
+          price: 699, 
+          description: 'Maximum protection and long-lasting shine with ceramic coating',
+          details: '2 polishing steps + high-durability ceramic coating (3-year protection)',
+          vehicleTypes: { small: 699, suv: 799, threeRow: 899 }
         }
       ]
     }
   };
 
-  // Generate time slots based on day of week
-  // Monday to Friday: 7am, 9am, 12pm, 3pm, 6pm
-  // Saturday and Sunday: 7am, 9am, 12pm, 3pm, 6pm, 9pm
+  // Generate time slots - TODOS LOS DÍAS MISMO HORARIO
+  // 7:30 am - 10:00 am - 1:00 pm - 3:00 pm - 5:00 pm
   const generateTimeSlots = (selectedDate) => {
     if (!selectedDate) return [];
     
     const slots = [];
     const date = dayjs(selectedDate);
-    const dayOfWeek = date.day(); // 0 = Sunday, 6 = Saturday
     
-    // Define available hours based on day of week
-    let availableHours;
+    // ✅ NUEVOS HORARIOS: Todos los días tienen los mismos horarios
+    const availableSlots = [
+      { hour: 7, minute: 30 },   // 7:30 AM
+      { hour: 10, minute: 0 },   // 10:00 AM
+      { hour: 13, minute: 0 },   // 1:00 PM
+      { hour: 15, minute: 0 },   // 3:00 PM
+      { hour: 17, minute: 0 }    // 5:00 PM
+    ];
     
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      // Weekend: 7am, 9am, 12pm, 3pm, 6pm, 9pm
-      availableHours = [7, 9, 12, 15, 18, 21];
-    } else {
-      // Weekday (Monday to Friday): 7am, 9am, 12pm, 3pm, 6pm
-      availableHours = [7, 9, 12, 15, 18];
-    }
-    
-    // Generate slots for available hours
-    availableHours.forEach(hour => {
-      const slotTime = date.hour(hour).minute(0).second(0);
+    // Generate slots for available times
+    availableSlots.forEach(slot => {
+      const slotTime = date.hour(slot.hour).minute(slot.minute).second(0);
       
       // Don't show past time slots for today
       if (date.isSame(dayjs(), 'day') && slotTime.isBefore(dayjs())) {
