@@ -31,11 +31,13 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
   const { currentUser } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState(0); // 0: Card, 1: Zelle, 2: Apple Pay
+  const [paymentMethod, setPaymentMethod] = useState(0); // 0: Card, 1: Zelle, 2: Apple Pay, 3: Cash App
   const [applePayAvailable, setApplePayAvailable] = useState(false);
   const [zelleReceipt, setZelleReceipt] = useState(null);
   const [receiptUploading, setReceiptUploading] = useState(false);
   const [receiptUrl, setReceiptUrl] = useState('');
+  const [cashAppReceipt, setCashAppReceipt] = useState(null);
+  const [cashAppReceiptUrl, setCashAppReceiptUrl] = useState('');
 
   const depositAmount = calculateDepositAmount(servicePrice);
   const depositDisplay = formatCurrency(depositAmount);
@@ -184,6 +186,49 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     }
   };
 
+  const handleCashAppReceiptUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!validTypes.includes(file.type)) {
+      setError('❌ Only images (JPG, PNG, GIF) and PDF files are allowed');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('❌ File size must be less than 5MB');
+      return;
+    }
+
+    setReceiptUploading(true);
+    setError('');
+
+    try {
+      const userId = currentUser?.uid || 'guest';
+      const timestamp = Date.now();
+      const fileName = `cashapp_receipt_${timestamp}_${file.name}`;
+      const storageRef = ref(storage, `payment-receipts/${userId}/${fileName}`);
+
+      console.log('Uploading Cash App receipt to:', `payment-receipts/${userId}/${fileName}`);
+      
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      
+      console.log('✅ Cash App receipt uploaded successfully:', downloadUrl);
+      
+      setCashAppReceipt(file);
+      setCashAppReceiptUrl(downloadUrl);
+      setReceiptUploading(false);
+    } catch (err) {
+      console.error('Error uploading Cash App receipt:', err);
+      setError(`❌ Failed to upload receipt: ${err.message}`);
+      setReceiptUploading(false);
+    }
+  };
+
   const handleZellePayment = async () => {
     // Validate that receipt is uploaded
     if (!zelleReceipt || !receiptUrl) {
@@ -213,6 +258,41 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
       onPaymentSuccess(mockPaymentResult);
     } catch (err) {
       setError('Zelle payment failed. Please try again.');
+      onPaymentError(err);
+    }
+
+    setIsProcessing(false);
+  };
+
+  const handleCashAppPayment = async () => {
+    // Validate that receipt is uploaded
+    if (!cashAppReceipt || !cashAppReceiptUrl) {
+      setError('❌ Please upload your Cash App payment receipt first');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError('');
+
+    try {
+      // Simulate Cash App payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mock successful Cash App payment with receipt URL
+      const mockPaymentResult = {
+        id: `cashapp_${Math.random().toString(36).substr(2, 9)}`,
+        status: 'succeeded',
+        amount: depositAmount,
+        payment_method: 'cashapp',
+        method: 'cashapp',
+        receiptUrl: cashAppReceiptUrl,
+        receiptFileName: cashAppReceipt.name
+      };
+
+      console.log('✅ Cash App payment confirmed with receipt:', mockPaymentResult);
+      onPaymentSuccess(mockPaymentResult);
+    } catch (err) {
+      setError('Cash App payment failed. Please try again.');
       onPaymentError(err);
     }
 
@@ -553,10 +633,19 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   label: 'Apple Pay', 
                   color: '#000000', 
                   desc: 'One-tap checkout',
-                  badge: applePayAvailable ? 'Available' : 'Not Available',
-                  available: applePayAvailable
+                  badge: applePayAvailable ? 'Available' : 'Device Not Supported',
+                  available: true // Always show
+                },
+                { 
+                  id: 3, 
+                  icon: <AccountBalance />, 
+                  label: 'Cash App', 
+                  color: '#00d54b', 
+                  desc: '$Cashtag Payment',
+                  badge: 'Popular',
+                  available: true
                 }
-              ].filter(method => method.available).map((method) => (
+              ].map((method) => (
                 <Grid item xs={12} sm={6} md={4} key={method.id}>
                   <Paper
                     elevation={paymentMethod === method.id ? 6 : 2}
@@ -848,10 +937,10 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <PhoneIphone sx={{ color: '#6b21a8' }} />
                     614-653-5882
-                  </Typography>
+                </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: '#64748b' }}>
                     Poveda Premium Auto Care
-                  </Typography>
+                </Typography>
                 </Box>
 
                 <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', mb: 1.5 }}>
@@ -1086,6 +1175,185 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
                     <Apple />
                     <Typography sx={{ fontWeight: 600 }}>Pay ${depositDisplay}</Typography>
+                  </Box>
+                )}
+              </Button>
+            </Box>
+          )}
+
+          {paymentMethod === 3 && (
+            <Box>
+              <Typography variant="subtitle2" sx={{ 
+                mb: 2, 
+                fontWeight: 600, 
+                color: '#00d54b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <AccountBalance fontSize="small" />
+                Pay with Cash App
+              </Typography>
+              
+              <Alert severity="success" icon={<Box component="span" sx={{ fontSize: '1.3rem' }}>💵</Box>} sx={{ mb: 3, borderRadius: '12px' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  Send payment to our Cash App and upload the receipt:
+                </Typography>
+              </Alert>
+
+              {/* Cash App Payment Details */}
+              <Paper sx={{ 
+                p: 3, 
+                mb: 3, 
+                borderRadius: '16px', 
+                background: 'linear-gradient(135deg, rgba(0, 213, 75, 0.05) 0%, rgba(0, 213, 75, 0.08) 100%)',
+                border: '2px dashed #00d54b'
+              }}>
+                <Box sx={{ textAlign: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#00d54b', mb: 1 }}>
+                    Cash App Details
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 600, color: '#1e293b', fontSize: '1.1rem' }}>
+                    $PovedaDetailing
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#64748b', mt: 1 }}>
+                    Poveda Premium Auto Care
+                  </Typography>
+                </Box>
+
+                <Box sx={{ 
+                  p: 2, 
+                  bgcolor: 'rgba(0, 213, 75, 0.1)', 
+                  borderRadius: '12px',
+                  border: '1px solid rgba(0, 213, 75, 0.2)'
+                }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#00d54b', mb: 1 }}>
+                    📋 Instructions:
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#475569', mb: 0.5 }}>
+                    1. Open Cash App and send <strong>${depositDisplay}</strong>
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#475569', mb: 0.5 }}>
+                    2. To: <strong>$PovedaDetailing</strong>
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#475569' }}>
+                    3. Take a screenshot of your payment confirmation
+                  </Typography>
+                </Box>
+              </Paper>
+
+              {/* Cash App Receipt Upload */}
+              <Paper sx={{ 
+                p: 3, 
+                mb: 3, 
+                borderRadius: '16px',
+                border: '2px solid',
+                borderColor: cashAppReceiptUrl ? '#22c55e' : '#e2e8f0',
+                background: cashAppReceiptUrl ? 
+                  'linear-gradient(135deg, rgba(34, 197, 94, 0.03) 0%, rgba(34, 197, 94, 0.08) 100%)' : 
+                  'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)'
+              }}>
+                <Typography variant="subtitle2" sx={{ 
+                  mb: 2, 
+                  fontWeight: 600, 
+                  color: '#1e293b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <AttachFile fontSize="small" />
+                  Upload Cash App Receipt
+                </Typography>
+
+                <input
+                  accept="image/*,application/pdf"
+                  style={{ display: 'none' }}
+                  id="cashapp-receipt-upload"
+                  type="file"
+                  onChange={handleCashAppReceiptUpload}
+                />
+                <label htmlFor="cashapp-receipt-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    fullWidth
+                    disabled={receiptUploading}
+                    startIcon={receiptUploading ? <CircularProgress size={20} /> : (cashAppReceiptUrl ? <CheckCircle /> : <CloudUpload />)}
+                    sx={{
+                      py: 2,
+                      borderRadius: '12px',
+                      borderColor: cashAppReceiptUrl ? '#22c55e' : '#cbd5e1',
+                      color: cashAppReceiptUrl ? '#22c55e' : '#64748b',
+                      fontWeight: 600,
+                      fontSize: '0.95rem',
+                      textTransform: 'none',
+                      '&:hover': {
+                        borderColor: cashAppReceiptUrl ? '#16a34a' : '#94a3b8',
+                        bgcolor: cashAppReceiptUrl ? 'rgba(34, 197, 94, 0.04)' : 'rgba(148, 163, 184, 0.04)'
+                      }
+                    }}
+                  >
+                    {receiptUploading ? 'Uploading...' : 
+                     cashAppReceiptUrl ? `✅ ${cashAppReceipt.name}` : 
+                     'Choose File (Image or PDF)'}
+                  </Button>
+                </label>
+
+                {cashAppReceiptUrl && (
+                  <Alert severity="success" sx={{ mt: 2, borderRadius: '12px' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      ✅ Receipt uploaded successfully! Click "Confirm Payment" below.
+                    </Typography>
+                  </Alert>
+                )}
+
+                <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#64748b', textAlign: 'center' }}>
+                  Max file size: 5MB • Formats: JPG, PNG, GIF, PDF
+                </Typography>
+              </Paper>
+
+              {/* Submit Cash App Payment */}
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                onClick={handleCashAppPayment}
+                disabled={isProcessing || !cashAppReceiptUrl}
+                sx={{
+                  py: 2,
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #00d54b 0%, #00b341 100%)',
+                  boxShadow: '0 8px 16px rgba(0, 213, 75, 0.3)',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  textTransform: 'none',
+                  letterSpacing: '0.2px',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #00b341 0%, #009938 100%)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 20px rgba(0, 213, 75, 0.4)',
+                  },
+                  '&:disabled': {
+                    background: '#e2e8f0',
+                    color: '#94a3b8'
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {isProcessing ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                    <CircularProgress size={22} color="inherit" />
+                    <Typography sx={{ fontWeight: 600 }}>Processing...</Typography>
+                  </Box>
+                ) : cashAppReceiptUrl ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                    <Box component="span" sx={{ fontSize: '1.3rem' }}>✅</Box>
+                    <Typography sx={{ fontWeight: 600 }}>Confirm Payment</Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                    <AccountBalance />
+                    <Typography sx={{ fontWeight: 600 }}>Upload Receipt First</Typography>
                   </Box>
                 )}
               </Button>
