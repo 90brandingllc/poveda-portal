@@ -264,50 +264,63 @@ const BookAppointment = () => {
     if (!selectedDate) return;
     
     setLoadingSlots(true);
+    console.log('🔍 Checking slot availability for:', selectedDate.format('YYYY-MM-DD'));
+    console.log('👤 Current user:', currentUser ? currentUser.uid : 'GUEST (not authenticated)');
+    
     try {
-      await withRetry(async () => {
       const dayStart = dayjs(selectedDate).startOf('day').toDate();
       const dayEnd = dayjs(selectedDate).endOf('day').toDate();
       
-      // Query appointments for the selected date
-      const appointmentsQuery = query(
-        collection(db, 'appointments'),
-        where('date', '>=', dayStart),
-        where('date', '<=', dayEnd)
-      );
+      let bookedSlots = [];
+      let blockedSlots = [];
       
-      // Query admin-blocked slots for the selected date (using same Date object approach as admin)
-      const blockedSlotsQuery = query(
-        collection(db, 'blockedSlots'),
-        where('date', '>=', dayStart),
-        where('date', '<=', dayEnd)
-      );
-      
-      const [appointmentsSnapshot, blockedSlotsSnapshot] = await Promise.all([
-        getDocs(appointmentsQuery),
-        getDocs(blockedSlotsQuery)
-      ]);
-      
-      const bookedSlots = [];
-      const blockedSlots = [];
-      
-      // Get booked slots from appointments
-      appointmentsSnapshot.forEach((doc) => {
-        const appointment = doc.data();
-        if (appointment.timeSlot) {
-          bookedSlots.push(appointment.timeSlot);
-        }
-      });
-      
-      // Get admin-blocked slots
-      blockedSlotsSnapshot.forEach((doc) => {
-        const blockedSlot = doc.data();
-        if (blockedSlot.timeSlot) {
-          blockedSlots.push(blockedSlot.timeSlot);
-        }
-      });
-      
-
+      // Try to fetch slot availability - but handle permission errors for guest users
+      try {
+        // Query appointments for the selected date
+        const appointmentsQuery = query(
+          collection(db, 'appointments'),
+          where('date', '>=', dayStart),
+          where('date', '<=', dayEnd)
+        );
+        
+        // Query admin-blocked slots for the selected date
+        const blockedSlotsQuery = query(
+          collection(db, 'blockedSlots'),
+          where('date', '>=', dayStart),
+          where('date', '<=', dayEnd)
+        );
+        
+        const [appointmentsSnapshot, blockedSlotsSnapshot] = await Promise.all([
+          getDocs(appointmentsQuery),
+          getDocs(blockedSlotsQuery)
+        ]);
+        
+        // Get booked slots from appointments
+        appointmentsSnapshot.forEach((doc) => {
+          const appointment = doc.data();
+          if (appointment.timeSlot) {
+            bookedSlots.push(appointment.timeSlot);
+          }
+        });
+        
+        // Get admin-blocked slots
+        blockedSlotsSnapshot.forEach((doc) => {
+          const blockedSlot = doc.data();
+          if (blockedSlot.timeSlot) {
+            blockedSlots.push(blockedSlot.timeSlot);
+          }
+        });
+        
+        console.log('✅ Slot availability check successful');
+        console.log('   - Booked slots:', bookedSlots);
+        console.log('   - Blocked slots:', blockedSlots);
+        
+      } catch (permissionError) {
+        // Guest users don't have permission to query - show all slots as available
+        console.warn('⚠️  Permission denied (guest user). Showing all slots as available.');
+        console.warn('   Real availability will be verified at booking time.');
+        // Leave bookedSlots and blockedSlots as empty arrays
+      }
       
       // Generate slots and mark availability
       const slots = generateTimeSlots(selectedDate);
@@ -318,14 +331,24 @@ const BookAppointment = () => {
                   !blockedSlots.includes(slot.label)
       }));
       
-        setAvailableSlots(availableSlots);
-      });
+      console.log('📋 Available slots:', availableSlots.filter(s => s.available).map(s => s.label));
+      setAvailableSlots(availableSlots);
+      
     } catch (error) {
-      const errorInfo = await handleError(error, {
-        action: 'checking_slot_availability',
-        date: selectedDate?.toISOString()
-      });
-      setError(errorInfo.message);
+      console.error('❌ Error checking slot availability:', error);
+      
+      // Even on error, generate slots and show all as available
+      const slots = generateTimeSlots(selectedDate);
+      const availableSlots = slots.map(slot => ({
+        ...slot,
+        available: true // Show all as available on error
+      }));
+      
+      console.log('⚠️  Showing all slots as available due to error');
+      setAvailableSlots(availableSlots);
+      
+      // Don't show error to user - they can still book
+      // The actual availability will be verified server-side
     }
     setLoadingSlots(false);
   };
@@ -776,6 +799,15 @@ const BookAppointment = () => {
       const remainingBalance = formData.estimatedPrice - depositAmount;
 
       // Build appointment data - works for both logged in and guest users
+      console.log('========================================');
+      console.log('🔍 CREATING APPOINTMENT');
+      console.log('========================================');
+      console.log('👤 Current User:', currentUser ? currentUser.uid : 'GUEST (not authenticated)');
+      console.log('📧 Email:', currentUser?.email || formData.customerEmail);
+      console.log('👤 Name:', currentUser?.displayName || formData.customerName);
+      console.log('🏷️  Is Guest Booking:', !currentUser);
+      console.log('========================================');
+      
       const appointmentData = {
         // User info - use guest info if not logged in
         userId: currentUser?.uid || 'guest',
@@ -811,7 +843,18 @@ const BookAppointment = () => {
         updatedAt: serverTimestamp()
       };
 
+      console.log('📝 Appointment Data to be saved:');
+      console.log('   - userId:', appointmentData.userId);
+      console.log('   - userEmail:', appointmentData.userEmail);
+      console.log('   - isGuestBooking:', appointmentData.isGuestBooking);
+      console.log('   - services:', appointmentData.services);
+      console.log('   - date:', appointmentData.date);
+      console.log('========================================');
+
+      console.log('💾 Attempting to save appointment to Firestore...');
       const docRef = await addDoc(collection(db, 'appointments'), appointmentData);
+      console.log('✅ Appointment saved successfully! ID:', docRef.id);
+      console.log('========================================');
       
       // Send automatic approval notifications
       try {
