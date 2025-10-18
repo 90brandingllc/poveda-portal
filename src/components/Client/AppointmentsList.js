@@ -261,6 +261,100 @@ const AppointmentsList = () => {
     handleMenuClose();
   };
 
+  // Check if appointment can be cancelled (24 hours before)
+  const canCancelAppointment = (appointment) => {
+    if (!appointment || !appointment.date) {
+      console.log('❌ canCancelAppointment: No appointment or no date');
+      return false;
+    }
+    
+    try {
+      // Parse appointment date
+      let appointmentDateTime;
+      
+      if (appointment.date.seconds) {
+        // Firestore Timestamp
+        appointmentDateTime = new Date(appointment.date.seconds * 1000);
+      } else if (appointment.date.toDate) {
+        // Firestore Timestamp object with toDate method
+        appointmentDateTime = appointment.date.toDate();
+      } else {
+        // Regular Date object or string
+        appointmentDateTime = new Date(appointment.date);
+      }
+      
+      // Validate that we got a valid date
+      if (isNaN(appointmentDateTime.getTime())) {
+        console.error('❌ Invalid date parsed:', appointment.date);
+        return false;
+      }
+      
+      // Add appointment time if available
+      if (appointment.time) {
+        try {
+          const timeParts = appointment.time.split(':');
+          const hours = parseInt(timeParts[0], 10);
+          const minutes = parseInt(timeParts[1], 10);
+          
+          if (!isNaN(hours) && !isNaN(minutes)) {
+            appointmentDateTime.setHours(hours, minutes, 0, 0);
+          } else {
+            console.warn('⚠️ Invalid time format, using start of day:', appointment.time);
+            // If time is invalid, use start of day (more restrictive)
+            appointmentDateTime.setHours(0, 0, 0, 0);
+          }
+        } catch (error) {
+          console.error('❌ Error parsing time:', error);
+          // If error parsing time, use start of day (more restrictive)
+          appointmentDateTime.setHours(0, 0, 0, 0);
+        }
+      } else {
+        console.warn('⚠️ No time specified, using start of day for safety');
+        // If no time specified, use start of day (more restrictive for cancellation)
+        appointmentDateTime.setHours(0, 0, 0, 0);
+      }
+      
+      const now = new Date();
+      const hoursDifference = (appointmentDateTime - now) / (1000 * 60 * 60);
+      
+      // Must be AT LEAST 24 hours in the future
+      const canCancel = hoursDifference >= 24;
+      
+      console.log('🕐 Validación 24h ESTRICTA:', {
+        appointmentId: appointment.id,
+        appointmentStatus: appointment.status,
+        appointmentDate: appointmentDateTime.toLocaleString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        appointmentTime: appointment.time || 'NOT SPECIFIED',
+        now: now.toLocaleString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        hoursDifference: hoursDifference.toFixed(2) + ' hours',
+        minimumRequired: '24.00 hours',
+        canCancel: canCancel ? '✅ YES' : '❌ NO',
+        reason: canCancel ? 'More than 24h remaining' : 'Less than 24h remaining - BLOCKED'
+      });
+      
+      return canCancel;
+      
+    } catch (error) {
+      console.error('❌ Error in canCancelAppointment:', error);
+      // On error, deny cancellation for safety
+      return false;
+    }
+  };
+
   const handleCancelAppointment = (appointment = null) => {
     const appointmentToCancel = appointment || selectedAppointment;
     
@@ -270,6 +364,35 @@ const AppointmentsList = () => {
         open: true,
         message: 'No appointment selected. Please try again.',
         severity: 'error'
+      });
+      return;
+    }
+
+    // Check if appointment is within 24 hours
+    if (!canCancelAppointment(appointmentToCancel)) {
+      // Parse appointment date with time
+      let appointmentDateTime;
+      if (appointmentToCancel.date.seconds) {
+        appointmentDateTime = new Date(appointmentToCancel.date.seconds * 1000);
+      } else if (appointmentToCancel.date.toDate) {
+        appointmentDateTime = appointmentToCancel.date.toDate();
+      } else {
+        appointmentDateTime = new Date(appointmentToCancel.date);
+      }
+      
+      // Add time if available
+      if (appointmentToCancel.time) {
+        const [hours, minutes] = appointmentToCancel.time.split(':').map(Number);
+        appointmentDateTime.setHours(hours, minutes, 0, 0);
+      }
+      
+      const now = new Date();
+      const hoursDifference = Math.abs((appointmentDateTime - now) / (1000 * 60 * 60));
+      
+      setSnackbar({
+        open: true,
+        message: `❌ Cannot cancel appointment within 24 hours. Your appointment is in ${hoursDifference.toFixed(1)} hours. Please contact us directly for urgent changes.`,
+        severity: 'warning'
       });
       return;
     }
@@ -285,8 +408,39 @@ const AppointmentsList = () => {
       return;
     }
 
+    // ✅ VALIDACIÓN FINAL: Verificar 24 horas antes de cancelar
+    if (!canCancelAppointment(appointmentToCancel)) {
+      // Parse appointment date with time
+      let appointmentDateTime;
+      if (appointmentToCancel.date.seconds) {
+        appointmentDateTime = new Date(appointmentToCancel.date.seconds * 1000);
+      } else if (appointmentToCancel.date.toDate) {
+        appointmentDateTime = appointmentToCancel.date.toDate();
+      } else {
+        appointmentDateTime = new Date(appointmentToCancel.date);
+      }
+      
+      // Add time if available
+      if (appointmentToCancel.time) {
+        const [hours, minutes] = appointmentToCancel.time.split(':').map(Number);
+        appointmentDateTime.setHours(hours, minutes, 0, 0);
+      }
+      
+      const now = new Date();
+      const hoursDifference = Math.abs((appointmentDateTime - now) / (1000 * 60 * 60));
+      
+      setSnackbar({
+        open: true,
+        message: `❌ Cannot cancel appointment within 24 hours. Your appointment is in ${hoursDifference.toFixed(1)} hours. Please contact us directly.`,
+        severity: 'error'
+      });
+      
+      setCancelConfirmOpen(false);
+      return;
+    }
+
     try {
-      console.log('Cancelling appointment:', appointmentToCancel.id);
+      console.log('✅ Cancelling appointment (24h validation passed):', appointmentToCancel.id);
       
       const appointmentRef = doc(db, 'appointments', appointmentToCancel.id);
       
@@ -1168,43 +1322,40 @@ const AppointmentsList = () => {
         <MenuItem onClick={handleViewDetails}>
           View Details
         </MenuItem>
+        
+        {/* Reschedule solo para pending */}
         {selectedAppointment?.status === 'pending' && (
-          <>
-            <MenuItem onClick={handleReschedule}>
-              <Edit sx={{ mr: 1 }} />
-              Reschedule
-            </MenuItem>
-            <MenuItem 
-              onClick={() => {
-                handleMenuClose();
-                handleCancelAppointment();
-              }}
-              sx={{ color: 'error.main' }}
-            >
-              <Cancel sx={{ mr: 1 }} />
-              Cancel Appointment
-            </MenuItem>
-          </>
-        )}
-        {selectedAppointment?.status === 'completed' && (
-          <MenuItem onClick={handleMenuClose}>
-            Book Again
+          <MenuItem onClick={handleReschedule}>
+            <Edit sx={{ mr: 1 }} />
+            Reschedule
           </MenuItem>
         )}
         
-        <Divider />
-        
-        {/* Opción para eliminar citas en cualquier estado */}
-        {selectedAppointment && selectedAppointment.status !== 'pending' && (
+        {/* Cancel Appointment para pending y approved */}
+        {(selectedAppointment?.status === 'pending' || selectedAppointment?.status === 'approved') && (
           <MenuItem 
             onClick={() => {
               handleMenuClose();
               handleCancelAppointment();
             }}
-            sx={{ color: 'error.main' }}
+            disabled={!canCancelAppointment(selectedAppointment)}
+            sx={{ 
+              color: canCancelAppointment(selectedAppointment) ? 'error.main' : 'text.disabled',
+              '&.Mui-disabled': {
+                opacity: 0.6
+              }
+            }}
           >
-            <Delete sx={{ mr: 1 }} />
-            Delete Appointment
+            <Cancel sx={{ mr: 1 }} />
+            {canCancelAppointment(selectedAppointment) 
+              ? 'Cancel Appointment' 
+              : 'Cannot Cancel (< 24h)'}
+          </MenuItem>
+        )}
+        
+        {selectedAppointment?.status === 'completed' && (
+          <MenuItem onClick={handleMenuClose}>
+            Book Again
           </MenuItem>
         )}
       </Menu>
@@ -1443,35 +1594,57 @@ const AppointmentsList = () => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 3, bgcolor: 'grey.50' }}>
-          <Button 
-            onClick={() => setDetailsOpen(false)} 
-            variant="outlined"
-            size="large"
-          >
-            Close
-          </Button>
-          {selectedAppointment?.status === 'pending' && (
-            <Button 
-              variant="contained" 
-              color="error"
-              size="large"
-              startIcon={<Cancel />}
-              onClick={handleCancelAppointment}
-            >
-              Cancel Appointment
-            </Button>
+        <DialogActions sx={{ p: 3, bgcolor: 'grey.50', flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
+          {/* Alerta de restricción 24h para pending y approved */}
+          {(selectedAppointment?.status === 'pending' || selectedAppointment?.status === 'approved') 
+            && !canCancelAppointment(selectedAppointment) && (
+            <Alert severity="warning" sx={{ mb: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                ⏰ Cannot cancel within 24 hours of appointment. Please contact us directly.
+              </Typography>
+            </Alert>
           )}
-          {selectedAppointment?.status === 'completed' && (
+          
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             <Button 
-              variant="contained" 
-              color="primary"
+              onClick={() => setDetailsOpen(false)} 
+              variant="outlined"
               size="large"
-              startIcon={<Star />}
             >
-              Book Again
+              Close
             </Button>
-          )}
+            
+            {/* Botón Cancel para pending y approved */}
+            {(selectedAppointment?.status === 'pending' || selectedAppointment?.status === 'approved') && (
+              <Button 
+                variant="contained" 
+                color="error"
+                size="large"
+                startIcon={<Cancel />}
+                onClick={handleCancelAppointment}
+                disabled={!canCancelAppointment(selectedAppointment)}
+                sx={{
+                  '&:disabled': {
+                    bgcolor: '#e0e0e0',
+                    color: '#9e9e9e',
+                  }
+                }}
+              >
+                Cancel Appointment
+              </Button>
+            )}
+            
+            {selectedAppointment?.status === 'completed' && (
+              <Button 
+                variant="contained" 
+                color="primary"
+                size="large"
+                startIcon={<Star />}
+              >
+                Book Again
+              </Button>
+            )}
+          </Box>
         </DialogActions>
       </Dialog>
 
@@ -1579,6 +1752,17 @@ const AppointmentsList = () => {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
+          {appointmentToCancel && !canCancelAppointment(appointmentToCancel) && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                ❌ Cannot cancel within 24 hours of appointment
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                Please contact us directly for urgent changes.
+              </Typography>
+            </Alert>
+          )}
+          
           <Typography variant="h6" gutterBottom>
             Are you sure you want to cancel your appointment?
           </Typography>
@@ -1597,9 +1781,21 @@ const AppointmentsList = () => {
               )}
             </Box>
           )}
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            <strong>Warning:</strong> This action cannot be undone. Your appointment will be permanently cancelled.
-          </Alert>
+          
+          {appointmentToCancel && canCancelAppointment(appointmentToCancel) ? (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                ⚠️ <strong>Cancellation Policy:</strong> Your appointment will be marked as cancelled. 
+                This action cannot be undone.
+              </Typography>
+            </Alert>
+          ) : (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                ℹ️ Appointments can only be cancelled at least 24 hours in advance.
+              </Typography>
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
           <Button
@@ -1607,7 +1803,9 @@ const AppointmentsList = () => {
             variant="outlined"
             size="large"
           >
-            No, Keep Appointment
+            {appointmentToCancel && !canCancelAppointment(appointmentToCancel) 
+              ? 'Close' 
+              : 'No, Keep Appointment'}
           </Button>
           <Button
             onClick={handleConfirmCancel}
@@ -1615,6 +1813,13 @@ const AppointmentsList = () => {
             color="error"
             size="large"
             startIcon={<Cancel />}
+            disabled={appointmentToCancel && !canCancelAppointment(appointmentToCancel)}
+            sx={{
+              '&:disabled': {
+                bgcolor: '#e0e0e0',
+                color: '#9e9e9e',
+              }
+            }}
           >
             Yes, Cancel Appointment
           </Button>

@@ -3,6 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Users can read and write their own user document
     match /users/{userId} {
+      // Users can read and write their own document
       allow read, write: if request.auth != null && request.auth.uid == userId;
       
       // Also allow users to read their own document by uid field (fallback)
@@ -10,6 +11,14 @@ service cloud.firestore {
       
       // Allow creation of user documents 
       allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // ✅ NUEVO: Admins can read all users
+      allow read: if request.auth != null && 
+                 getUserRole(request.auth.uid) == 'admin';
+      
+      // ✅ NUEVO: Admins can update any user (for role changes, etc.)
+      allow update: if request.auth != null && 
+                   getUserRole(request.auth.uid) == 'admin';
     }
     
     // Appointments rules

@@ -305,22 +305,44 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
       return;
     }
 
+    console.log('🍎 Iniciando Apple Pay...');
+    console.log('Apple Pay disponible:', applePayAvailable);
+    
+    if (!applePayAvailable) {
+      setError('Apple Pay no está disponible en este dispositivo. Usa Safari en un dispositivo Apple o prueba otro método de pago.');
+      return;
+    }
+
     setIsProcessing(true);
     setError('');
 
     try {
+      console.log('🍎 Creando Payment Request...');
+      
       // Create Payment Request
       const paymentRequest = stripe.paymentRequest({
         country: 'US',
         currency: 'usd',
         total: {
-          label: `Deposit - ${servicePackage || 'Service'}`,
+          label: `Depósito - ${servicePackage || 'Servicio de Detailing'}`,
           amount: depositAmount,
         },
         requestPayerName: true,
         requestPayerEmail: true,
       });
 
+      // Verificar si Apple Pay está disponible
+      const canMakePayment = await paymentRequest.canMakePayment();
+      console.log('🍎 Can Make Payment:', canMakePayment);
+      
+      if (!canMakePayment || !canMakePayment.applePay) {
+        setError('Apple Pay no está disponible en este dispositivo o navegador. Por favor usa Safari en un dispositivo Apple.');
+        setIsProcessing(false);
+        return;
+      }
+
+      console.log('🍎 Creando Payment Intent en backend...');
+      
       // Create Payment Intent on backend
       const { getFunctions, httpsCallable } = await import('firebase/functions');
       const functions = getFunctions();
@@ -340,9 +362,12 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
       });
 
       const { clientSecret } = paymentIntentResult.data;
+      console.log('🍎 Payment Intent creado, client secret recibido');
 
       // Handle payment method
       paymentRequest.on('paymentmethod', async (ev) => {
+        console.log('🍎 Payment method recibido, confirmando pago...');
+        
         const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
           { payment_method: ev.paymentMethod.id },
@@ -350,11 +375,13 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
         );
 
         if (confirmError) {
+          console.error('❌ Error confirmando pago:', confirmError);
           ev.complete('fail');
           setError(confirmError.message);
           onPaymentError(confirmError);
           setIsProcessing(false);
         } else {
+          console.log('✅ Pago confirmado exitosamente:', paymentIntent.status);
           ev.complete('success');
           
           if (paymentIntent.status === 'succeeded') {
@@ -368,6 +395,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
               currency: paymentIntent.currency
             };
 
+            console.log('✅ Notificando éxito del pago');
             onPaymentSuccess(paymentResult);
           }
           setIsProcessing(false);
@@ -375,11 +403,25 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
       });
 
       // Show Apple Pay sheet
-      paymentRequest.show();
+      console.log('🍎 Mostrando Apple Pay sheet...');
+      const result = await paymentRequest.show();
+      console.log('🍎 Apple Pay sheet resultado:', result);
 
     } catch (err) {
-      console.error('Apple Pay error:', err);
-      setError(err.message || 'Apple Pay failed. Please try again.');
+      console.error('❌ Apple Pay error:', err);
+      
+      // Mensajes de error más claros
+      let errorMessage = 'Error procesando Apple Pay. ';
+      
+      if (err.message.includes('not available')) {
+        errorMessage = 'Apple Pay no está disponible. Por favor usa Safari en un iPhone, iPad o Mac.';
+      } else if (err.message.includes('canceled') || err.message.includes('cancelled')) {
+        errorMessage = 'Pago con Apple Pay cancelado.';
+      } else {
+        errorMessage = err.message || 'Error inesperado con Apple Pay. Por favor intenta otro método de pago.';
+      }
+      
+      setError(errorMessage);
       onPaymentError(err);
       setIsProcessing(false);
     }
