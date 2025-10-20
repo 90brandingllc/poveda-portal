@@ -28,6 +28,8 @@ export const createPaymentIntent = async (amount, currency = 'usd', metadata = {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
+      mode: 'cors',
       body: JSON.stringify({
         data: {
           amount: Math.round(amount),
@@ -58,6 +60,8 @@ export const confirmPayment = async (paymentIntentId, appointmentId) => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
+      mode: 'cors',
       body: JSON.stringify({
         data: {
           paymentIntentId,
