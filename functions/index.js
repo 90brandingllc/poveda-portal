@@ -4,10 +4,11 @@ const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 
 // Initialize Stripe with environment-based key selection
+// Default to LIVE keys for production. Set NODE_ENV=development to use test keys.
 const stripe = require('stripe')(
-  process.env.NODE_ENV === 'production' 
-    ? functions.config().stripe?.live_secret_key || process.env.STRIPE_LIVE_SECRET_KEY
-    : functions.config().stripe?.test_secret_key || process.env.STRIPE_TEST_SECRET_KEY
+  process.env.NODE_ENV === 'development'
+    ? functions.config().stripe?.test_secret_key || process.env.STRIPE_TEST_SECRET_KEY || functions.config().stripe?.live_secret_key
+    : functions.config().stripe?.live_secret_key || process.env.STRIPE_LIVE_SECRET_KEY
 );
 
 admin.initializeApp();
