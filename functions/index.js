@@ -1305,24 +1305,39 @@ exports.resetReminderFlags = functions.firestore
 
 // ========== STRIPE PAYMENT FUNCTIONS ==========
 
-// Create payment intent for deposit - PUBLIC (no auth required)
-exports.createPaymentIntent = functions.runWith({
-  invoker: 'public'
-}).https.onCall(async (data, context) => {
+// Create payment intent for deposit - PUBLIC HTTP endpoint
+exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
+  // Enable CORS
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+
   try {
-    const { amount, currency = 'usd', metadata = {} } = data;
+    const { amount, currency = 'usd', metadata = {} } = req.body.data || req.body;
     
     // Validate amount (should be in cents)
-    if (!amount || amount < 50) { // Minimum $0.50
-      throw new functions.https.HttpsError('invalid-argument', 'Invalid amount');
+    if (!amount || amount < 50) {
+      res.status(400).json({ error: 'Invalid amount' });
+      return;
     }
 
     // Create payment intent with automatic capture
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount), // Ensure integer
+      amount: Math.round(amount),
       currency: currency.toLowerCase(),
-      capture_method: 'automatic', // IMPORTANTE: Captura automática sin aprobación manual
-      confirmation_method: 'automatic', // Confirmación automática
+      capture_method: 'automatic',
+      confirmation_method: 'automatic',
       metadata: {
         ...metadata,
         source: 'POVEDA_AUTO_CARE',
@@ -1335,32 +1350,50 @@ exports.createPaymentIntent = functions.runWith({
 
     console.log(`Payment Intent created: ${paymentIntent.id} for $${amount/100}`);
 
-    return {
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id
-    };
+    res.status(200).json({
+      result: {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id
+      }
+    });
   } catch (error) {
     console.error('Error creating payment intent:', error);
-    throw new functions.https.HttpsError('internal', 'Unable to create payment intent');
+    res.status(500).json({ error: 'Unable to create payment intent', details: error.message });
   }
 });
 
-// Confirm payment and update appointment - PUBLIC (no auth required)
-exports.confirmPayment = functions.runWith({
-  invoker: 'public'
-}).https.onCall(async (data, context) => {
+// Confirm payment and update appointment - PUBLIC HTTP endpoint
+exports.confirmPayment = functions.https.onRequest(async (req, res) => {
+  // Enable CORS
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+
   try {
-    const { paymentIntentId, appointmentId } = data;
+    const { paymentIntentId, appointmentId } = req.body.data || req.body;
     
     if (!paymentIntentId || !appointmentId) {
-      throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters');
+      res.status(400).json({ error: 'Missing required parameters' });
+      return;
     }
 
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     
     if (paymentIntent.status !== 'succeeded') {
-      throw new functions.https.HttpsError('failed-precondition', 'Payment not completed');
+      res.status(400).json({ error: 'Payment not completed' });
+      return;
     }
 
     // Update appointment with payment info
@@ -1368,7 +1401,7 @@ exports.confirmPayment = functions.runWith({
     await appointmentRef.update({
       paymentStatus: 'deposit_paid',
       paymentId: paymentIntentId,
-      depositAmount: paymentIntent.amount / 100, // Convert cents to dollars
+      depositAmount: paymentIntent.amount / 100,
       remainingBalance: (paymentIntent.metadata.totalAmount || 0) - (paymentIntent.amount / 100),
       paidAt: admin.firestore.FieldValue.serverTimestamp(),
       paymentMethod: paymentIntent.payment_method ? 'card' : 'unknown'
@@ -1376,13 +1409,15 @@ exports.confirmPayment = functions.runWith({
 
     console.log(`Payment confirmed for appointment ${appointmentId}: ${paymentIntentId}`);
     
-    return {
-      success: true,
-      paymentId: paymentIntentId,
-      amount: paymentIntent.amount / 100
-    };
+    res.status(200).json({
+      result: {
+        success: true,
+        paymentId: paymentIntentId,
+        amount: paymentIntent.amount / 100
+      }
+    });
   } catch (error) {
     console.error('Error confirming payment:', error);
-    throw new functions.https.HttpsError('internal', 'Unable to confirm payment');
+    res.status(500).json({ error: 'Unable to confirm payment', details: error.message });
   }
 });
