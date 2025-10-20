@@ -1307,10 +1307,12 @@ exports.resetReminderFlags = functions.firestore
 
 // Create payment intent for deposit - PUBLIC HTTP endpoint
 exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
-  // Enable CORS
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  // Enable CORS - using origin from request header or allowing all origins as fallback
+  const origin = req.headers.origin || '*';
+  res.set('Access-Control-Allow-Origin', origin);
+  res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Allow-Credentials', 'true');
 
   // Handle preflight
   if (req.method === 'OPTIONS') {
@@ -1364,10 +1366,12 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
 
 // Confirm payment and update appointment - PUBLIC HTTP endpoint
 exports.confirmPayment = functions.https.onRequest(async (req, res) => {
-  // Enable CORS
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  // Enable CORS - using origin from request header or allowing all origins as fallback
+  const origin = req.headers.origin || '*';
+  res.set('Access-Control-Allow-Origin', origin);
+  res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Allow-Credentials', 'true');
 
   // Handle preflight
   if (req.method === 'OPTIONS') {
