@@ -1305,8 +1305,10 @@ exports.resetReminderFlags = functions.firestore
 
 // ========== STRIPE PAYMENT FUNCTIONS ==========
 
-// Create payment intent for deposit
-exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
+// Create payment intent for deposit - PUBLIC (no auth required)
+exports.createPaymentIntent = functions.runWith({
+  invoker: 'public'
+}).https.onCall(async (data, context) => {
   try {
     const { amount, currency = 'usd', metadata = {} } = data;
     
@@ -1343,8 +1345,10 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
   }
 });
 
-// Confirm payment and update appointment
-exports.confirmPayment = functions.https.onCall(async (data, context) => {
+// Confirm payment and update appointment - PUBLIC (no auth required)
+exports.confirmPayment = functions.runWith({
+  invoker: 'public'
+}).https.onCall(async (data, context) => {
   try {
     const { paymentIntentId, appointmentId } = data;
     
