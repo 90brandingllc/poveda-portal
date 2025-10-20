@@ -1326,10 +1326,31 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    const { amount, currency = 'usd', metadata = {} } = req.body.data || req.body;
+    // Imprimir el cuerpo completo para depuración
+    console.log('Request body:', JSON.stringify(req.body));
+    
+    let amount, currency, metadata;
+    
+    // Intentar extraer datos de diferentes estructuras posibles
+    if (req.body.data) {
+      // Si los datos vienen en req.body.data
+      ({ amount, currency = 'usd', metadata = {} } = req.body.data);
+    } else if (req.body.amount !== undefined) {
+      // Si los datos están directamente en req.body
+      amount = req.body.amount;
+      currency = req.body.currency || 'usd';
+      metadata = req.body.metadata || {};
+    } else {
+      console.error('No se pudo encontrar los datos de cantidad en la solicitud');
+      res.status(400).json({ error: 'Missing payment amount data' });
+      return;
+    }
+    
+    console.log(`Processing payment intent: amount=${amount}, currency=${currency}`);
     
     // Validate amount (should be in cents)
     if (!amount || amount < 50) {
+      console.error(`Invalid amount: ${amount}`);
       res.status(400).json({ error: 'Invalid amount' });
       return;
     }
@@ -1359,8 +1380,27 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
       }
     });
   } catch (error) {
+    // Log detallado del error
     console.error('Error creating payment intent:', error);
-    res.status(500).json({ error: 'Unable to create payment intent', details: error.message });
+    console.error('Error details:', JSON.stringify({
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      type: error.type,
+      decline_code: error.decline_code,
+      param: error.param,
+      stack: error.stack
+    }));
+    
+    // Respuesta más descriptiva
+    res.status(500).json({
+      error: 'Unable to create payment intent',
+      details: error.message,
+      code: error.code || 'unknown_error',
+      type: error.type || 'server_error',
+      // Enviar detalles adicionales sólo en modo de desarrollo
+      ...(process.env.NODE_ENV === 'development' ? { stack: error.stack } : {})
+    });
   }
 });
 
