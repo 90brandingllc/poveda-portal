@@ -20,41 +20,59 @@ export const formatCurrency = (amountInCents) => {
   return (amountInCents / 100).toFixed(2);
 };
 
-// Create payment intent for deposit using Firebase Functions
+// Create payment intent for deposit using Firebase Functions HTTP endpoint
 export const createPaymentIntent = async (amount, currency = 'usd', metadata = {}) => {
   try {
-    // Import Firebase Functions
-    const { getFunctions, httpsCallable } = await import('firebase/functions');
-    const functions = getFunctions();
-    const createPaymentIntentFn = httpsCallable(functions, 'createPaymentIntent');
-    
-    // Call Firebase Function
-    const result = await createPaymentIntentFn({
-      amount: Math.round(amount), // Ensure integer (cents)
-      currency,
-      metadata
+    const response = await fetch('https://us-central1-clients-portal-a3fdf.cloudfunctions.net/createPaymentIntent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        data: {
+          amount: Math.round(amount),
+          currency,
+          metadata
+        }
+      })
     });
-
-    return result.data;
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || 'Failed to create payment intent');
+    }
+    
+    const data = await response.json();
+    return data.result;
   } catch (error) {
     console.error('Error creating payment intent:', error);
     throw error;
   }
 };
 
-// Confirm payment using Firebase Functions
+// Confirm payment using Firebase Functions HTTP endpoint
 export const confirmPayment = async (paymentIntentId, appointmentId) => {
   try {
-    const { getFunctions, httpsCallable } = await import('firebase/functions');
-    const functions = getFunctions();
-    const confirmPaymentFn = httpsCallable(functions, 'confirmPayment');
-    
-    const result = await confirmPaymentFn({
-      paymentIntentId,
-      appointmentId
+    const response = await fetch('https://us-central1-clients-portal-a3fdf.cloudfunctions.net/confirmPayment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        data: {
+          paymentIntentId,
+          appointmentId
+        }
+      })
     });
-
-    return result.data;
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || 'Failed to confirm payment');
+    }
+    
+    const data = await response.json();
+    return data.result;
   } catch (error) {
     console.error('Error confirming payment:', error);
     throw error;
