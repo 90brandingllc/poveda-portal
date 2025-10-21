@@ -69,8 +69,8 @@ const UserManual = () => {
           description: 'El dashboard muestra un resumen de tus citas, estimados y estadísticas.',
           steps: [
             'Ver el número total de citas programadas',
-            'Revisar citas pendientes de aprobación',
-            'Ver el total gastado en servicios',
+            'Revisar citas ',
+            
             'Acceder rápidamente a las próximas citas'
           ]
         },
@@ -109,7 +109,7 @@ const UserManual = () => {
           steps: [
             '💳 Tarjeta de Crédito/Débito (Stripe) - Instantáneo',
             '📱 Zelle - Sube comprobante de pago',
-            '💵 Cash App - Sube comprobante de pago',
+            '💵 Cash App - Sube comprobante de pago (Próximamente)',
             'El saldo restante se paga al completar el servicio'
           ]
         }
@@ -124,22 +124,22 @@ const UserManual = () => {
           description: 'Ver y administrar todas tus citas programadas.',
           steps: [
             'Ver lista completa de citas (pasadas y futuras)',
-            'Filtrar por estado: Pendiente, Aprobada, Completada, Cancelada',
+          
             'Ver detalles completos de cada cita',
-            'Cancelar citas si es necesario',
+            'Cancelar citas si es necesario (no permitido 24 horas antes de la cita)',
             'Descargar recibo de pago',
-            'Ver ubicación en el mapa'
+           
           ]
         },
         {
           subtitle: 'Estados de Cita',
           description: 'Significado de cada estado.',
           steps: [
-            '🟡 Pendiente: Esperando aprobación del administrador',
+            
             '🟢 Aprobada: Confirmada, el equipo llegará a la hora programada',
-            '🔵 Completada: Servicio finalizado',
+            
             '🔴 Cancelada: Cita cancelada por ti o el administrador',
-            '⚫ Rechazada: No se pudo acomodar la cita'
+            
           ]
         }
       ]
@@ -245,8 +245,7 @@ const UserManual = () => {
           description: 'Recibe actualizaciones importantes.',
           steps: [
             'Notificaciones cuando tu cita es aprobada',
-            'Recordatorios 24 horas antes de la cita',
-            'Recordatorios 2 horas antes de la cita',
+           
             'Actualizaciones de estimados',
             'Respuestas a tickets de soporte',
             'Configurar preferencias de email'
@@ -286,9 +285,7 @@ const UserManual = () => {
           steps: [
             'Ver todas las citas en una tabla filtrable',
             'Filtrar por estado, fecha, cliente',
-            'Aprobar citas pendientes',
             'Rechazar citas con motivo',
-            'Editar detalles de citas (fecha, hora, precio)',
             'Marcar citas como completadas',
             'Ver información de pago',
             'Enviar notificaciones personalizadas'
@@ -319,7 +316,7 @@ const UserManual = () => {
             'Establecer precio estimado',
             'Agregar notas internas',
             'Aprobar o rechazar estimado',
-            'Cliente puede convertir estimado en cita'
+            
           ]
         }
       ]
@@ -334,8 +331,7 @@ const UserManual = () => {
           steps: [
             'Ver lista completa de usuarios',
             'Buscar por nombre o email',
-            'Ver historial de citas por cliente',
-            'Ver total gastado por cliente',
+            
             'Cambiar roles (Cliente/Admin)',
             'Desactivar cuentas si es necesario'
           ]
@@ -352,7 +348,7 @@ const UserManual = () => {
           steps: [
             'Ver todos los tickets de soporte',
             'Filtrar por estado y prioridad',
-            'Asignar tickets a administradores',
+           
             'Responder con comentarios',
             'Cambiar estado (Abierto → En Progreso → Resuelto)',
             'Cerrar tickets completados',
@@ -361,24 +357,7 @@ const UserManual = () => {
         }
       ]
     },
-    {
-      title: '📧 Plantillas de Email',
-      icon: <Email />,
-      items: [
-        {
-          subtitle: 'Personalizar Comunicaciones',
-          description: 'Edita los emails automáticos del sistema.',
-          steps: [
-            'Ver todas las plantillas disponibles',
-            'Editar contenido HTML de emails',
-            'Usar variables dinámicas ({{userName}}, {{date}}, etc.)',
-            'Previsualizar antes de guardar',
-            'Activar/desactivar plantillas',
-            'Tipos: Confirmación, Recordatorio, Estado actualizado'
-          ]
-        }
-      ]
-    },
+    
     {
       title: '⏰ Gestión de Horarios',
       icon: <Schedule />,
@@ -387,10 +366,9 @@ const UserManual = () => {
           subtitle: 'Configurar Disponibilidad',
           description: 'Define cuándo puedes aceptar citas.',
           steps: [
-            'Establecer horario de trabajo por día',
+            
             'Bloquear días específicos (vacaciones, feriados)',
-            'Definir duración de servicios',
-            'Configurar tiempo entre citas',
+      
             'Limitar número de citas por día'
           ]
         }
@@ -423,11 +401,7 @@ const UserManual = () => {
           description: 'Ajustes generales de la aplicación.',
           steps: [
             'Configurar información del negocio',
-            'Actualizar precios de servicios',
-            'Configurar métodos de pago',
-            'Gestionar notificaciones automáticas',
-            'Configurar integración con Stripe',
-            'Backup y exportación de datos'
+            
           ]
         }
       ]
