@@ -675,8 +675,8 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   label: 'Apple Pay', 
                   color: '#000000', 
                   desc: 'One-tap checkout',
-                  badge: applePayAvailable ? 'Available' : 'Device Not Supported',
-                  available: true // Always show
+                  badge: 'Próximamente',
+                  available: false // Deshabilitado temporalmente
                 },
                 { 
                   id: 3, 
@@ -684,8 +684,8 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   label: 'Cash App', 
                   color: '#00d54b', 
                   desc: '$Cashtag Payment',
-                  badge: 'Popular',
-                  available: true
+                  badge: 'Próximamente',
+                  available: false // Deshabilitado temporalmente
                 }
               ].map((method) => (
                 <Grid item xs={12} sm={6} md={4} key={method.id}>
@@ -709,7 +709,15 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                         borderColor: method.color,
                       }
                     }}
-                    onClick={() => setPaymentMethod(method.id)}
+                    onClick={() => {
+                      // Mostrar mensaje si el método no está disponible
+                      if (!method.available) {
+                        setError(`${method.label} estará disponible próximamente. Por favor utilice otro método de pago.`);
+                        return;
+                      }
+                      setPaymentMethod(method.id);
+                      setError('');
+                    }}
                   >
                     <Box sx={{ 
                       display: 'flex',
@@ -785,7 +793,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                         position: 'absolute',
                         top: -10,
                         left: 16,
-                        backgroundColor: method.id === 0 ? '#10b981' : method.id === 1 ? '#6b21a8' : '#000000',
+                        backgroundColor: method.id === 0 ? '#10b981' : method.id === 1 ? '#6b21a8' : method.id === 2 ? '#888888' : '#888888',
                         color: 'white',
                         px: 2,
                         py: 0.75,
@@ -802,7 +810,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                         letterSpacing: '0.5px'
                       }}>
                         <Box component="span" sx={{ fontSize: '0.9rem' }}>
-                          {method.id === 0 ? '🔒' : method.id === 1 ? '⚡' : '🍎'}
+                          {method.id === 0 ? '🔒' : method.id === 1 ? '⚡' : method.id === 2 ? '🔴' : '🔴'}
                         </Box>
                         {method.badge}
                       </Box>
