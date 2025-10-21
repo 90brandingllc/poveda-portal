@@ -888,12 +888,8 @@ const BookAppointment = () => {
       
       setSuccess(true);
       setTimeout(() => {
-        // Redirect based on user status
-        if (currentUser) {
-          navigate('/appointments');
-        } else {
-          navigate('/login');
-        }
+        // Redirigir al dashboard de citas, independientemente del estado del usuario
+        navigate('/appointments');
       }, 2000);
       
     } catch (error) {
@@ -2035,7 +2031,7 @@ const BookAppointment = () => {
             color: '#1f2937',
             mb: 2
           }}>
-            🎉 Booking Confirmed!
+            🎉 ¡Cita Agendada!
           </Typography>
           
           <Typography variant="h6" sx={{ 
@@ -2043,7 +2039,7 @@ const BookAppointment = () => {
             mb: 3,
             fontWeight: 500
           }}>
-            Your appointment request has been successfully submitted.
+            Tu solicitud de cita ha sido enviada exitosamente.
           </Typography>
           
           <Typography variant="body1" sx={{ 
@@ -2051,7 +2047,7 @@ const BookAppointment = () => {
             color: '#374151',
             lineHeight: 1.6
           }}>
-            Your deposit has been processed and your appointment is pending approval. Our team will review and confirm your booking shortly. You'll receive a notification once confirmed.
+            Tu depósito ha sido procesado y tu cita está pendiente de aprobación. Nuestro equipo revisará y confirmará tu reserva en breve. Recibirás una notificación una vez confirmada.
           </Typography>
           
           <Button
@@ -2067,7 +2063,7 @@ const BookAppointment = () => {
               py: 1.5
             }}
           >
-            View My Appointments
+            Ver Mis Citas
           </Button>
         </Box>
       </ClientLayout>
