@@ -45,6 +45,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import UserManual from '../UserManual';
 
 const drawerWidth = 280;
 
@@ -688,6 +689,9 @@ const AdminLayout = ({ children }) => {
           {children}
         </Box>
       </Box>
+
+      {/* Botón flotante de Manual de Usuario */}
+      <UserManual />
     </Box>
   );
 };
