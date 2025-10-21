@@ -29,6 +29,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import UserManual from '../UserManual';
 
 const ClientLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -274,6 +275,9 @@ const ClientLayout = ({ children }) => {
       >
         {children}
       </Box>
+
+      {/* Botón flotante de Manual de Usuario */}
+      <UserManual />
     </Box>
   );
 };
