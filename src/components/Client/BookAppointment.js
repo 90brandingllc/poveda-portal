@@ -887,10 +887,13 @@ const BookAppointment = () => {
       }
       
       setSuccess(true);
-      setTimeout(() => {
-        // Redirigir al dashboard de citas, independientemente del estado del usuario
-        navigate('/appointments');
-      }, 2000);
+      // Eliminar la redirección automática para usuarios que vienen desde URL
+      if (!formData.preselectedFromUrl) {
+        // Solo redirigir si el usuario NO vino desde URL
+        setTimeout(() => {
+          navigate('/appointments');
+        }, 2000);
+      }
       
     } catch (error) {
       const errorInfo = await handleError(error, {
@@ -2043,28 +2046,46 @@ const BookAppointment = () => {
           </Typography>
           
           <Typography variant="body1" sx={{ 
-            mb: 4,
             color: '#374151',
-            lineHeight: 1.6
+            lineHeight: 1.6,
+            mb: formData.preselectedFromUrl ? 2 : 4
           }}>
             Tu depósito ha sido procesado y tu cita está pendiente de aprobación. Nuestro equipo revisará y confirmará tu reserva en breve. Recibirás una notificación una vez confirmada.
           </Typography>
           
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => navigate('/appointments')}
-            sx={{
-              background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
-              borderRadius: '12px',
-              textTransform: 'none',
-              fontWeight: 600,
-              px: 4,
-              py: 1.5
-            }}
-          >
-            Ver Mis Citas
-          </Button>
+          {formData.preselectedFromUrl && (
+            <Typography variant="body1" sx={{ 
+              mb: 4,
+              color: '#22c55e',
+              fontWeight: 500,
+              border: '1px solid #dcfce7',
+              borderRadius: '8px',
+              bgcolor: '#f0fdf4',
+              p: 2,
+              lineHeight: 1.6
+            }}>
+              ¡Gracias por elegir nuestros servicios! Ya puedes cerrar esta ventana.
+            </Typography>
+          )}
+          
+          {/* Mostrar botón solo si el usuario no viene desde URL */}
+          {!formData.preselectedFromUrl && (
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => navigate('/appointments')}
+              sx={{
+                background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 4,
+                py: 1.5
+              }}
+            >
+              Ver Mis Citas
+            </Button>
+          )}
         </Box>
       </ClientLayout>
     );
