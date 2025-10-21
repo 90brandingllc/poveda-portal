@@ -86,6 +86,20 @@ service firebase.storage {
                    request.auth.uid == userId;
     }
     
+    // NEW: Rules for guest payment receipts (users without authentication)
+    match /payment-receipts/guest/{fileName} {
+      // Allow anyone to create guest receipts (no auth required)
+      allow create: if 
+                   // Validate file size (max 5MB for receipts)
+                   request.resource.size <= 5 * 1024 * 1024 &&
+                   // Validate file type (images and PDFs)
+                   (request.resource.contentType.matches('image/.*') ||
+                    request.resource.contentType == 'application/pdf');
+      
+      // Allow reading guest receipts
+      allow read: if true;
+    }
+    
     // Deny all other access
     match /{allPaths=**} {
       allow read, write: if false;
