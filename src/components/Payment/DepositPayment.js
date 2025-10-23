@@ -675,8 +675,8 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   label: 'Apple Pay', 
                   color: '#000000', 
                   desc: 'One-tap checkout',
-                  badge: 'Próximamente',
-                  available: false // Deshabilitado temporalmente
+                  badge: applePayAvailable ? 'Available' : 'Device Not Supported',
+                  available: applePayAvailable // Habilitado si el dispositivo lo soporta
                 },
                 { 
                   id: 3, 
@@ -684,8 +684,8 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   label: 'Cash App', 
                   color: '#00d54b', 
                   desc: '$Cashtag Payment',
-                  badge: 'Próximamente',
-                  available: false // Deshabilitado temporalmente
+                  badge: 'Popular',
+                  available: true // ✅ HABILITADO - Completamente funcional
                 }
               ].map((method) => (
                 <Grid item xs={12} sm={6} md={4} key={method.id}>
