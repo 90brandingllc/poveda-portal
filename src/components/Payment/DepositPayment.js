@@ -319,31 +319,8 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     try {
       console.log('🍎 Creando Payment Request...');
       
-      // Create Payment Request
-      const paymentRequest = stripe.paymentRequest({
-        country: 'US',
-        currency: 'usd',
-        total: {
-          label: `Depósito - ${servicePackage || 'Servicio de Detailing'}`,
-          amount: depositAmount,
-        },
-        requestPayerName: true,
-        requestPayerEmail: true,
-      });
-
-      // Verificar si Apple Pay está disponible
-      const canMakePayment = await paymentRequest.canMakePayment();
-      console.log('🍎 Can Make Payment:', canMakePayment);
-      
-      if (!canMakePayment || !canMakePayment.applePay) {
-        setError('Apple Pay no está disponible en este dispositivo o navegador. Por favor usa Safari en un dispositivo Apple.');
-        setIsProcessing(false);
-        return;
-      }
-
+      // Primero, crea el Payment Intent y obten el client secret
       console.log('🍎 Creando Payment Intent en backend...');
-      
-      // Create Payment Intent on backend
       const { getFunctions, httpsCallable } = await import('firebase/functions');
       const functions = getFunctions();
       const createPaymentIntentFn = httpsCallable(functions, 'createPaymentIntent');
@@ -363,8 +340,20 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
 
       const { clientSecret } = paymentIntentResult.data;
       console.log('🍎 Payment Intent creado, client secret recibido');
-
-      // Handle payment method
+      
+      // Create Payment Request
+      const paymentRequest = stripe.paymentRequest({
+        country: 'US',
+        currency: 'usd',
+        total: {
+          label: `Depósito - ${servicePackage || 'Servicio de Detailing'}`,
+          amount: depositAmount,
+        },
+        requestPayerName: true,
+        requestPayerEmail: true,
+      });
+      
+      // Handle payment method ANTES de mostrar el sheet
       paymentRequest.on('paymentmethod', async (ev) => {
         console.log('🍎 Payment method recibido, confirmando pago...');
         
@@ -401,11 +390,25 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
           setIsProcessing(false);
         }
       });
+      
+      // Verificar si Apple Pay está disponible
+      const canMakePayment = await paymentRequest.canMakePayment();
+      console.log('🍎 Can Make Payment:', canMakePayment);
+      
+      if (!canMakePayment || !canMakePayment.applePay) {
+        setError('Apple Pay no está disponible en este dispositivo o navegador. Por favor usa Safari en un dispositivo Apple.');
+        setIsProcessing(false);
+        return;
+      }
 
-      // Show Apple Pay sheet
+      // Show Apple Pay sheet - DEBE estar al final del handler de clic
+      // sin async/await intermedios para cumplir con los requisitos de Apple Pay
       console.log('🍎 Mostrando Apple Pay sheet...');
-      const result = await paymentRequest.show();
-      console.log('🍎 Apple Pay sheet resultado:', result);
+      paymentRequest.show().catch(err => {
+        console.error('❌ Error mostrando Apple Pay sheet:', err);
+        setError('Error al mostrar Apple Pay: ' + (err.message || 'Error desconocido'));
+        setIsProcessing(false);
+      });
 
     } catch (err) {
       console.error('❌ Apple Pay error:', err);
