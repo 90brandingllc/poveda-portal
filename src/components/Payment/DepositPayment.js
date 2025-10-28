@@ -46,24 +46,89 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
   // Check if Apple Pay is available on load
   React.useEffect(() => {
     const checkApplePay = async () => {
-      if (!stripe) return;
+      if (!stripe) {
+        console.log('🍎 Stripe no inicializado, reintentando...');
+        return;
+      }
       
-      const paymentRequest = stripe.paymentRequest({
-        country: 'US',
-        currency: 'usd',
-        total: {
-          label: 'Deposit Payment',
-          amount: depositAmount,
-        },
-        requestPayerName: true,
-        requestPayerEmail: true,
-      });
+      try {
+        console.log('🍎 Verificando compatibilidad de Apple Pay...');
+        
+        // 1. Verificar contexto seguro (HTTPS)
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+          console.log('🍎 ❌ Apple Pay requiere HTTPS o localhost');
+          setApplePayAvailable(false);
+          return;
+        }
+        
+        // 2. Verificar si estamos en un dispositivo/navegador compatible
+        const isAppleDevice = /iPad|iPhone|iPod|Mac/.test(navigator.userAgent);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const isChrome = /chrome/i.test(navigator.userAgent) && /google inc/i.test(navigator.vendor);
+        
+        console.log('🍎 Dispositivo Apple:', isAppleDevice);
+        console.log('🍎 Safari:', isSafari);
+        console.log('🍎 Chrome:', isChrome);
+        console.log('🍎 User Agent:', navigator.userAgent);
+        
+        // 3. Verificar si Apple Pay está disponible en el navegador
+        if (!window.ApplePaySession) {
+          console.log('🍎 ❌ ApplePaySession no disponible en este navegador');
+          setApplePayAvailable(false);
+          return;
+        }
+        
+        // 4. Verificar versión de Apple Pay
+        const applePayVersion = window.ApplePaySession.supportsVersion(3) ? 3 : 
+                               window.ApplePaySession.supportsVersion(2) ? 2 : 
+                               window.ApplePaySession.supportsVersion(1) ? 1 : 0;
+        
+        if (applePayVersion === 0) {
+          console.log('🍎 ❌ Versión de Apple Pay no soportada');
+          setApplePayAvailable(false);
+          return;
+        }
+        
+        console.log('🍎 Versión de Apple Pay soportada:', applePayVersion);
+        
+        // 5. Verificar si el dispositivo puede hacer pagos
+        if (!window.ApplePaySession.canMakePayments()) {
+          console.log('🍎 ❌ El dispositivo no puede hacer pagos con Apple Pay');
+          setApplePayAvailable(false);
+          return;
+        }
+        
+        // 6. Crear Payment Request para verificar disponibilidad con Stripe
+        const paymentRequest = stripe.paymentRequest({
+          country: 'US',
+          currency: 'usd',
+          total: {
+            label: 'Depósito - Poveda Auto Care',
+            amount: depositAmount,
+          },
+          requestPayerName: true,
+          requestPayerEmail: true,
+        });
 
-      const canMakePayment = await paymentRequest.canMakePayment();
-      setApplePayAvailable(!!canMakePayment?.applePay);
+        // 7. Verificar si se puede hacer el pago específico
+        const canMakePayment = await paymentRequest.canMakePayment();
+        console.log('🍎 Can Make Payment result:', canMakePayment);
+        
+        const isAvailable = !!(canMakePayment && canMakePayment.applePay);
+        console.log('🍎 Apple Pay disponible:', isAvailable);
+        
+        setApplePayAvailable(isAvailable);
+        
+      } catch (error) {
+        console.error('🍎 ❌ Error verificando Apple Pay:', error);
+        setApplePayAvailable(false);
+      }
     };
 
-    checkApplePay();
+    // Retrasar la verificación para asegurar que Stripe esté completamente cargado
+    const timeoutId = setTimeout(checkApplePay, 1000);
+    
+    return () => clearTimeout(timeoutId);
   }, [stripe, depositAmount]);
 
   const handleCardPayment = async (event) => {
@@ -299,6 +364,27 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     setIsProcessing(false);
   };
 
+  // Función de diagnóstico para Apple Pay
+  const diagnoseApplePay = () => {
+    const diagnostics = {
+      protocol: window.location.protocol,
+      hostname: window.location.hostname,
+      userAgent: navigator.userAgent,
+      applePaySession: !!window.ApplePaySession,
+      canMakePayments: window.ApplePaySession ? window.ApplePaySession.canMakePayments() : false,
+      supportedVersions: {
+        v1: window.ApplePaySession ? window.ApplePaySession.supportsVersion(1) : false,
+        v2: window.ApplePaySession ? window.ApplePaySession.supportsVersion(2) : false,
+        v3: window.ApplePaySession ? window.ApplePaySession.supportsVersion(3) : false,
+      },
+      stripeLoaded: !!stripe,
+      applePayAvailable: applePayAvailable
+    };
+    
+    console.log('🍎 Diagnóstico completo de Apple Pay:', diagnostics);
+    return diagnostics;
+  };
+
   const handleApplePayment = async () => {
     if (!stripe) {
       setError('Stripe is not initialized. Please check your configuration.');
@@ -306,10 +392,22 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     }
 
     console.log('🍎 Iniciando Apple Pay...');
-    console.log('Apple Pay disponible:', applePayAvailable);
+    const diagnostics = diagnoseApplePay();
     
     if (!applePayAvailable) {
-      setError('Apple Pay no está disponible en este dispositivo. Usa Safari en un dispositivo Apple o prueba otro método de pago.');
+      let errorMsg = 'Apple Pay no está disponible. ';
+      
+      if (!diagnostics.applePaySession) {
+        errorMsg += 'Use Safari en un dispositivo Apple (iPhone, iPad, Mac).';
+      } else if (!diagnostics.canMakePayments) {
+        errorMsg += 'Configure Apple Pay en Configuración > Wallet y Apple Pay y agregue al menos una tarjeta.';
+      } else if (diagnostics.protocol !== 'https:' && diagnostics.hostname !== 'localhost') {
+        errorMsg += 'Se requiere una conexión HTTPS segura.';
+      } else {
+        errorMsg += 'Verifique su configuración de Apple Pay.';
+      }
+      
+      setError(errorMsg);
       return;
     }
 
@@ -396,7 +494,19 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
       console.log('🍎 Can Make Payment:', canMakePayment);
       
       if (!canMakePayment || !canMakePayment.applePay) {
-        setError('Apple Pay no está disponible en este dispositivo o navegador. Por favor usa Safari en un dispositivo Apple.');
+        let errorMsg = 'Apple Pay no está disponible. ';
+        
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+          errorMsg += 'Se requiere HTTPS.';
+        } else if (!window.ApplePaySession) {
+          errorMsg += 'Use Safari en un dispositivo Apple.';
+        } else if (!window.ApplePaySession.canMakePayments()) {
+          errorMsg += 'Configure Apple Pay en Configuración > Wallet y Apple Pay.';
+        } else {
+          errorMsg += 'Verifique que tenga tarjetas configuradas en Apple Pay.';
+        }
+        
+        setError(errorMsg);
         setIsProcessing(false);
         return;
       }
@@ -413,16 +523,25 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
     } catch (err) {
       console.error('❌ Apple Pay error:', err);
       
-      // Mensajes de error más claros
+      // Mensajes de error más claros y específicos
       let errorMessage = 'Error procesando Apple Pay. ';
       
-      if (err.message.includes('not available')) {
-        errorMessage = 'Apple Pay no está disponible. Por favor usa Safari en un iPhone, iPad o Mac.';
-      } else if (err.message.includes('canceled') || err.message.includes('cancelled')) {
-        errorMessage = 'Pago con Apple Pay cancelado.';
+      if (err.message.includes('not available') || err.message.includes('not supported')) {
+        errorMessage = 'Apple Pay no está disponible. Use Safari en un dispositivo Apple con Apple Pay configurado.';
+      } else if (err.message.includes('canceled') || err.message.includes('cancelled') || err.message.includes('user_cancel')) {
+        errorMessage = 'Pago con Apple Pay cancelado por el usuario.';
+      } else if (err.message.includes('timeout')) {
+        errorMessage = 'Tiempo de espera agotado. Intente nuevamente.';
+      } else if (err.message.includes('network') || err.message.includes('connection')) {
+        errorMessage = 'Error de conexión. Verifique su conexión a internet.';
+      } else if (err.message.includes('payment_method')) {
+        errorMessage = 'Error con el método de pago. Verifique sus tarjetas en Apple Pay.';
       } else {
         errorMessage = err.message || 'Error inesperado con Apple Pay. Por favor intenta otro método de pago.';
       }
+      
+      // Agregar diagnóstico en caso de error
+      console.log('🍎 Diagnóstico en error:', diagnoseApplePay());
       
       setError(errorMessage);
       onPaymentError(err);
@@ -678,8 +797,8 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                   label: 'Apple Pay', 
                   color: '#000000', 
                   desc: 'One-tap checkout',
-                  badge: applePayAvailable ? 'Available' : 'Device Not Supported',
-                  available: applePayAvailable // Habilitado si el dispositivo lo soporta
+                  badge: applePayAvailable ? 'Available' : 'Not Compatible',
+                  available: applePayAvailable
                 },
                 { 
                   id: 3, 
@@ -713,8 +832,11 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                       }
                     }}
                     onClick={() => {
-                      // Mostrar mensaje si el método no está disponible
-                      if (!method.available) {
+                      // Mostrar mensaje específico si Apple Pay no está disponible
+                      if (!method.available && method.id === 2) {
+                        setError('Apple Pay no está disponible. Requiere Safari en un dispositivo Apple (iPhone, iPad, Mac) con Apple Pay configurado.');
+                        return;
+                      } else if (!method.available) {
                         setError(`${method.label} estará disponible próximamente. Por favor utilice otro método de pago.`);
                         return;
                       }
@@ -1171,11 +1293,19 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                 Pay with Apple Pay
               </Typography>
               
-              <Alert severity="success" icon={<Box component="span" sx={{ fontSize: '1.3rem' }}>🍎</Box>} sx={{ mb: 3, borderRadius: '12px' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  <strong>One-Tap Checkout</strong> - Fast, secure, and private payment with Face ID or Touch ID.
-                </Typography>
-              </Alert>
+              {applePayAvailable ? (
+                <Alert severity="success" icon={<Box component="span" sx={{ fontSize: '1.3rem' }}>🍎</Box>} sx={{ mb: 3, borderRadius: '12px' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    <strong>One-Tap Checkout</strong> - Fast, secure, and private payment with Face ID or Touch ID.
+                  </Typography>
+                </Alert>
+              ) : (
+                <Alert severity="warning" icon={<Box component="span" sx={{ fontSize: '1.3rem' }}>⚠️</Box>} sx={{ mb: 3, borderRadius: '12px' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    <strong>Apple Pay no disponible</strong> - Requiere Safari en un dispositivo Apple con Apple Pay configurado.
+                  </Typography>
+                </Alert>
+              )}
               
               <Paper variant="outlined" sx={{ 
                 p: 3, 
@@ -1185,10 +1315,18 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
                 border: '2px solid rgba(0, 0, 0, 0.1)'
               }}>
                 <Box sx={{ textAlign: 'center', py: 2 }}>
-                  <Apple sx={{ fontSize: '4rem', mb: 2 }} />
+                  <Apple sx={{ fontSize: '4rem', mb: 2, color: applePayAvailable ? '#000' : '#94a3b8' }} />
                   <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                    Click the button below to complete your payment with Apple Pay
+                    {applePayAvailable ? 
+                      'Haga clic en el botón de abajo para completar su pago con Apple Pay' :
+                      'Apple Pay no está disponible en este dispositivo o navegador'
+                    }
                   </Typography>
+                  {!applePayAvailable && (
+                    <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mt: 1 }}>
+                      Requiere Safari en iPhone, iPad o Mac con Apple Pay configurado
+                    </Typography>
+                  )}
                 </Box>
               </Paper>
               
