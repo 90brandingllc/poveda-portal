@@ -35,7 +35,7 @@ import {
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DepositPayment from '../Payment/DepositPayment';
@@ -63,6 +63,8 @@ const BookAppointment = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [forceUpdate, setForceUpdate] = useState(0); // Add this for forcing re-renders
+  const [userPhoneNumber, setUserPhoneNumber] = useState(''); // Store user's phone from Firestore
+  const [phoneNumberMissing, setPhoneNumberMissing] = useState(false); // Track if phone is missing
   
   // Helper function to force a re-render
   const triggerRerender = () => {
@@ -602,6 +604,45 @@ const BookAppointment = () => {
     }
   }, [currentUser]);
 
+  // Load user's phone number from Firestore (only if logged in)
+  useEffect(() => {
+    const loadUserPhoneNumber = async () => {
+      if (currentUser?.uid) {
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const phoneNumber = userData.phoneNumber || '';
+            setUserPhoneNumber(phoneNumber);
+            
+            // Check if phone number is missing
+            if (!phoneNumber || phoneNumber.trim() === '') {
+              setPhoneNumberMissing(true);
+              console.log('⚠️ User phone number is missing');
+            } else {
+              setPhoneNumberMissing(false);
+              console.log('✅ User phone number loaded:', phoneNumber);
+            }
+          } else {
+            console.log('⚠️ User document not found in Firestore');
+            setPhoneNumberMissing(true);
+          }
+        } catch (error) {
+          console.error('Error loading user phone number:', error);
+          setPhoneNumberMissing(true);
+        }
+      } else {
+        // Guest user - no phone number to load
+        setUserPhoneNumber('');
+        setPhoneNumberMissing(false); // Guest users will provide phone in the form
+      }
+    };
+    
+    loadUserPhoneNumber();
+  }, [currentUser]);
+
   // Effect to check availability when date changes
   useEffect(() => {
     if (formData.date) {
@@ -803,6 +844,14 @@ const BookAppointment = () => {
         return;
       }
 
+      // Validate phone number is present (for both logged in and guest users)
+      const phoneNumber = currentUser ? userPhoneNumber : formData.customerPhone;
+      if (!phoneNumber || phoneNumber.trim() === '') {
+        setError('Phone number is required. Please provide a valid phone number to continue.');
+        setLoading(false);
+        return;
+      }
+
       const depositAmount = parseFloat(formatCurrency(calculateDepositAmount(formData.estimatedPrice)));
       const remainingBalance = formData.estimatedPrice - depositAmount;
 
@@ -821,7 +870,7 @@ const BookAppointment = () => {
         userId: currentUser?.uid || 'guest',
         userEmail: currentUser?.email || formData.customerEmail,
         userName: currentUser?.displayName || formData.customerName,
-        ...(!currentUser && formData.customerPhone ? { userPhone: formData.customerPhone } : {}), // Solo incluir userPhone para usuarios no logueados
+        userPhone: currentUser ? userPhoneNumber : formData.customerPhone, // Include phone for both logged in and guest users
         isGuestBooking: !currentUser,
         bookingSource: formData.preselectedFromUrl ? 'web_url' : 'portal', // Identificar si viene desde URL
         services: formData.selectedServices.map(service => `${service.name} (${serviceCategories[service.category].name})`), // Array of service names with categories
@@ -1563,6 +1612,94 @@ const BookAppointment = () => {
                 </Grid>
               )}
             </Grid>
+            
+            {/* Phone Number Section for Logged In Users */}
+            <Grid item xs={12} sx={{ mt: 3 }}>
+              <Divider sx={{ mb: 3 }} />
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                📞 Contact Information
+              </Typography>
+              
+              {phoneNumberMissing ? (
+                <Alert severity="warning" sx={{ mb: 3 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                    Número de Teléfono Requerido
+                  </Typography>
+                  <Typography variant="body2">
+                    Para poder agendar tu cita, necesitamos tu número de teléfono para contactarte.
+                  </Typography>
+                </Alert>
+              ) : (
+                <Alert severity="success" sx={{ mb: 3 }}>
+                  <Typography variant="body2">
+                    ✅ Tu número de teléfono está registrado
+                  </Typography>
+                </Alert>
+              )}
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Número de Teléfono *"
+                    type="tel"
+                    value={userPhoneNumber}
+                    onChange={(e) => setUserPhoneNumber(e.target.value)}
+                    required
+                    placeholder="(555) 123-4567"
+                    helperText="Este número se guardará en tu perfil"
+                    error={phoneNumberMissing && !userPhoneNumber}
+                  />
+                </Grid>
+                
+                {phoneNumberMissing && userPhoneNumber && (
+                  <Grid item xs={12} sm={6}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      onClick={async () => {
+                        if (!userPhoneNumber || userPhoneNumber.trim() === '') {
+                          setError('Por favor ingresa un número de teléfono válido');
+                          return;
+                        }
+                        
+                        // Save phone number to Firestore
+                        try {
+                          const userDocRef = doc(db, 'users', currentUser.uid);
+                          await updateDoc(userDocRef, {
+                            phoneNumber: userPhoneNumber
+                          });
+                          setPhoneNumberMissing(false);
+                          setError('');
+                          console.log('✅ Phone number saved successfully');
+                        } catch (error) {
+                          console.error('Error saving phone number:', error);
+                          setError('Error al guardar el número de teléfono. Por favor intenta de nuevo.');
+                        }
+                      }}
+                      sx={{
+                        background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+                        borderRadius: '12px',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        py: 1.5,
+                        height: '56px'
+                      }}
+                    >
+                      💾 Guardar Teléfono
+                    </Button>
+                  </Grid>
+                )}
+              </Grid>
+              
+              {phoneNumberMissing && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    💡 Necesitas guardar tu número de teléfono antes de continuar con la reserva.
+                  </Typography>
+                </Alert>
+              )}
+            </Grid>
           </Grid>
         );
 
@@ -1845,6 +1982,22 @@ const BookAppointment = () => {
                         {vehicles.find(v => v.id === formData.vehicleId) ? 
                           `${vehicles.find(v => v.id === formData.vehicleId).year} ${vehicles.find(v => v.id === formData.vehicleId).make} ${vehicles.find(v => v.id === formData.vehicleId).model}` : 
                           'Not selected'}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Contact Phone Number - Show for both logged in and guest users */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, display: 'flex', alignItems: 'center' }}>
+                        <Phone fontSize="small" sx={{ mr: 0.5, color: '#0891b2' }} />
+                        Contact Phone:
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        textAlign: 'right',
+                        maxWidth: '60%'
+                      }}>
+                        {currentUser ? userPhoneNumber : formData.customerPhone}
                       </Typography>
                     </Box>
                     
@@ -2319,7 +2472,7 @@ const BookAppointment = () => {
               disabled={
                 (activeStep === 0 && formData.selectedServices.length === 0) ||
                 (activeStep === 1 && !formData.vehicleType) ||
-                (activeStep === 2 && currentUser && !formData.vehicleId) ||
+                (activeStep === 2 && currentUser && (!formData.vehicleId || phoneNumberMissing || !userPhoneNumber?.trim())) ||
                 (activeStep === 2 && !currentUser && (!formData.customerName?.trim() || !formData.customerEmail?.trim() || !formData.customerPhone?.trim())) ||
                 (activeStep === 3 && (!formData.date || !formData.timeSlot)) ||
                 (activeStep === 4 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
