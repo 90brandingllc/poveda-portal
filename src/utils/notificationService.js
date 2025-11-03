@@ -72,6 +72,7 @@ export const createAppointmentConfirmedNotification = async (userId, appointment
     date, 
     timeSlot = 'scheduled time', 
     address = {}, 
+    userPhone, // ✅ Extraer número de teléfono
     id: appointmentId 
   } = appointmentData;
   
@@ -89,13 +90,14 @@ export const createAppointmentConfirmedNotification = async (userId, appointment
     day: 'numeric'
   })} at ${timeSlot} has been confirmed. Our team will arrive at ${street}${city ? ', ' + city : ''}.`;
   
-  // Metadata limpia
+  // Metadata limpia con número de teléfono
   const metadata = {
     type: NotificationTypes.APPOINTMENT_CONFIRMED,
     ...(appointmentId ? { appointmentId } : {}),
     ...(service !== 'requested' ? { service } : {}),
     date: appointmentDate.toISOString(),
-    ...(timeSlot !== 'scheduled time' ? { timeSlot } : {})
+    ...(timeSlot !== 'scheduled time' ? { timeSlot } : {}),
+    ...(userPhone ? { userPhone } : {}) // ✅ Incluir teléfono en metadata
   };
   
   return createNotification(

@@ -68,6 +68,7 @@ function createAppointmentConfirmationEmail(data) {
         <p><strong>📅 Date:</strong> ${data.date || 'Scheduled date'}</p>
         <p><strong>🕒 Time:</strong> ${data.time || 'Scheduled time'}</p>
         <p><strong>📍 Location:</strong> ${data.location || 'Service location'}</p>
+        <p><strong>📞 Contact Phone:</strong> ${data.phone || 'Not provided'}</p>
         <p><strong>💲 Deposit Paid:</strong> ${data.depositAmount || 'Deposit amount'}</p>
         <p><strong>💰 Remaining Balance:</strong> ${data.remainingBalance || 'Remaining balance'}</p>
         <p><strong>💵 Total Price:</strong> ${data.estimatedPrice || 'Total price'}</p>
@@ -96,6 +97,7 @@ function createGuestUrlAppointmentEmail(data) {
         <p><strong>📅 Date:</strong> ${data.date || 'Scheduled date'}</p>
         <p><strong>🕒 Time:</strong> ${data.time || 'Scheduled time'}</p>
         <p><strong>📍 Location:</strong> ${data.location || 'Service location'}</p>
+        <p><strong>📞 Contact Phone:</strong> ${data.phone || 'Not provided'}</p>
         <p><strong>💲 Deposit Paid:</strong> ${data.depositAmount || 'Deposit amount'}</p>
         <p><strong>💰 Remaining Balance:</strong> ${data.remainingBalance || 'Remaining balance'}</p>
         <p><strong>💵 Total Price:</strong> ${data.estimatedPrice || 'Total price'}</p>

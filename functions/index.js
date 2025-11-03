@@ -111,6 +111,7 @@ async function createCalendarEvent(appointment) {
       description: `
 Client: ${appointment.userName}
 Email: ${appointment.userEmail}
+Phone: ${appointment.userPhone || 'Not provided'}
 Service: ${appointment.service}
 Category: ${appointment.category}
 Location: ${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}
@@ -183,6 +184,7 @@ exports.sendAppointmentConfirmation = functions.firestore
             date: appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString() : 'TBD',
             time: appointment.time || 'TBD',
             address: `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}`,
+            phone: appointment.userPhone || 'Not provided', // ✅ Incluir teléfono
             finalPrice: appointment.finalPrice || appointment.estimatedPrice,
             estimatedPrice: appointment.estimatedPrice
           };

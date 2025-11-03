@@ -66,6 +66,7 @@ export const sendAppointmentConfirmationEmail = async (appointmentData) => {
           date: formattedDate,
           time: appointmentData.timeSlot || appointmentData.time || 'the scheduled time',
           location: `${appointmentData.address.street}, ${appointmentData.address.city}, ${appointmentData.address.state} ${appointmentData.address.zipCode}`,
+          phone: appointmentData.userPhone || 'Not provided', // ✅ Incluir número de teléfono
           depositAmount: appointmentData.depositAmount ? 
             `$${parseFloat(appointmentData.depositAmount).toFixed(2)}` : 
             'the deposit',
