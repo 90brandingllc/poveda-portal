@@ -828,7 +828,25 @@ const BookAppointment = () => {
 
 
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    setError(''); // Clear errors when moving to next step
+    
+    // 🔥 AUTO-SAVE PHONE NUMBER BEFORE PROCEEDING (for logged-in users on vehicle step)
+    if (activeStep === 2 && currentUser && userPhoneNumber && userPhoneNumber.trim() !== '') {
+      try {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userDocRef, {
+          phoneNumber: userPhoneNumber
+        });
+        setPhoneNumberMissing(false);
+        console.log('✅ Phone number auto-saved on Next');
+      } catch (error) {
+        console.error('Error auto-saving phone number:', error);
+        setError('Error al guardar el número de teléfono. Por favor intenta de nuevo.');
+        return; // Don't proceed if save failed
+      }
+    }
+    
     setActiveStep((prevStep) => prevStep + 1);
   };
 
@@ -861,6 +879,16 @@ const BookAppointment = () => {
 
       // Validate phone number is present (for both logged in and guest users)
       const phoneNumber = currentUser ? userPhoneNumber : formData.customerPhone;
+      
+      console.log('========================================');
+      console.log('📞 PHONE NUMBER VALIDATION');
+      console.log('========================================');
+      console.log('Is Logged In:', !!currentUser);
+      console.log('userPhoneNumber (logged):', userPhoneNumber);
+      console.log('formData.customerPhone (guest):', formData.customerPhone);
+      console.log('Final phoneNumber:', phoneNumber);
+      console.log('========================================');
+      
       if (!phoneNumber || phoneNumber.trim() === '') {
         setError('Phone number is required. Please provide a valid phone number to continue.');
         setLoading(false);
@@ -877,6 +905,7 @@ const BookAppointment = () => {
       console.log('👤 Current User:', currentUser ? currentUser.uid : 'GUEST (not authenticated)');
       console.log('📧 Email:', currentUser?.email || formData.customerEmail);
       console.log('👤 Name:', currentUser?.displayName || formData.customerName);
+      console.log('📞 Phone:', phoneNumber); // ✅ AÑADIDO LOG DE TELÉFONO
       console.log('🏷️  Is Guest Booking:', !currentUser);
       console.log('========================================');
       
@@ -1689,13 +1718,19 @@ const BookAppointment = () => {
                           setPhoneNumberMissing(false);
                           setError('');
                           console.log('✅ Phone number saved successfully');
+                          
+                          // Show success message briefly
+                          setError(''); // Clear any errors
+                          setTimeout(() => {
+                            console.log('✅ Phone saved, ready to continue');
+                          }, 500);
                         } catch (error) {
                           console.error('Error saving phone number:', error);
                           setError('Error al guardar el número de teléfono. Por favor intenta de nuevo.');
                         }
                       }}
                       sx={{
-                        background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                         borderRadius: '12px',
                         textTransform: 'none',
                         fontWeight: 600,
@@ -1703,16 +1738,19 @@ const BookAppointment = () => {
                         height: '56px'
                       }}
                     >
-                      💾 Guardar Teléfono
+                      ✅ Guardar y Continuar
                     </Button>
                   </Grid>
                 )}
               </Grid>
               
               {phoneNumberMissing && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="body2">
-                    💡 Necesitas guardar tu número de teléfono antes de continuar con la reserva.
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    📞 Número de teléfono requerido
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5 }}>
+                    Por favor ingresa tu número de teléfono arriba. Puedes hacer clic en "Guardar y Continuar" o simplemente en "Siguiente" para avanzar.
                   </Typography>
                 </Alert>
               )}

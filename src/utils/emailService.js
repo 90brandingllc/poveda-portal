@@ -168,7 +168,8 @@ export const sendAppointmentReminderEmail = async (appointmentData) => {
           date: formattedDate,
           time: appointmentData.timeSlot || appointmentData.time || 'the scheduled time',
           location: `${appointmentData.address.street}, ${appointmentData.address.city}, ${appointmentData.address.state} ${appointmentData.address.zipCode}`,
-          rescheduleLink: `https://poveda-portal.web.app/appointments`
+          phone: appointmentData.userPhone || 'Not provided', // ✅ Incluir número de teléfono
+          rescheduleLink: `https://poveda-portal.vercel.app/appointments`
         }
       }
     };

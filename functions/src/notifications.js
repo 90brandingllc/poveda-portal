@@ -1,8 +1,113 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
 // Make sure to use the existing admin instance from index.js
 // This file assumes admin.initializeApp() is called in the main index.js
+
+// Email configuration - Poveda Portal email
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'povedaportal@gmail.com',
+    pass: 'xzbi vnch pldc mdrf'  // App password for Poveda Portal
+  }
+});
+
+/**
+ * Send reminder email to user
+ * @param {Object} appointment - Appointment data
+ * @param {Object} emailData - Email template data (name, service, date, time, location, phone)
+ */
+async function sendReminderEmail(appointment, emailData) {
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="margin: 0; font-size: 28px;">⏰ Appointment Reminder</h1>
+        <p style="margin: 10px 0 0 0; font-size: 18px;">Your appointment is tomorrow!</p>
+      </div>
+      
+      <!-- Body -->
+      <div style="padding: 30px; background-color: #ffffff;">
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">Hello <strong>${emailData.name}</strong>,</p>
+        
+        <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+          This is a friendly reminder that your appointment for <strong>${emailData.service}</strong> is scheduled for <strong>tomorrow</strong>.
+        </p>
+        
+        <!-- Appointment Details Box -->
+        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 5px solid #f59e0b;">
+          <h3 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px;">📋 Appointment Details</h3>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">📅 Date:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;"><strong>${emailData.date}</strong></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">🕒 Time:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;"><strong>${emailData.time}</strong></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">📍 Location:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;">${emailData.location}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">📞 Your Phone:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;">${emailData.phone}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">🚗 Service:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;">${emailData.service}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Important Notes -->
+        <div style="background-color: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #fcd34d;">
+          <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 16px;">⚠️ Important Reminders:</h4>
+          <ul style="margin: 10px 0; padding-left: 20px; color: #78350f; line-height: 1.8;">
+            <li>Please ensure your vehicle is accessible at the scheduled location</li>
+            <li>Have your keys ready for our team</li>
+            <li>Clear any personal belongings from your vehicle</li>
+            <li>If you need to reschedule, please contact us as soon as possible</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 25px 0;">
+          We're looking forward to servicing your vehicle tomorrow! If you have any questions or need to make changes to your appointment, please don't hesitate to contact us.
+        </p>
+        
+        <!-- Action Buttons -->
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${emailData.rescheduleLink}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 5px;">View Appointment</a>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #f9fafb; padding: 25px; text-align: center; border-radius: 0 0 10px 10px; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">
+          <strong>POVEDA PREMIUM AUTO CARE</strong><br>
+          Professional Mobile Detailing Service<br>
+          📧 povedaportal@gmail.com
+        </p>
+        <p style="margin: 15px 0 0 0; color: #9ca3af; font-size: 12px;">
+          This is an automated reminder. Please do not reply to this email.
+        </p>
+      </div>
+    </div>
+  `;
+
+  const mailOptions = {
+    from: 'Poveda Auto Care <povedaportal@gmail.com>',
+    to: appointment.userEmail,
+    subject: '⏰ Reminder: Your Appointment is Tomorrow - Poveda Auto Care',
+    html: htmlContent
+  };
+
+  await transporter.sendMail(mailOptions);
+}
 
 /**
  * Create a notification in Firestore
@@ -181,6 +286,7 @@ exports.createAppointmentStatusChangeNotification = functions.firestore
 
 /**
  * Create appointment reminder notifications (1 day before)
+ * Sends both in-app notifications AND email reminders
  */
 exports.createDayBeforeReminders = functions.pubsub
   .schedule('0 9 * * *')  // 9am every day
@@ -206,6 +312,8 @@ exports.createDayBeforeReminders = functions.pubsub
       console.log(`Found ${snapshot.size} appointments scheduled for tomorrow`);
       
       const reminderPromises = [];
+      let emailsSent = 0;
+      let emailsFailed = 0;
       
       snapshot.forEach((doc) => {
         const appointment = { id: doc.id, ...doc.data() };
@@ -230,25 +338,52 @@ exports.createDayBeforeReminders = functions.pubsub
         const timeSlot = appointment.timeSlot || appointment.time || 'the scheduled time';
         const userPhone = appointment.userPhone || 'Not provided'; // ✅ Extraer teléfono
         
-        // Create notification
-        const notificationPromise = createNotification(
-          appointment.userId,
-          'Appointment Tomorrow',
-          `Reminder: Your ${service} appointment is tomorrow (${formattedDate}) at ${timeSlot}. Please ensure your vehicle is accessible.`,
-          'warning',
-          {
-            type: 'appointment_reminder',
-            appointmentId: appointment.id,
-            service,
-            date: appointmentDate.toISOString(),
-            timeSlot,
-            userPhone // ✅ Incluir teléfono en metadata
-          }
-        ).catch(error => {
-          console.error(`Error creating reminder notification for appointment ${doc.id}:`, error);
-        });
+        // Create in-app notification (only for registered users, not guests)
+        if (appointment.userId !== 'guest') {
+          const notificationPromise = createNotification(
+            appointment.userId,
+            'Appointment Tomorrow',
+            `Reminder: Your ${service} appointment is tomorrow (${formattedDate}) at ${timeSlot}. Please ensure your vehicle is accessible.`,
+            'warning',
+            {
+              type: 'appointment_reminder',
+              appointmentId: appointment.id,
+              service,
+              date: appointmentDate.toISOString(),
+              timeSlot,
+              userPhone // ✅ Incluir teléfono en metadata
+            }
+          ).catch(error => {
+            console.error(`Error creating reminder notification for appointment ${doc.id}:`, error);
+          });
+          
+          reminderPromises.push(notificationPromise);
+        }
         
-        reminderPromises.push(notificationPromise);
+        // ✅ SEND EMAIL REMINDER (for ALL users - registered AND guests)
+        if (appointment.userEmail) {
+          const emailPromise = sendReminderEmail(appointment, {
+            name: appointment.userName || 'Valued Customer',
+            service: service,
+            date: formattedDate,
+            time: timeSlot,
+            location: appointment.address ? 
+              `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 
+              'Your specified location',
+            phone: userPhone,
+            rescheduleLink: 'https://poveda-portal.vercel.app/appointments'
+          }).then(() => {
+            emailsSent++;
+            console.log(`✅ Reminder email sent to ${appointment.userEmail}`);
+          }).catch(error => {
+            emailsFailed++;
+            console.error(`❌ Error sending reminder email to ${appointment.userEmail}:`, error);
+          });
+          
+          reminderPromises.push(emailPromise);
+        } else {
+          console.warn(`⚠️  No email address for appointment ${doc.id}, skipping email reminder`);
+        }
         
         // Mark the appointment as having received a reminder
         doc.ref.update({
@@ -260,7 +395,15 @@ exports.createDayBeforeReminders = functions.pubsub
       });
       
       await Promise.all(reminderPromises);
-      return { success: true, count: snapshot.size };
+      
+      console.log(`📧 Email reminders summary: ${emailsSent} sent, ${emailsFailed} failed`);
+      
+      return { 
+        success: true, 
+        count: snapshot.size,
+        emailsSent: emailsSent,
+        emailsFailed: emailsFailed
+      };
     } catch (error) {
       console.error('Error sending day-before reminders:', error);
       return { success: false, error: error.message };

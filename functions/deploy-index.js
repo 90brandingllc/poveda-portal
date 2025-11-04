@@ -34,6 +34,10 @@ exports.sendEmail = functions.https.onCall(async (data, context) => {
         subject = '🚗 Your Booking from Quick Link - Poveda Auto Care';
         htmlContent = createGuestUrlAppointmentEmail(template.data);
         break;
+      case 'appointment_reminder':
+        subject = '⏰ Reminder: Your Appointment is Tomorrow - Poveda Auto Care';
+        htmlContent = createAppointmentReminderEmail(template.data);
+        break;
       default:
         subject = 'Notification from Poveda Auto Care';
         htmlContent = createDefaultEmail(template.data);
@@ -107,6 +111,87 @@ function createGuestUrlAppointmentEmail(data) {
       </div>
       
       <p>We're looking forward to servicing your vehicle.</p>
+    </div>
+  `;
+}
+
+function createAppointmentReminderEmail(data) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="margin: 0; font-size: 28px;">⏰ Appointment Reminder</h1>
+        <p style="margin: 10px 0 0 0; font-size: 18px;">Your appointment is tomorrow!</p>
+      </div>
+      
+      <!-- Body -->
+      <div style="padding: 30px; background-color: #ffffff;">
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">Hello <strong>${data.name || 'Valued Customer'}</strong>,</p>
+        
+        <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+          This is a friendly reminder that your appointment for <strong>${data.service || 'your selected service'}</strong> is scheduled for <strong>tomorrow</strong>.
+        </p>
+        
+        <!-- Appointment Details Box -->
+        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 5px solid #f59e0b;">
+          <h3 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px;">📋 Appointment Details</h3>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">📅 Date:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;"><strong>${data.date || 'Scheduled date'}</strong></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">🕒 Time:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;"><strong>${data.time || 'Scheduled time'}</strong></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">📍 Location:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;">${data.location || 'Service location'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">📞 Your Phone:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;">${data.phone || 'Not provided'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #92400e; font-weight: 600; font-size: 15px;">🚗 Service:</td>
+              <td style="padding: 8px 0; color: #451a03; font-size: 15px;">${data.service || 'Your service'}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Important Notes -->
+        <div style="background-color: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #fcd34d;">
+          <h4 style="margin: 0 0 10px 0; color: #92400e; font-size: 16px;">⚠️ Important Reminders:</h4>
+          <ul style="margin: 10px 0; padding-left: 20px; color: #78350f; line-height: 1.8;">
+            <li>Please ensure your vehicle is accessible at the scheduled location</li>
+            <li>Have your keys ready for our team</li>
+            <li>Clear any personal belongings from your vehicle</li>
+            <li>If you need to reschedule, please contact us as soon as possible</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 25px 0;">
+          We're looking forward to servicing your vehicle tomorrow! If you have any questions or need to make changes to your appointment, please don't hesitate to contact us.
+        </p>
+        
+        <!-- Action Buttons -->
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${data.rescheduleLink || 'https://poveda-portal.vercel.app/appointments'}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 5px;">View Appointment</a>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #f9fafb; padding: 25px; text-align: center; border-radius: 0 0 10px 10px; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">
+          <strong>POVEDA PREMIUM AUTO CARE</strong><br>
+          Professional Mobile Detailing Service<br>
+          📧 povedaportal@gmail.com
+        </p>
+        <p style="margin: 15px 0 0 0; color: #9ca3af; font-size: 12px;">
+          This is an automated reminder. Please do not reply to this email.
+        </p>
+      </div>
     </div>
   `;
 }
