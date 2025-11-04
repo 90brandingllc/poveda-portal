@@ -111,7 +111,7 @@ async function createCalendarEvent(appointment) {
       description: `
 Client: ${appointment.userName}
 Email: ${appointment.userEmail}
-Phone: ${appointment.userPhone || 'Not provided'}
+Phone: ${getPhoneNumber(appointment)}
 Service: ${appointment.service}
 Category: ${appointment.category}
 Location: ${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}
@@ -184,7 +184,7 @@ exports.sendAppointmentConfirmation = functions.firestore
             date: appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString() : 'TBD',
             time: appointment.time || 'TBD',
             address: `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}`,
-            phone: appointment.userPhone || 'Not provided', // ✅ Incluir teléfono
+            phone: getPhoneNumber(appointment), // ✅ Incluir teléfono
             finalPrice: appointment.finalPrice || appointment.estimatedPrice,
             estimatedPrice: appointment.estimatedPrice
           };
@@ -223,6 +223,10 @@ exports.sendAppointmentConfirmation = functions.firestore
                     <tr>
                       <td style="padding: 8px 0; font-weight: bold;">Location:</td>
                       <td style="padding: 8px 0;">${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 0; font-weight: bold;">Phone:</td>
+                      <td style="padding: 8px 0;">${getPhoneNumber(appointment)}</td>
                     </tr>
                     <tr>
                       <td style="padding: 8px 0; font-weight: bold;">Total Price:</td>
@@ -309,7 +313,7 @@ exports.sendAppointmentConfirmation = functions.firestore
                     <h3 style="color: #1976d2; margin-top: 0;">Customer Information</h3>
                     <p><strong>Name:</strong> ${appointment.userName}</p>
                     <p><strong>Email:</strong> ${appointment.userEmail}</p>
-                    <p><strong>Phone:</strong> ${appointment.userPhone || 'N/A'}</p>
+                    <p><strong>Phone:</strong> ${getPhoneNumber(appointment)}</p>
                   </div>
                   
                   <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">
@@ -543,7 +547,7 @@ exports.sendStatusUpdate = functions.firestore
                   <h3 style="color: #d32f2f; margin-top: 0;">Customer Information</h3>
                   <p><strong>Name:</strong> ${after.userName}</p>
                   <p><strong>Email:</strong> ${after.userEmail}</p>
-                  <p><strong>Phone:</strong> ${after.userPhone || 'N/A'}</p>
+                  <p><strong>Phone:</strong> ${getPhoneNumber(after)}</p>
                 </div>
                 
                 <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1976d2;">
@@ -858,6 +862,11 @@ exports.send2HourReminder = functions.pubsub
     return null;
   });
 
+// Helper function to get the phone number from an appointment object
+function getPhoneNumber(appointment) {
+  return appointment.userPhone || appointment.phoneNumber || 'Not provided';
+}
+
 // Helper function to combine date and time into a proper DateTime
 function getAppointmentDateTime(appointment) {
   const appointmentDate = appointment.date.toDate();
@@ -1037,7 +1046,7 @@ POVEDA Premium Auto Care - Client Appointment
 
 👤 Customer: ${appointment.userName}
 📧 Email: ${appointment.userEmail}
-📞 Phone: ${appointment.userPhone || 'Not provided'}
+📞 Phone: ${getPhoneNumber(appointment)}
 🚗 Service: ${appointment.service || appointment.servicePackage}
 📦 Package: ${appointment.category || 'Standard'}
 📍 Location: ${appointment.address ? `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 'Mobile Service'}
@@ -1188,7 +1197,7 @@ POVEDA Premium Auto Care - Client Appointment
 
 👤 Customer: ${after.userName}
 📧 Email: ${after.userEmail}
-📞 Phone: ${after.userPhone || 'Not provided'}
+📞 Phone: ${getPhoneNumber(after)}
 🚗 Service: ${after.service || after.servicePackage}
 📦 Package: ${after.category || 'Standard'}
 📍 Location: ${after.address ? `${after.address.street}, ${after.address.city}, ${after.address.state} ${after.address.zipCode}` : 'Mobile Service'}
@@ -1330,6 +1339,7 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
   try {
     // Imprimir el cuerpo completo para depuración
     console.log('Request body:', JSON.stringify(req.body));
+    console.log('Request metadata:', JSON.stringify(req.body.metadata || req.body.data?.metadata || {}));
     
     let amount, currency, metadata;
     
@@ -1357,6 +1367,14 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
       return;
     }
 
+    // Ensure phone number is properly captured in metadata
+    const phoneNumber = metadata.userPhone || metadata.phoneNumber || metadata.phone || null;
+    if (phoneNumber) {
+      console.log(`Phone number found in metadata: ${phoneNumber}`);
+    } else {
+      console.log('No phone number found in metadata');
+    }
+    
     // Create payment intent with automatic capture
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount),
@@ -1365,6 +1383,7 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
       confirmation_method: 'automatic',
       metadata: {
         ...metadata,
+        userPhone: phoneNumber, // Ensure consistent field name
         source: 'POVEDA_AUTO_CARE',
         environment: process.env.NODE_ENV || 'development'
       },
@@ -1444,13 +1463,30 @@ exports.confirmPayment = functions.https.onRequest(async (req, res) => {
 
     // Update appointment with payment info
     const appointmentRef = admin.firestore().collection('appointments').doc(appointmentId);
+    
+    // First get the current appointment data to ensure we have the phone number
+    const appointmentDoc = await appointmentRef.get();
+    const appointmentData = appointmentDoc.data();
+    
+    // Make sure we have the phone number from the metadata or existing data
+    const userPhone = paymentIntent.metadata.userPhone || appointmentData.userPhone || paymentIntent.metadata.phoneNumber || appointmentData.phoneNumber || null;
+    
+    // Log phone number information for debugging
+    console.log(`Phone number information for appointment ${appointmentId}:`);
+    console.log(`- From metadata.userPhone: ${paymentIntent.metadata.userPhone || 'Not found'}`);
+    console.log(`- From appointmentData.userPhone: ${appointmentData.userPhone || 'Not found'}`);
+    console.log(`- From metadata.phoneNumber: ${paymentIntent.metadata.phoneNumber || 'Not found'}`);
+    console.log(`- From appointmentData.phoneNumber: ${appointmentData.phoneNumber || 'Not found'}`);
+    console.log(`- Final userPhone value: ${userPhone || 'Not found'}`);
+    
     await appointmentRef.update({
       paymentStatus: 'deposit_paid',
       paymentId: paymentIntentId,
       depositAmount: paymentIntent.amount / 100,
       remainingBalance: (paymentIntent.metadata.totalAmount || 0) - (paymentIntent.amount / 100),
       paidAt: admin.firestore.FieldValue.serverTimestamp(),
-      paymentMethod: paymentIntent.payment_method ? 'card' : 'unknown'
+      paymentMethod: paymentIntent.payment_method ? 'card' : 'unknown',
+      userPhone: userPhone // Ensure the phone number is properly stored
     });
 
     console.log(`Payment confirmed for appointment ${appointmentId}: ${paymentIntentId}`);
