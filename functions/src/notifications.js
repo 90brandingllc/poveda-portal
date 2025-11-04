@@ -66,6 +66,7 @@ exports.createAppointmentConfirmationNotification = functions.firestore
       const service = Array.isArray(appointmentData.services) ? 
         appointmentData.services.join(', ') : 
         appointmentData.service || 'your service';
+      const userPhone = appointmentData.userPhone || 'Not provided'; // ✅ Extraer teléfono
       
       // Create notification
       await createNotification(
@@ -78,7 +79,8 @@ exports.createAppointmentConfirmationNotification = functions.firestore
           appointmentId: context.params.appointmentId,
           service,
           date: appointmentDate.toISOString(),
-          timeSlot
+          timeSlot,
+          userPhone // ✅ Incluir teléfono en metadata
         }
       );
       
@@ -126,6 +128,7 @@ exports.createAppointmentStatusChangeNotification = functions.firestore
       const service = Array.isArray(after.services) ? 
         after.services.join(', ') : 
         after.service || 'your service';
+      const userPhone = after.userPhone || 'Not provided'; // ✅ Extraer teléfono
       
       let title, message, type;
       
@@ -163,7 +166,8 @@ exports.createAppointmentStatusChangeNotification = functions.firestore
           service,
           date: appointmentDate.toISOString(),
           previousStatus: before.status,
-          currentStatus: after.status
+          currentStatus: after.status,
+          userPhone // ✅ Incluir teléfono en metadata
         }
       );
       
@@ -224,6 +228,7 @@ exports.createDayBeforeReminders = functions.pubsub
           appointment.service || 'your service';
         
         const timeSlot = appointment.timeSlot || appointment.time || 'the scheduled time';
+        const userPhone = appointment.userPhone || 'Not provided'; // ✅ Extraer teléfono
         
         // Create notification
         const notificationPromise = createNotification(
@@ -236,7 +241,8 @@ exports.createDayBeforeReminders = functions.pubsub
             appointmentId: appointment.id,
             service,
             date: appointmentDate.toISOString(),
-            timeSlot
+            timeSlot,
+            userPhone // ✅ Incluir teléfono en metadata
           }
         ).catch(error => {
           console.error(`Error creating reminder notification for appointment ${doc.id}:`, error);

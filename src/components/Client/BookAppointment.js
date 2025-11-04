@@ -281,8 +281,9 @@ const BookAppointment = () => {
       const dayStart = dayjs(selectedDate).startOf('day').toDate();
       const dayEnd = dayjs(selectedDate).endOf('day').toDate();
       
-      let bookedSlots = [];
+      let slotBookingCount = {}; // Contador de reservas por slot
       let blockedSlots = [];
+      const MAX_BOOKINGS_PER_SLOT = 2; // ✅ Máximo 2 personas por horario
       
       // Try to fetch slot availability - but handle permission errors for guest users
       try {
@@ -305,11 +306,15 @@ const BookAppointment = () => {
           getDocs(blockedSlotsQuery)
         ]);
         
-        // Get booked slots from appointments
+        // ✅ NUEVA LÓGICA: Contar appointments por timeSlot
         appointmentsSnapshot.forEach((doc) => {
           const appointment = doc.data();
-          if (appointment.timeSlot) {
-            bookedSlots.push(appointment.timeSlot);
+          // Solo contar appointments que no estén cancelados o rechazados
+          if (appointment.timeSlot && appointment.status !== 'cancelled' && appointment.status !== 'rejected') {
+            if (!slotBookingCount[appointment.timeSlot]) {
+              slotBookingCount[appointment.timeSlot] = 0;
+            }
+            slotBookingCount[appointment.timeSlot]++;
           }
         });
         
@@ -322,26 +327,34 @@ const BookAppointment = () => {
         });
         
         console.log('✅ Slot availability check successful');
-        console.log('   - Booked slots:', bookedSlots);
+        console.log('   - Booking count per slot:', slotBookingCount);
         console.log('   - Blocked slots:', blockedSlots);
         
       } catch (permissionError) {
         // Guest users don't have permission to query - show all slots as available
         console.warn('⚠️  Permission denied (guest user). Showing all slots as available.');
         console.warn('   Real availability will be verified at booking time.');
-        // Leave bookedSlots and blockedSlots as empty arrays
+        // Leave slotBookingCount and blockedSlots as empty
       }
       
       // Generate slots and mark availability
       const slots = generateTimeSlots(selectedDate);
-      const availableSlots = slots.map(slot => ({
-        ...slot,
-        available: slot.available && 
-                  !bookedSlots.includes(slot.label) && 
-                  !blockedSlots.includes(slot.label)
-      }));
+      const availableSlots = slots.map(slot => {
+        const bookingCount = slotBookingCount[slot.label] || 0;
+        const isBlocked = blockedSlots.includes(slot.label);
+        const isFull = bookingCount >= MAX_BOOKINGS_PER_SLOT;
+        
+        return {
+          ...slot,
+          available: slot.available && !isBlocked && !isFull,
+          bookingCount: bookingCount, // ✅ Agregar contador para mostrar al usuario
+          spotsRemaining: MAX_BOOKINGS_PER_SLOT - bookingCount // ✅ Espacios restantes
+        };
+      });
       
-      console.log('📋 Available slots:', availableSlots.filter(s => s.available).map(s => s.label));
+      console.log('📋 Available slots:', availableSlots
+        .filter(s => s.available)
+        .map(s => `${s.label} (${s.spotsRemaining}/${MAX_BOOKINGS_PER_SLOT} spots)`));
       setAvailableSlots(availableSlots);
       
     } catch (error) {
@@ -351,7 +364,9 @@ const BookAppointment = () => {
       const slots = generateTimeSlots(selectedDate);
       const availableSlots = slots.map(slot => ({
         ...slot,
-        available: true // Show all as available on error
+        available: true, // Show all as available on error
+        bookingCount: 0,
+        spotsRemaining: 2
       }));
       
       console.log('⚠️  Showing all slots as available due to error');
@@ -903,6 +918,8 @@ const BookAppointment = () => {
       console.log('📝 Appointment Data to be saved:');
       console.log('   - userId:', appointmentData.userId);
       console.log('   - userEmail:', appointmentData.userEmail);
+      console.log('   - userName:', appointmentData.userName);
+      console.log('   - userPhone:', appointmentData.userPhone); // ✅ LOG DEL TELÉFONO
       console.log('   - isGuestBooking:', appointmentData.isGuestBooking);
       console.log('   - services:', appointmentData.services);
       console.log('   - date:', appointmentData.date);
@@ -1756,35 +1773,56 @@ const BookAppointment = () => {
                     <Grid container spacing={{ xs: 1, sm: 2 }}>
                       {availableSlots.map((slot, index) => (
                         <Grid item xs={6} sm={4} md={3} key={index}>
-                          <Chip
-                            id={`timeslot_${slot.label.replace(/[: ]/g, '_')}`}
-                            data-selected={selectedSlot?.label === slot.label ? 'true' : 'false'}
-                            label={slot.label}
-                            onClick={() => handleSlotSelect(slot)}
-                            color={selectedSlot?.label === slot.label ? 'primary' : 'default'}
-                            variant={selectedSlot?.label === slot.label ? 'filled' : 'outlined'}
-                            disabled={!slot.available}
-                            icon={slot.available ? <Schedule /> : <Block />}
-                            sx={{
-                              width: '100%',
-                              height: { xs: 40, sm: 48 },
-                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                              cursor: slot.available ? 'pointer' : 'not-allowed',
-                              opacity: slot.available ? 1 : 0.5,
-                              borderRadius: { xs: '8px', sm: '16px' },
-                              '& .MuiChip-icon': {
-                                fontSize: { xs: '1rem', sm: '1.25rem' }
-                              },
-                              '&:hover': {
-                                backgroundColor: slot.available ? 'primary.light' : 'inherit'
-                              },
-                              transition: 'all 0.2s ease-in-out',
-                              transform: selectedSlot?.label === slot.label ? 'scale(1.05)' : 'scale(1)',
-                              border: selectedSlot?.label === slot.label ? '2px solid #1976d2' : '1px solid rgba(0, 0, 0, 0.23)',
-                              boxShadow: selectedSlot?.label === slot.label ? '0 2px 10px rgba(25, 118, 210, 0.4)' : 'none',
-                              fontWeight: selectedSlot?.label === slot.label ? 700 : 400
-                            }}
-                          />
+                          <Box sx={{ position: 'relative' }}>
+                            <Chip
+                              id={`timeslot_${slot.label.replace(/[: ]/g, '_')}`}
+                              data-selected={selectedSlot?.label === slot.label ? 'true' : 'false'}
+                              label={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <span>{slot.label}</span>
+                                  {slot.available && slot.spotsRemaining === 1 && (
+                                    <Box 
+                                      component="span" 
+                                      sx={{ 
+                                        fontSize: '0.65rem', 
+                                        color: '#f59e0b',
+                                        fontWeight: 600,
+                                        ml: 0.5
+                                      }}
+                                    >
+                                      (1 left)
+                                    </Box>
+                                  )}
+                                </Box>
+                              }
+                              onClick={() => handleSlotSelect(slot)}
+                              color={selectedSlot?.label === slot.label ? 'primary' : 'default'}
+                              variant={selectedSlot?.label === slot.label ? 'filled' : 'outlined'}
+                              disabled={!slot.available}
+                              icon={slot.available ? <Schedule /> : <Block />}
+                              sx={{
+                                width: '100%',
+                                height: { xs: 40, sm: 48 },
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                cursor: slot.available ? 'pointer' : 'not-allowed',
+                                opacity: slot.available ? 1 : 0.5,
+                                borderRadius: { xs: '8px', sm: '16px' },
+                                borderColor: slot.available && slot.spotsRemaining === 1 ? '#f59e0b' : undefined,
+                                borderWidth: slot.available && slot.spotsRemaining === 1 ? 2 : undefined,
+                                '& .MuiChip-icon': {
+                                  fontSize: { xs: '1rem', sm: '1.25rem' }
+                                },
+                                '&:hover': {
+                                  backgroundColor: slot.available ? 'primary.light' : 'inherit'
+                                },
+                                transition: 'all 0.2s ease-in-out',
+                                transform: selectedSlot?.label === slot.label ? 'scale(1.05)' : 'scale(1)',
+                                border: selectedSlot?.label === slot.label ? '2px solid #1976d2' : '1px solid rgba(0, 0, 0, 0.23)',
+                                boxShadow: selectedSlot?.label === slot.label ? '0 2px 10px rgba(25, 118, 210, 0.4)' : 'none',
+                                fontWeight: selectedSlot?.label === slot.label ? 700 : 400
+                              }}
+                            />
+                          </Box>
                         </Grid>
                       ))}
                     </Grid>
