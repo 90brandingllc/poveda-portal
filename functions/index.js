@@ -309,7 +309,7 @@ exports.sendAppointmentConfirmation = functions.firestore
                     <h3 style="color: #1976d2; margin-top: 0;">Customer Information</h3>
                     <p><strong>Name:</strong> ${appointment.userName}</p>
                     <p><strong>Email:</strong> ${appointment.userEmail}</p>
-                    <p><strong>Phone:</strong> ${appointment.phoneNumber || 'N/A'}</p>
+                    <p><strong>Phone:</strong> ${appointment.userPhone || 'N/A'}</p>
                   </div>
                   
                   <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">
@@ -543,7 +543,7 @@ exports.sendStatusUpdate = functions.firestore
                   <h3 style="color: #d32f2f; margin-top: 0;">Customer Information</h3>
                   <p><strong>Name:</strong> ${after.userName}</p>
                   <p><strong>Email:</strong> ${after.userEmail}</p>
-                  <p><strong>Phone:</strong> ${after.phoneNumber || 'N/A'}</p>
+                  <p><strong>Phone:</strong> ${after.userPhone || 'N/A'}</p>
                 </div>
                 
                 <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1976d2;">
@@ -1037,7 +1037,7 @@ POVEDA Premium Auto Care - Client Appointment
 
 👤 Customer: ${appointment.userName}
 📧 Email: ${appointment.userEmail}
-📞 Phone: ${appointment.phoneNumber || 'Not provided'}
+📞 Phone: ${appointment.userPhone || 'Not provided'}
 🚗 Service: ${appointment.service || appointment.servicePackage}
 📦 Package: ${appointment.category || 'Standard'}
 📍 Location: ${appointment.address ? `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 'Mobile Service'}
@@ -1188,7 +1188,7 @@ POVEDA Premium Auto Care - Client Appointment
 
 👤 Customer: ${after.userName}
 📧 Email: ${after.userEmail}
-📞 Phone: ${after.phoneNumber || 'Not provided'}
+📞 Phone: ${after.userPhone || 'Not provided'}
 🚗 Service: ${after.service || after.servicePackage}
 📦 Package: ${after.category || 'Standard'}
 📍 Location: ${after.address ? `${after.address.street}, ${after.address.city}, ${after.address.state} ${after.address.zipCode}` : 'Mobile Service'}
