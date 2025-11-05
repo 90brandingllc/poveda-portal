@@ -274,6 +274,18 @@ exports.sendAppointmentConfirmation = functions.firestore
 
     // ✅ NUEVO: Enviar email a todos los administradores
     try {
+      // 🔍 LOG COMPLETO DEL APPOINTMENT PARA DEBUGGING
+      console.log('========================================');
+      console.log('📊 APPOINTMENT DATA FOR ADMIN EMAIL:');
+      console.log('========================================');
+      console.log('userName:', appointment.userName);
+      console.log('userEmail:', appointment.userEmail);
+      console.log('userPhone:', appointment.userPhone);
+      console.log('phoneNumber:', appointment.phoneNumber);
+      console.log('phone:', appointment.phone);
+      console.log('isGuestBooking:', appointment.isGuestBooking);
+      console.log('========================================');
+      
       // Buscar todos los usuarios con role 'admin'
       const adminsSnapshot = await admin.firestore()
         .collection('users')
@@ -310,10 +322,29 @@ exports.sendAppointmentConfirmation = functions.firestore
                   </div>
                   
                   <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2196f3;">
-                    <h3 style="color: #1976d2; margin-top: 0;">Customer Information</h3>
-                    <p><strong>Name:</strong> ${appointment.userName}</p>
-                    <p><strong>Email:</strong> ${appointment.userEmail}</p>
-                    <p><strong>Phone:</strong> ${getPhoneNumber(appointment)}</p>
+                    <h3 style="color: #1976d2; margin-top: 0;">👤 Customer Information</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 8px 0; color: #1976d2; font-weight: 600;">Name:</td>
+                        <td style="padding: 8px 0; color: #333;">${appointment.userName || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #1976d2; font-weight: 600;">Email:</td>
+                        <td style="padding: 8px 0; color: #333;"><a href="mailto:${appointment.userEmail}">${appointment.userEmail || 'N/A'}</a></td>
+                      </tr>
+                      <tr style="background-color: #fff3cd; border-left: 4px solid #ffc107;">
+                        <td style="padding: 12px; color: #856404; font-weight: 700; font-size: 16px;">📞 Phone:</td>
+                        <td style="padding: 12px; color: #856404; font-weight: 700; font-size: 16px;">
+                          <a href="tel:${appointment.userPhone || ''}" style="color: #856404; text-decoration: none;">
+                            ${appointment.userPhone || appointment.phoneNumber || appointment.phone || 'NOT PROVIDED ⚠️'}
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #1976d2; font-weight: 600;">Guest Booking:</td>
+                        <td style="padding: 8px 0; color: #333;">${appointment.isGuestBooking ? 'Yes' : 'No'}</td>
+                      </tr>
+                    </table>
                   </div>
                   
                   <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">

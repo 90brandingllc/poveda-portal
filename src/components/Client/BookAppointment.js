@@ -909,12 +909,22 @@ const BookAppointment = () => {
       console.log('🏷️  Is Guest Booking:', !currentUser);
       console.log('========================================');
       
+      // 🔥 ASEGURAR QUE EL TELÉFONO ESTÉ PRESENTE
+      const finalPhoneNumber = currentUser ? userPhoneNumber : formData.customerPhone;
+      
+      console.log('🔥 VERIFICACIÓN FINAL DE TELÉFONO:');
+      console.log('   - currentUser exists:', !!currentUser);
+      console.log('   - userPhoneNumber:', userPhoneNumber);
+      console.log('   - formData.customerPhone:', formData.customerPhone);
+      console.log('   - FINAL PHONE NUMBER:', finalPhoneNumber);
+      console.log('========================================');
+      
       const appointmentData = {
         // User info - use guest info if not logged in
         userId: currentUser?.uid || 'guest',
         userEmail: currentUser?.email || formData.customerEmail,
         userName: currentUser?.displayName || formData.customerName,
-        userPhone: currentUser ? userPhoneNumber : formData.customerPhone, // Include phone for both logged in and guest users
+        userPhone: finalPhoneNumber, // 🔥 Usar la variable verificada
         isGuestBooking: !currentUser,
         bookingSource: formData.preselectedFromUrl ? 'web_url' : 'portal', // Identificar si viene desde URL
         services: formData.selectedServices.map(service => `${service.name} (${serviceCategories[service.category].name})`), // Array of service names with categories
