@@ -36,17 +36,43 @@ import About from './components/Public/About';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, loading } = useAuth();
   
+  // Si todavía estamos cargando, mostramos un indicador de carga
+  if (loading) {
+    return (
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+        flexDirection="column"
+        gap={2}
+      >
+        <CircularProgress size={40} />
+        <Box>Verificando acceso...</Box>
+      </Box>
+    );
+  }
+  
+  // Si no hay usuario autenticado, redirigimos al login
   if (!currentUser) {
+    console.log('No hay usuario autenticado, redirigiendo a login');
     return <Navigate to="/login" replace />;
   }
   
-  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+  // Si el rol del usuario es undefined, asumimos que es cliente
+  const effectiveRole = userRole === undefined ? 'client' : userRole;
+  console.log('Rol efectivo del usuario:', effectiveRole);
+  
+  // Si se especificaron roles permitidos y el usuario no tiene uno de ellos
+  if (allowedRoles.length > 0 && !allowedRoles.includes(effectiveRole)) {
+    console.log(`Usuario no tiene rol permitido: ${effectiveRole}, roles permitidos:`, allowedRoles);
     return <Navigate to="/dashboard" replace />;
   }
   
-  // Always include NotificationListener for authenticated routes
+  // Si todo está bien, mostramos el contenido protegido
+  console.log('Acceso permitido para el usuario con rol:', effectiveRole);
   return (
     <>
       <NotificationListener />
@@ -57,28 +83,88 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
 // Public Route Component (redirect if authenticated)
 const PublicRoute = ({ children }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
   
-  if (currentUser) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  return children;
-};
-
-function App() {
-  const { currentUser, userRole } = useAuth();
-  
-  // Show loading spinner while checking auth state
-  if (currentUser === undefined) {
+  // Si todavía estamos cargando, mostramos un indicador de carga
+  if (loading) {
     return (
       <Box 
         display="flex" 
         justifyContent="center" 
         alignItems="center" 
         minHeight="100vh"
+        flexDirection="column"
+        gap={2}
+      >
+        <CircularProgress size={40} />
+        <Box>Verificando sesión...</Box>
+      </Box>
+    );
+  }
+  
+  // Si el usuario ya está autenticado, lo redirigimos al dashboard
+  if (currentUser) {
+    console.log('Usuario ya autenticado, redirigiendo a dashboard');
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  // Si no hay usuario autenticado, mostramos la ruta pública
+  console.log('Mostrando ruta pública para usuario no autenticado');
+  return children;
+};
+
+function App() {
+  console.log('App componente inicializado');
+  const { currentUser, userRole, loading, authError } = useAuth();
+  
+  console.log('Estado de App:', { currentUser: !!currentUser, userRole, loading, hasError: !!authError });
+  
+  // Show loading spinner while checking auth state
+  if (loading) {
+    return (
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+        flexDirection="column"
+        gap={2}
       >
         <CircularProgress size={60} />
+        <Box>Cargando la aplicación...</Box>
+        <Box sx={{ mt: 2, color: 'text.secondary', fontSize: '0.875rem' }}>
+          Verificando autenticación...
+        </Box>
+      </Box>
+    );
+  }
+  
+  // Si hay un error de autenticación, mostrarlo
+  if (authError) {
+    return (
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+        flexDirection="column"
+        gap={2}
+        p={3}
+      >
+        <Box sx={{ color: 'error.main', fontWeight: 'bold', fontSize: '1.2rem' }}>
+          Error de autenticación
+        </Box>
+        <Box sx={{ color: 'error.main', textAlign: 'center', maxWidth: '600px' }}>
+          {authError}
+        </Box>
+        <Button 
+          variant="contained" 
+          color="primary"
+          onClick={() => window.location.reload()}
+          sx={{ mt: 2 }}
+        >
+          Reintentar
+        </Button>
       </Box>
     );
   }
@@ -164,7 +250,11 @@ function App() {
         />
         <Route 
           path="/book-appointment" 
-          element={<BookAppointment />} 
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <BookAppointment />
+            </ProtectedRoute>
+          } 
         />
         <Route 
           path="/appointments" 
@@ -176,11 +266,19 @@ function App() {
         />
         <Route 
           path="/contact" 
-          element={<ContactUs />} 
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <ContactUs />
+            </ProtectedRoute>
+          } 
         />
         <Route 
           path="/get-estimate" 
-          element={<GetEstimate />}
+          element={
+            <ProtectedRoute allowedRoles={['client']}>
+              <GetEstimate />
+            </ProtectedRoute>
+          }
         />
         <Route 
           path="/my-estimates" 

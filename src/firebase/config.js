@@ -4,6 +4,8 @@ import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 
+console.log('Inicializando configuración de Firebase...');
+
 // Firebase configuration from environment variables with fallbacks
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "demo-api-key",
@@ -14,6 +16,16 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:123456789:web:demo",
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-DEMO"
 };
+
+// Log para depuración (sin mostrar la apiKey completa por seguridad)
+const safeConfig = { ...firebaseConfig };
+if (safeConfig.apiKey) {
+  safeConfig.apiKey = safeConfig.apiKey.substring(0, 5) + '...';
+}
+if (safeConfig.appId) {
+  safeConfig.appId = safeConfig.appId.substring(0, 5) + '...';
+}
+console.log('Configuración de Firebase:', safeConfig);
 
 // Validate Firebase configuration
 const requiredEnvVars = [
@@ -36,12 +48,27 @@ if (missingVars.length > 0) {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-// Especificar región de functions para el servicio de email
-export const functions = getFunctions(app, process.env.REACT_APP_FIREBASE_FUNCTIONS_REGION || 'us-central1');
-export const storage = getStorage(app);
+// Initialize Firebase services with better error handling
+let auth, db, functions, storage;
+
+try {
+  console.log('Inicializando servicios de Firebase...');
+  auth = getAuth(app);
+  db = getFirestore(app);
+  functions = getFunctions(app, process.env.REACT_APP_FIREBASE_FUNCTIONS_REGION || 'us-central1');
+  storage = getStorage(app);
+  console.log('Servicios de Firebase inicializados correctamente');
+} catch (error) {
+  console.error('Error al inicializar servicios de Firebase:', error);
+  // Crear servicios dummy para evitar errores en cascada
+  auth = { currentUser: null };
+  db = {};
+  functions = {};
+  storage = {};
+}
+
+// Exportar los servicios
+export { auth, db, functions, storage };
 
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();

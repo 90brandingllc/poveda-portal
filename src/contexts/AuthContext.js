@@ -24,9 +24,11 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  console.log('AuthProvider inicializado');
   const [currentUser, setCurrentUser] = useState(undefined);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
   // Create user profile in Firestore
   const createUserProfile = async (user, additionalData = {}) => {
@@ -151,41 +153,100 @@ export const AuthProvider = ({ children }) => {
   // Get user role
   const getUserRole = async (uid) => {
     try {
+      console.log('Intentando obtener rol del usuario desde Firestore...');
       const userRef = doc(db, 'users', uid);
       const userDoc = await getDoc(userRef);
-      const role = userDoc.exists() ? userDoc.data().role : 'client';
-
-      return role;
+      
+      if (userDoc.exists()) {
+        console.log('Documento de usuario encontrado en Firestore');
+        const role = userDoc.data().role || 'client';
+        console.log('Rol obtenido de Firestore:', role);
+        return role;
+      } else {
+        console.log('Documento de usuario no encontrado en Firestore, usando rol predeterminado: client');
+        return 'client';
+      }
     } catch (error) {
       console.error('Error getting user role:', error);
+      console.log('Usando rol predeterminado debido a error: client');
+      // En caso de error, devolvemos 'client' como rol predeterminado
+      // para evitar bloqueos en la autenticación
       return 'client';
     }
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        const role = await getUserRole(user.uid);
-        setUserRole(role);
-      } else {
-        setUserRole(null);
-      }
+    console.log('AuthProvider useEffect iniciado');
+    
+    try {
+      console.log('Configurando listener de autenticación...');
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        console.log('Estado de autenticación cambiado:', user ? `Usuario autenticado: ${user.email}` : 'No hay usuario autenticado');
+        
+        try {
+          setCurrentUser(user);
+          if (user) {
+            try {
+              console.log('Obteniendo rol del usuario...');
+              const role = await getUserRole(user.uid);
+              console.log('Rol del usuario obtenido:', role);
+              setUserRole(role);
+            } catch (roleError) {
+              console.error('Error obteniendo el rol del usuario:', roleError);
+              // Si hay un error al obtener el rol, establecemos un rol predeterminado
+              console.log('Estableciendo rol predeterminado: client');
+              setUserRole('client');
+              setAuthError(roleError.message);
+            }
+          } else {
+            console.log('No hay usuario autenticado, estableciendo rol a null');
+            setUserRole(null);
+          }
+        } catch (authError) {
+          console.error('Error en la autenticación:', authError);
+          setAuthError(authError.message);
+        } finally {
+          // Siempre establecemos loading en false para evitar bloqueos
+          console.log('Finalizando estado de carga');
+          setLoading(false);
+        }
+      }, (error) => {
+        // Manejador de errores para onAuthStateChanged
+        console.error('Error en onAuthStateChanged:', error);
+        setAuthError(error.message);
+        setLoading(false);
+      });
+      
+      // Establecer un timeout de seguridad para evitar bloqueos
+      const timeoutId = setTimeout(() => {
+        console.log('Timeout de seguridad activado después de 5 segundos');
+        setLoading(false);
+      }, 5000);
+      
+      return () => {
+        console.log('Limpiando listener de autenticación');
+        clearTimeout(timeoutId);
+        unsubscribe();
+      };
+    } catch (setupError) {
+      console.error('Error al configurar el listener de autenticación:', setupError);
+      setAuthError(setupError.message);
       setLoading(false);
-    });
-
-    return unsubscribe;
+      return () => {};
+    }
   }, []);
 
   const value = {
     currentUser,
     userRole,
     loading,
+    authError,
     signup,
     signin,
     signInWithGoogle,
     logout,
-    createUserProfile
+    createUserProfile,
+    resetPassword
   };
 
   return (

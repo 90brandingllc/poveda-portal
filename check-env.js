@@ -1,0 +1,10 @@
+console.log('Checking environment variables...');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('REACT_APP_FIREBASE_API_KEY exists:', !!process.env.REACT_APP_FIREBASE_API_KEY);
+console.log('REACT_APP_FIREBASE_AUTH_DOMAIN exists:', !!process.env.REACT_APP_FIREBASE_AUTH_DOMAIN);
+console.log('REACT_APP_FIREBASE_PROJECT_ID exists:', !!process.env.REACT_APP_FIREBASE_PROJECT_ID);
+console.log('REACT_APP_FIREBASE_STORAGE_BUCKET exists:', !!process.env.REACT_APP_FIREBASE_STORAGE_BUCKET);
+console.log('REACT_APP_FIREBASE_MESSAGING_SENDER_ID exists:', !!process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID);
+console.log('REACT_APP_FIREBASE_APP_ID exists:', !!process.env.REACT_APP_FIREBASE_APP_ID);
+console.log('REACT_APP_FIREBASE_MEASUREMENT_ID exists:', !!process.env.REACT_APP_FIREBASE_MEASUREMENT_ID);
+console.log('REACT_APP_FIREBASE_FUNCTIONS_REGION exists:', !!process.env.REACT_APP_FIREBASE_FUNCTIONS_REGION);
