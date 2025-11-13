@@ -1,7 +1,8 @@
-import { connectFirestoreEmulator } from 'firebase/firestore';
-import { connectAuthEmulator } from 'firebase/auth';
-import { connectFunctionsEmulator } from 'firebase/functions';
-import { db, auth, functions } from './config';
+// Imports commented out since we're using real Firebase services
+// import { connectFirestoreEmulator } from 'firebase/firestore';
+// import { connectAuthEmulator } from 'firebase/auth';
+// import { connectFunctionsEmulator } from 'firebase/functions';
+// import { db, auth, functions } from './config';
 
 // Configurar emuladores para desarrollo local
 export const setupEmulators = () => {

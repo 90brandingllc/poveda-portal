@@ -29,7 +29,7 @@ import {
 import {
   RequestQuote,
   CheckCircle,
-  Star,
+  // Star, // Reserved for future use
   Send,
   History,
   Chat,
@@ -41,8 +41,8 @@ import {
   Info,
   CalendarToday,
   PhotoLibrary,
-  Description,
-  Schedule,
+  // Description, // Reserved for future use  
+  // Schedule, // Reserved for future use
   Payments,
   LocationOn,
   NoteAdd,

@@ -47,7 +47,7 @@ export const NotificationProvider = ({ children }) => {
     // Función para obtener notificaciones nuevas desde cada colección
     const loadLatestNotifications = () => {
       setLoading(true);
-      const notificationsArray = [];
+      // const notificationsArray = []; // Reserved for future use
       
       // Monitorizar nuevas citas (appointments)
       const appointmentsUnsubscribe = onSnapshot(
