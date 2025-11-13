@@ -146,6 +146,13 @@ const BookAppointment = () => {
           vehicleTypes: { small: 185, suv: 210, threeRow: 240 }
         },
         { 
+          name: 'DIAMOND REVIVING YOUR CAR', 
+          price: 280, 
+          description: 'Premium diamond reviving service to bring your car back to life',
+          details: 'Professional diamond reviving treatment with deep restoration and shine enhancement',
+          vehicleTypes: { small: 280, suv: 310, threeRow: 340 }
+        },
+        { 
           name: 'XTREME FULL RENOVATION - 3-Month Ceramic Protection', 
           price: 475, 
           description: 'Complete renovation with 3-month ceramic protection',
