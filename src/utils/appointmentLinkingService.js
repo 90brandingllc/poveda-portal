@@ -1,4 +1,4 @@
-import { collection, query, where, getDocs, updateDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 /**

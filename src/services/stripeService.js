@@ -11,6 +11,7 @@ const stripePromise = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY ?
 export const getStripe = () => stripePromise;
 
 // Calculate deposit amount ($50 fixed deposit)
+// eslint-disable-next-line no-unused-vars
 export const calculateDepositAmount = (servicePrice) => {
   return 50 * 100; // $50 converted to cents for Stripe
 };
