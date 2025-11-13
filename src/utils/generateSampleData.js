@@ -279,6 +279,7 @@ export const generateSampleData = async (userId, userEmail, userName) => {
 };
 
 // Function to clear existing user data (for demo reset)
+// eslint-disable-next-line no-unused-vars
 export const clearUserData = async (userId) => {
   try {
 

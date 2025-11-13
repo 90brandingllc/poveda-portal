@@ -145,7 +145,7 @@ export const handleError = async (error, context = {}, options = {}) => {
     showNotification = false,
     userId = null,
     fallbackMessage = null,
-    silent = false
+    // silent = false // Reserved for future use
   } = options;
 
   // Log the error
