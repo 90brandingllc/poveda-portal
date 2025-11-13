@@ -1211,7 +1211,11 @@ const BookAppointment = () => {
                               service.name.toLowerCase().includes('gold')) ||
                             (serviceParam === 'silver-interior' && 
                               key === 'interior' && 
-                              service.name.toLowerCase().includes('silver'))) {
+                              service.name.toLowerCase().includes('silver')) ||
+                            (serviceParam === 'diamond-reviving-your-car' && 
+                              key === 'packages' && 
+                              service.name.toLowerCase().includes('diamond') &&
+                              service.name.toLowerCase().includes('reviving'))) {
                         console.log(`✅ URL MATCH (SPECIAL CASE): ${service.name}`);
                         isSelected = true;
                       }
