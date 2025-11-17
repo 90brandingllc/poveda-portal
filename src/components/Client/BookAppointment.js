@@ -94,10 +94,8 @@ const BookAppointment = () => {
     preselectedFromUrl: false // Flag para controlar si el servicio se cargó desde la URL
   });
 
-  // Adjust steps based on whether user is logged in
-  const steps = currentUser 
-    ? ['Select Services', 'Select Vehicle Type', 'Select Vehicle', 'Choose Date & Time', 'Location Details', 'Review & Payment']
-    : ['Select Services', 'Select Vehicle Type', 'Your Information', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
+  // All users follow the same flow (no login required)
+  const steps = ['Select Services', 'Select Vehicle Type', 'Your Information', 'Choose Date & Time', 'Location Details', 'Review & Payment'];
 
   // Service categories definition (moved up for URL parameter processing)
   // ✅ ORDEN ACTUALIZADO según especificaciones del cliente
@@ -596,7 +594,7 @@ const BookAppointment = () => {
           ...prev,
           selectedServices: [finalService],
           preselectedFromUrl: true,
-          emailReminders: !currentUser ? true : prev.emailReminders // Forzar emails para usuarios no logueados
+          emailReminders: true // Always send email reminders for all users
         }));
         
         // Forzar actualización del estado - múltiples veces para garantizar que se aplique
@@ -617,69 +615,15 @@ const BookAppointment = () => {
     }
   }, [searchParams, serviceCategories]); // Dependemos de searchParams y serviceCategories
 
-  // Fetch user's vehicles (only if logged in)
+  // COMMENTED: Vehicle fetching removed - no login, no vehicle garage
+  /*
   useEffect(() => {
-    if (currentUser) {
-      const vehiclesQuery = query(
-        collection(db, 'vehicles'),
-        where('userId', '==', currentUser.uid)
-      );
+    setVehicles([]);
+  }, []);
+  */
 
-      const unsubscribe = onSnapshot(vehiclesQuery, (snapshot) => {
-        const userVehicles = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setVehicles(userVehicles);
-      }, (error) => {
-        console.error('Error fetching vehicles:', error);
-      });
-
-      return () => unsubscribe();
-    } else {
-      // No vehicles for guest users
-      setVehicles([]);
-    }
-  }, [currentUser]);
-
-  // Load user's phone number from Firestore (only if logged in)
-  useEffect(() => {
-    const loadUserPhoneNumber = async () => {
-      if (currentUser?.uid) {
-        try {
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            const phoneNumber = userData.phoneNumber || '';
-            setUserPhoneNumber(phoneNumber);
-            
-            // Check if phone number is missing
-            if (!phoneNumber || phoneNumber.trim() === '') {
-              setPhoneNumberMissing(true);
-              console.log('⚠️ User phone number is missing');
-            } else {
-              setPhoneNumberMissing(false);
-              console.log('✅ User phone number loaded:', phoneNumber);
-            }
-          } else {
-            console.log('⚠️ User document not found in Firestore');
-            setPhoneNumberMissing(true);
-          }
-        } catch (error) {
-          console.error('Error loading user phone number:', error);
-          setPhoneNumberMissing(true);
-        }
-      } else {
-        // Guest user - no phone number to load
-        setUserPhoneNumber('');
-        setPhoneNumberMissing(false); // Guest users will provide phone in the form
-      }
-    };
-    
-    loadUserPhoneNumber();
-  }, [currentUser]);
+  // COMMENTED: Phone number loading removed - no login, all users provide phone in form
+  // No need to load phone from Firestore since there's no authentication
 
   // Effect to check availability when date changes
   useEffect(() => {
@@ -900,15 +844,13 @@ const BookAppointment = () => {
         return;
       }
 
-      // Validate phone number is present (for both logged in and guest users)
-      const phoneNumber = currentUser ? userPhoneNumber : formData.customerPhone;
+      // Validate phone number is present (all users provide phone in form)
+      const phoneNumber = formData.customerPhone;
       
       console.log('========================================');
       console.log('📞 PHONE NUMBER VALIDATION');
       console.log('========================================');
-      console.log('Is Logged In:', !!currentUser);
-      console.log('userPhoneNumber (logged):', userPhoneNumber);
-      console.log('formData.customerPhone (guest):', formData.customerPhone);
+      console.log('formData.customerPhone:', formData.customerPhone);
       console.log('Final phoneNumber:', phoneNumber);
       console.log('========================================');
       
@@ -925,30 +867,19 @@ const BookAppointment = () => {
       console.log('========================================');
       console.log('🔍 CREATING APPOINTMENT');
       console.log('========================================');
-      console.log('👤 Current User:', currentUser ? currentUser.uid : 'GUEST (not authenticated)');
-      console.log('📧 Email:', currentUser?.email || formData.customerEmail);
-      console.log('👤 Name:', currentUser?.displayName || formData.customerName);
-      console.log('📞 Phone:', phoneNumber); // ✅ AÑADIDO LOG DE TELÉFONO
-      console.log('🏷️  Is Guest Booking:', !currentUser);
-      console.log('========================================');
-      
-      // 🔥 ASEGURAR QUE EL TELÉFONO ESTÉ PRESENTE
-      const finalPhoneNumber = currentUser ? userPhoneNumber : formData.customerPhone;
-      
-      console.log('🔥 VERIFICACIÓN FINAL DE TELÉFONO:');
-      console.log('   - currentUser exists:', !!currentUser);
-      console.log('   - userPhoneNumber:', userPhoneNumber);
-      console.log('   - formData.customerPhone:', formData.customerPhone);
-      console.log('   - FINAL PHONE NUMBER:', finalPhoneNumber);
+      console.log('👤 User Type: GUEST (no authentication)');
+      console.log('📧 Email:', formData.customerEmail);
+      console.log('👤 Name:', formData.customerName);
+      console.log('📞 Phone:', phoneNumber);
       console.log('========================================');
       
       const appointmentData = {
-        // User info - use guest info if not logged in
-        userId: currentUser?.uid || 'guest',
-        userEmail: currentUser?.email || formData.customerEmail,
-        userName: currentUser?.displayName || formData.customerName,
-        userPhone: finalPhoneNumber, // 🔥 Usar la variable verificada
-        isGuestBooking: !currentUser,
+        // User info - all users are guests now
+        userId: 'guest',
+        userEmail: formData.customerEmail,
+        userName: formData.customerName,
+        userPhone: phoneNumber,
+        isGuestBooking: true,
         bookingSource: formData.preselectedFromUrl ? 'web_url' : 'portal', // Identificar si viene desde URL
         services: formData.selectedServices.map(service => `${service.name} (${serviceCategories[service.category].name})`), // Array of service names with categories
         servicesDetails: formData.selectedServices, // Full service objects for reference
@@ -1542,255 +1473,55 @@ const BookAppointment = () => {
         );
 
       case 2:
-        // If user is not logged in, show customer information form
-        if (!currentUser) {
-          return (
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                  Your Contact Information
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Please provide your contact details so we can confirm your appointment.
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Full Name"
-                  value={formData.customerName}
-                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                  required
-                />
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Email Address"
-                  type="email"
-                  value={formData.customerEmail}
-                  onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
-                  required
-                />
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Phone Number"
-                  type="tel"
-                  value={formData.customerPhone}
-                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
-                  required
-                  placeholder="(555) 123-4567"
-                />
-              </Grid>
-              
-              <Grid item xs={12}>
-                <Alert severity="info">
-                  💡 Your information will only be used to confirm and manage your appointment.
-                </Alert>
-              </Grid>
-            </Grid>
-          );
-        }
-        
-        // If user is logged in, show vehicle selection
+        // Customer information form (no login required)
         return (
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                Select Vehicle for Service
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                Your Contact Information
               </Typography>
-              
-              {vehicles.length === 0 ? (
-                <Alert severity="info" sx={{ mb: 3 }}>
-                  You haven't added any vehicles yet. 
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    onClick={() => navigate('/my-garage')}
-                    sx={{ ml: 2 }}
-                  >
-                    Add Vehicle
-                  </Button>
-                </Alert>
-              ) : (
-                <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-                  {vehicles.map((vehicle) => (
-                    <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
-                      <Card 
-                        id={`vehicle_${vehicle.id}`}
-                        data-selected={formData.vehicleId === vehicle.id ? 'true' : 'false'}
-                        sx={{ 
-                          cursor: 'pointer',
-                          border: formData.vehicleId === vehicle.id ? '3px solid #1976d2' : '1px solid #e0e0e0',
-                          backgroundColor: formData.vehicleId === vehicle.id ? '#e3f2fd' : 'white',
-                          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
-                          height: '100%',
-                          borderRadius: { xs: '12px', sm: '16px' },
-                          position: 'relative',
-                          transition: 'all 0.2s ease-in-out',
-                          transform: formData.vehicleId === vehicle.id ? 'scale(1.02)' : 'scale(1)',
-                          boxShadow: formData.vehicleId === vehicle.id ? '0 4px 15px rgba(25, 118, 210, 0.3)' : 'none'
-                        }}
-                        onClick={() => {
-                          // Transferir tanto el ID como el teléfono del vehículo al formulario
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            vehicleId: vehicle.id,
-                            vehiclePhone: vehicle.phoneNumber // Transferir el teléfono del vehículo
-                          }));
-                          
-                          // Forzar actualización para reflejar la selección
-                          setTimeout(triggerRerender, 10);
-                        }}
-                      >
-                        {formData.vehicleId === vehicle.id && (
-                          <Box
-                            sx={{
-                              position: 'absolute',
-                              top: 8,
-                              right: 8,
-                              backgroundColor: '#1976d2',
-                              color: 'white',
-                              borderRadius: '50%',
-                              width: 30,
-                              height: 30,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '1rem',
-                              fontWeight: 800,
-                              boxShadow: '0 2px 8px rgba(25, 118, 210, 0.5)',
-                              zIndex: 10
-                            }}
-                          >
-                            ✓
-                          </Box>
-                        )}
-                        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-                            <DirectionsCar sx={{ color: '#1976d2', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
-                            <Typography variant="h6" sx={{ 
-                              fontWeight: 600,
-                              fontSize: { xs: '0.9rem', sm: '1.25rem' },
-                              lineHeight: 1.2
-                            }}>
-                              {vehicle.year} {vehicle.make} {vehicle.model}
-                            </Typography>
-                          </Box>
-                          
-                          <Typography variant="body2" color="text.secondary" sx={{ 
-                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
-                          }}>
-                            <strong>Color:</strong> {vehicle.color || 'Not specified'}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Please provide your contact details so we can confirm your appointment.
+              </Typography>
             </Grid>
             
-            {/* Phone Number Section for Logged In Users */}
-            <Grid item xs={12} sx={{ mt: 3 }}>
-              <Divider sx={{ mb: 3 }} />
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                📞 Contact Information
-              </Typography>
-              
-              {phoneNumberMissing ? (
-                <Alert severity="warning" sx={{ mb: 3 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
-                    Phone Number Required
-                  </Typography>
-                  <Typography variant="body2">
-                    To book your appointment, we need your phone number so we can contact you.
-                  </Typography>
-                </Alert>
-              ) : (
-                <Alert severity="success" sx={{ mb: 3 }}>
-                  <Typography variant="body2">
-                    ✅ Your phone number is on file
-                  </Typography>
-                </Alert>
-              )}
-              
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Phone Number *"
-                    type="tel"
-                    value={userPhoneNumber}
-                    onChange={(e) => setUserPhoneNumber(e.target.value)}
-                    required
-                    placeholder="(555) 123-4567"
-                    helperText="This number will be saved to your profile"
-                    error={phoneNumberMissing && !userPhoneNumber}
-                  />
-                </Grid>
-                
-                {phoneNumberMissing && userPhoneNumber && (
-                  <Grid item xs={12} sm={6}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={async () => {
-                        if (!userPhoneNumber || userPhoneNumber.trim() === '') {
-                          setError('Please enter a valid phone number');
-                          return;
-                        }
-                        
-                        // Save phone number to Firestore
-                        try {
-                          const userDocRef = doc(db, 'users', currentUser.uid);
-                          await setDoc(userDocRef, {
-                            phoneNumber: userPhoneNumber
-                          }, { merge: true });
-                          setPhoneNumberMissing(false);
-                          setError('');
-                          console.log('✅ Phone number saved successfully');
-                          
-                          // Show success message briefly
-                          setError(''); // Clear any errors
-                          setTimeout(() => {
-                            console.log('✅ Phone saved, ready to continue');
-                          }, 500);
-                        } catch (error) {
-                          console.error('Error saving phone number:', error);
-                          setError('Error saving phone number. Please try again.');
-                        }
-                      }}
-                      sx={{
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                        borderRadius: '12px',
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        py: 1.5,
-                        height: '56px'
-                      }}
-                    >
-                      ✅ Save and Continue
-                    </Button>
-                  </Grid>
-                )}
-              </Grid>
-              
-              {phoneNumberMissing && (
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    📞 Phone number required
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5 }}>
-                    Please enter your phone number above. You can click "Save and Continue" or simply "Next" to proceed.
-                  </Typography>
-                </Alert>
-              )}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                value={formData.customerName}
+                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                required
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Email Address"
+                type="email"
+                value={formData.customerEmail}
+                onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                required
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                type="tel"
+                value={formData.customerPhone}
+                onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                required
+                placeholder="(555) 123-4567"
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Alert severity="info">
+                💡 Your information will only be used to confirm and manage your appointment.
+              </Alert>
             </Grid>
           </Grid>
         );
@@ -2585,8 +2316,7 @@ const BookAppointment = () => {
               disabled={
                 (activeStep === 0 && formData.selectedServices.length === 0) ||
                 (activeStep === 1 && !formData.vehicleType) ||
-                (activeStep === 2 && currentUser && (!formData.vehicleId || phoneNumberMissing || !userPhoneNumber?.trim())) ||
-                (activeStep === 2 && !currentUser && (!formData.customerName?.trim() || !formData.customerEmail?.trim() || !formData.customerPhone?.trim())) ||
+                (activeStep === 2 && (!formData.customerName?.trim() || !formData.customerEmail?.trim() || !formData.customerPhone?.trim())) ||
                 (activeStep === 3 && (!formData.date || !formData.timeSlot)) ||
                 (activeStep === 4 && (!formData.address.street?.trim() || !formData.address.city?.trim() || !formData.address.state?.trim() || !formData.address.zipCode?.trim()))
               }
