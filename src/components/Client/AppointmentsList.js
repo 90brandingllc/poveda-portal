@@ -31,7 +31,7 @@ import {
   Save,
   Delete
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+// import { useAuth } from '../../contexts/AuthContext'; // COMMENTED: No longer needed
 import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import ClientLayout from '../Layout/ClientLayout';
@@ -43,9 +43,11 @@ import dayjs from 'dayjs';
 import { handleAppointmentCancellation, handleAppointmentStatusChange } from '../../utils/notificationTriggers';
 
 const AppointmentsList = () => {
-  const { currentUser } = useAuth();
+  // const { currentUser } = useAuth(); // COMMENTED: No longer needed
+  const [searchEmail, setSearchEmail] = useState('');
   const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -60,6 +62,8 @@ const AppointmentsList = () => {
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
 
+  // COMMENTED: Auto-fetch removed - now user searches by email
+  /*
   useEffect(() => {
     let unsubscribeUserId = null;
     let unsubscribeEmail = null;
@@ -194,6 +198,50 @@ const AppointmentsList = () => {
       }
     };
   }, [currentUser]);
+  */
+
+  // New function to search appointments by email
+  const handleSearchByEmail = async () => {
+    if (!searchEmail || !searchEmail.trim()) {
+      return;
+    }
+
+    setLoading(true);
+    setSearched(true);
+
+    try {
+      const appointmentsQuery = query(
+        collection(db, 'appointments'),
+        where('userEmail', '==', searchEmail.trim().toLowerCase())
+      );
+
+      const unsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
+        const appointmentData = [];
+        snapshot.forEach((doc) => {
+          appointmentData.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Sort by date (most recent first)
+        appointmentData.sort((a, b) => {
+          const aDate = a.date?.toDate?.() || new Date(a.date);
+          const bDate = b.date?.toDate?.() || new Date(b.date);
+          return bDate - aDate;
+        });
+
+        setAppointments(appointmentData);
+        setLoading(false);
+      }, (error) => {
+        console.error('Error fetching appointments:', error);
+        setLoading(false);
+      });
+
+      // Store unsubscribe function for cleanup if needed
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error searching appointments:', error);
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -540,10 +588,10 @@ const AppointmentsList = () => {
     try {
       console.log('=== RESCHEDULE DEBUG INFO ===');
       console.log('Appointment ID:', rescheduleAppointment.id);
-      console.log('Current user ID:', currentUser.uid);
+      // console.log('Current user ID:', currentUser.uid); // COMMENTED
       console.log('Appointment user ID:', rescheduleAppointment.userId);
       console.log('Current appointment status:', rescheduleAppointment.status);
-      console.log('User IDs match:', currentUser.uid === rescheduleAppointment.userId);
+      // console.log('User IDs match:', currentUser.uid === rescheduleAppointment.userId); // COMMENTED
       console.log('Status is pending:', rescheduleAppointment.status === 'pending');
       console.log('New date:', rescheduleData.date.toDate());
       console.log('New time:', rescheduleData.time.format('HH:mm'));
@@ -692,7 +740,7 @@ const AppointmentsList = () => {
                   textShadow: '0 2px 10px rgba(0,0,0,0.05)'
                 }}
               >
-                My Appointments
+                Our Services
               </Typography>
             </Box>
             
@@ -701,7 +749,7 @@ const AppointmentsList = () => {
               maxWidth: '500px',
               fontWeight: 500
             }}>
-              View and manage your scheduled service appointments
+              Discover our premium auto detailing and care services
             </Typography>
             
           </Box>
@@ -818,24 +866,50 @@ const AppointmentsList = () => {
                 mb: 2,
                 fontSize: '1.75rem'
               }}>
-                No Appointments Found
+                Premium Auto Care Services
               </Typography>
               
               <Typography variant="body1" sx={{ 
                 color: '#64748b', 
-                mb: 4, 
-                maxWidth: '550px', 
+                mb: 3, 
+                maxWidth: '650px', 
                 mx: 'auto',
                 lineHeight: 1.7,
                 fontSize: '1.1rem'
               }}>
-                {currentUser ? 
-                  "You haven't scheduled any service appointments yet. Book your first appointment now to experience premium automotive care for your vehicle." :
-                  "Please log in to view your appointments and schedule your vehicle service."
-                }
+                We offer professional detailing services including interior cleaning, exterior wash & wax, 
+                paint correction, ceramic coating, and more. Experience premium automotive care for your vehicle.
               </Typography>
-              
-              {currentUser && (
+
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 1.5, 
+                justifyContent: 'center', 
+                mb: 4,
+                maxWidth: '700px',
+                mx: 'auto'
+              }}>
+                {['Interior Detailing', 'Exterior Wash', 'Paint Correction', 'Ceramic Coating', 'Full Detail Packages'].map((service) => (
+                  <Box
+                    key={service}
+                    sx={{
+                      bgcolor: 'rgba(234, 179, 8, 0.1)',
+                      color: '#d97706',
+                      px: 2.5,
+                      py: 1,
+                      borderRadius: '12px',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      border: '1px solid rgba(234, 179, 8, 0.3)'
+                    }}
+                  >
+                    {service}
+                  </Box>
+                ))}
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
                 <Button
                   component={Link}
                   to="/book-appointment"
@@ -858,35 +932,36 @@ const AppointmentsList = () => {
                   }}
                   startIcon={<Schedule sx={{ fontSize: '1.3rem' }} />}
                 >
-                  Book Your First Service
+                  Book Your Service Now
                 </Button>
-              )}
-              
-              {!currentUser && (
+
                 <Button
-                  component={Link}
-                  to="/login"
+                  component="a"
+                  href="https://povedapremiumautocare.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="outlined"
                   sx={{
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
-                    color: 'white',
+                    borderColor: '#eab308',
+                    color: '#d97706',
                     fontWeight: 600,
-                    fontSize: '1rem',
-                    px: 6,
-                    py: 1.8,
+                    fontSize: '0.95rem',
+                    px: 5,
+                    py: 1.5,
                     borderRadius: '14px',
                     textTransform: 'none',
-                    boxShadow: '0 10px 20px rgba(59, 130, 246, 0.2)',
+                    borderWidth: 2,
                     '&:hover': { 
-                      background: 'linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%)',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 15px 30px rgba(59, 130, 246, 0.3)'
+                      borderColor: '#f59e0b',
+                      bgcolor: 'rgba(234, 179, 8, 0.05)',
+                      borderWidth: 2
                     },
                     transition: 'all 0.3s ease'
                   }}
                 >
-                  Log In to Continue
+                  🌐 Visit Our Website
                 </Button>
-              )}
+              </Box>
             </Box>
             
             {/* Decorative Elements */}

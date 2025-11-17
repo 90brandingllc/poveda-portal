@@ -26,22 +26,24 @@ import {
   DirectionsCar
 } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+// import { useAuth } from '../../contexts/AuthContext'; // COMMENTED: No longer needed
+// import { collection, query, where, onSnapshot } from 'firebase/firestore'; // COMMENTED: No longer needed
+// import { db } from '../../firebase/config'; // COMMENTED: No longer needed
 import UserManual from '../UserManual';
 
 const ClientLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // const [unreadCount, setUnreadCount] = useState(0); // COMMENTED: No longer needed
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, currentUser } = useAuth();
+  // const { logout, currentUser } = useAuth(); // COMMENTED: No longer needed
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  // COMMENTED: Logout and notification features removed
+  /*
   const handleLogout = async () => {
     try {
       await logout();
@@ -73,24 +75,21 @@ const ClientLayout = ({ children }) => {
       return () => unsubscribe();
     }
   }, [currentUser]);
+  */
 
+  // Navigation items - Only public features available
   const navigationItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-    { text: 'My Garage', icon: <DirectionsCar />, path: '/my-garage' },
+    // COMMENTED: Auth-dependent features
+    // { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+    // { text: 'My Garage', icon: <DirectionsCar />, path: '/my-garage' },
+    // { text: 'Notifications', icon: <Notifications />, path: '/notifications' },
+    // { text: 'My Estimates', icon: <Description />, path: '/my-estimates' },
+    
+    // Public features
     { text: 'Book Service', icon: <CalendarToday />, path: '/book-appointment' },
-    { text: 'My Appointments', icon: <Assignment />, path: '/appointments' },
-    { 
-      text: 'Notifications', 
-      icon: unreadCount > 0 ? (
-        <Badge badgeContent={unreadCount} color="error">
-          <Notifications />
-        </Badge>
-      ) : <Notifications />, 
-      path: '/notifications' 
-    },
+    { text: 'Our Services', icon: <Assignment />, path: '/appointments' },
     { text: 'Contact Us', icon: <Phone />, path: '/contact' },
-    { text: 'Get Estimate', icon: <Calculate />, path: '/get-estimate' },
-    { text: 'My Estimates', icon: <Description />, path: '/my-estimates' }
+    { text: 'Get Estimate', icon: <Calculate />, path: '/get-estimate' }
   ];
 
   // Sidebar component
@@ -152,7 +151,8 @@ const ClientLayout = ({ children }) => {
           </ListItem>
         ))}
         
-        {/* Logout Button */}
+        {/* COMMENTED: Logout Button - No longer needed */}
+        {/*
         <ListItem disablePadding sx={{ mt: 2 }}>
           <ListItemButton
             onClick={handleLogout}
@@ -184,6 +184,7 @@ const ClientLayout = ({ children }) => {
             />
           </ListItemButton>
         </ListItem>
+        */}
       </List>
     </Box>
   );
@@ -215,6 +216,8 @@ const ClientLayout = ({ children }) => {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
             POVEDA AUTO CARE
           </Typography>
+          {/* COMMENTED: Notification button removed */}
+          {/*
           <IconButton 
             sx={{ color: '#4b5563' }}
             onClick={handleNotificationClick}
@@ -224,6 +227,7 @@ const ClientLayout = ({ children }) => {
               <Notifications />
             </Badge>
           </IconButton>
+          */}
         </Toolbar>
       </AppBar>
 
