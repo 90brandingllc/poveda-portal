@@ -250,11 +250,7 @@ function App() {
         />
         <Route 
           path="/book-appointment" 
-          element={
-            <ProtectedRoute allowedRoles={['client']}>
-              <BookAppointment />
-            </ProtectedRoute>
-          } 
+          element={<BookAppointment />} 
         />
         <Route 
           path="/appointments" 

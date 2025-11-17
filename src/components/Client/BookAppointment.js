@@ -433,6 +433,22 @@ const BookAppointment = () => {
         // Asignar a una categoría basada en el parámetro service
         let serviceCategory = 'packages'; // Por defecto
         
+        // ✅ MAPEO ESPECIAL: gold-full-cleaning-package → GOLD FULL DETAIL
+        if (serviceParam === 'gold-full-cleaning-package') {
+          const goldFullDetail = serviceCategories.packages.services.find(s => 
+            s.name === 'GOLD FULL DETAIL');
+          
+          if (goldFullDetail) {
+            console.log('✅ Mapped gold-full-cleaning-package to GOLD FULL DETAIL');
+            directService.name = goldFullDetail.name;
+            directService.price = goldFullDetail.price;
+            directService.vehicleTypes = goldFullDetail.vehicleTypes;
+            directService.description = goldFullDetail.description;
+            directService.details = goldFullDetail.details;
+            serviceCategory = 'packages';
+          }
+        }
+        
         // Reglas precisas para determinar la categoría y ajustar precio si es necesario
         if (serviceParam.includes('interior')) {
           serviceCategory = 'interior';
