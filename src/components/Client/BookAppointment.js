@@ -35,7 +35,7 @@ import {
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DepositPayment from '../Payment/DepositPayment';
@@ -842,14 +842,14 @@ const BookAppointment = () => {
     if (activeStep === 2 && currentUser && userPhoneNumber && userPhoneNumber.trim() !== '') {
       try {
         const userDocRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userDocRef, {
+        await setDoc(userDocRef, {
           phoneNumber: userPhoneNumber
-        });
+        }, { merge: true });
         setPhoneNumberMissing(false);
         console.log('✅ Phone number auto-saved on Next');
       } catch (error) {
         console.error('Error auto-saving phone number:', error);
-        setError('Error al guardar el número de teléfono. Por favor intenta de nuevo.');
+        setError('Error saving phone number. Please try again.');
         return; // Don't proceed if save failed
       }
     }
@@ -1690,16 +1690,16 @@ const BookAppointment = () => {
               {phoneNumberMissing ? (
                 <Alert severity="warning" sx={{ mb: 3 }}>
                   <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
-                    Número de Teléfono Requerido
+                    Phone Number Required
                   </Typography>
                   <Typography variant="body2">
-                    Para poder agendar tu cita, necesitamos tu número de teléfono para contactarte.
+                    To book your appointment, we need your phone number so we can contact you.
                   </Typography>
                 </Alert>
               ) : (
                 <Alert severity="success" sx={{ mb: 3 }}>
                   <Typography variant="body2">
-                    ✅ Tu número de teléfono está registrado
+                    ✅ Your phone number is on file
                   </Typography>
                 </Alert>
               )}
@@ -1708,13 +1708,13 @@ const BookAppointment = () => {
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    label="Número de Teléfono *"
+                    label="Phone Number *"
                     type="tel"
                     value={userPhoneNumber}
                     onChange={(e) => setUserPhoneNumber(e.target.value)}
                     required
                     placeholder="(555) 123-4567"
-                    helperText="Este número se guardará en tu perfil"
+                    helperText="This number will be saved to your profile"
                     error={phoneNumberMissing && !userPhoneNumber}
                   />
                 </Grid>
@@ -1726,16 +1726,16 @@ const BookAppointment = () => {
                       variant="contained"
                       onClick={async () => {
                         if (!userPhoneNumber || userPhoneNumber.trim() === '') {
-                          setError('Por favor ingresa un número de teléfono válido');
+                          setError('Please enter a valid phone number');
                           return;
                         }
                         
                         // Save phone number to Firestore
                         try {
                           const userDocRef = doc(db, 'users', currentUser.uid);
-                          await updateDoc(userDocRef, {
+                          await setDoc(userDocRef, {
                             phoneNumber: userPhoneNumber
-                          });
+                          }, { merge: true });
                           setPhoneNumberMissing(false);
                           setError('');
                           console.log('✅ Phone number saved successfully');
@@ -1747,7 +1747,7 @@ const BookAppointment = () => {
                           }, 500);
                         } catch (error) {
                           console.error('Error saving phone number:', error);
-                          setError('Error al guardar el número de teléfono. Por favor intenta de nuevo.');
+                          setError('Error saving phone number. Please try again.');
                         }
                       }}
                       sx={{
@@ -1759,7 +1759,7 @@ const BookAppointment = () => {
                         height: '56px'
                       }}
                     >
-                      ✅ Guardar y Continuar
+                      ✅ Save and Continue
                     </Button>
                   </Grid>
                 )}
@@ -1768,10 +1768,10 @@ const BookAppointment = () => {
               {phoneNumberMissing && (
                 <Alert severity="warning" sx={{ mt: 2 }}>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    📞 Número de teléfono requerido
+                    📞 Phone number required
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 0.5 }}>
-                    Por favor ingresa tu número de teléfono arriba. Puedes hacer clic en "Guardar y Continuar" o simplemente en "Siguiente" para avanzar.
+                    Please enter your phone number above. You can click "Save and Continue" or simply "Next" to proceed.
                   </Typography>
                 </Alert>
               )}
@@ -2284,7 +2284,7 @@ const BookAppointment = () => {
             color: '#1f2937',
             mb: 2
           }}>
-            🎉 ¡Cita Agendada!
+            🎉 Appointment Scheduled!
           </Typography>
           
           <Typography variant="h6" sx={{ 
@@ -2292,7 +2292,7 @@ const BookAppointment = () => {
             mb: 3,
             fontWeight: 500
           }}>
-            Tu solicitud de cita ha sido enviada exitosamente.
+            Your appointment request has been submitted successfully.
           </Typography>
           
           <Typography variant="body1" sx={{ 
@@ -2300,7 +2300,7 @@ const BookAppointment = () => {
             lineHeight: 1.6,
             mb: formData.preselectedFromUrl ? 2 : 4
           }}>
-            Tu depósito ha sido procesado y tu cita está pendiente de aprobación. Nuestro equipo revisará y confirmará tu reserva en breve. Recibirás una notificación una vez confirmada.
+            Your deposit has been processed and your appointment is pending approval. Our team will review and confirm your booking shortly. You will receive a notification once it is confirmed.
           </Typography>
           
           {formData.preselectedFromUrl && (
@@ -2314,7 +2314,7 @@ const BookAppointment = () => {
               p: 2,
               lineHeight: 1.6
             }}>
-              ¡Gracias por elegir nuestros servicios! Ya puedes cerrar esta ventana.
+              Thank you for choosing our services! You may now close this window.
             </Typography>
           )}
           
@@ -2333,7 +2333,7 @@ const BookAppointment = () => {
                 py: 1.5
               }}
             >
-              Ver Mis Citas
+              View My Appointments
             </Button>
           )}
         </Box>
