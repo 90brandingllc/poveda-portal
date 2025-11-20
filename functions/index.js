@@ -808,90 +808,7 @@ exports.send24HourReminder = functions.pubsub
     return null;
   });
 
-// Send appointment reminder (2 hours before)
-exports.send2HourReminder = functions.pubsub
-  .schedule('every 30 minutes')
-  .timeZone('America/New_York')
-  .onRun(async (context) => {
-    const now = new Date();
-
-    try {
-      const appointmentsSnapshot = await admin.firestore()
-        .collection('appointments')
-        .where('status', 'in', ['approved', 'confirmed'])
-        .where('emailReminders', '==', true)
-        .get();
-
-      const promises = appointmentsSnapshot.docs
-        .filter(doc => {
-          const appointment = doc.data();
-          if (!appointment.date || !appointment.time) return false;
-          
-          const appointmentDateTime = getAppointmentDateTime(appointment);
-          const timeDiff = appointmentDateTime.getTime() - now.getTime();
-          const hoursDiff = timeDiff / (1000 * 60 * 60);
-          
-          // Send reminder if appointment is between 2-2.5 hours away and no 2h reminder sent yet
-          return hoursDiff >= 2 && hoursDiff < 2.5 && !appointment.reminder2hSent;
-        })
-        .map(async (doc) => {
-          const appointment = doc.data();
-          
-          try {
-            // Load template from Firestore
-            const template = await getEmailTemplate('appointment_reminder_2h');
-            
-            let emailHtml, emailSubject;
-            
-            if (template) {
-              // Use dynamic template
-              const templateVariables = {
-                userName: appointment.userName,
-                service: appointment.service,
-                date: new Date(appointment.date.toDate()).toLocaleDateString('en-US', { 
-                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-                }),
-                time: appointment.time,
-                address: `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}`,
-                finalPrice: appointment.finalPrice || appointment.estimatedPrice,
-                estimatedPrice: appointment.estimatedPrice
-              };
-              
-              emailHtml = replaceTemplateVariables(template.htmlContent, templateVariables);
-              emailSubject = template.subject;
-            } else {
-              // Fallback to existing template function
-              emailSubject = 'Appointment Reminder - In 2 Hours - POVEDA PREMIUM AUTO CARE';
-              emailHtml = getReminderEmailTemplate(appointment, '2 hours', 'in about 2 hours');
-            }
-
-            const mailOptions = {
-              from: 'POVEDA PREMIUM AUTO CARE <noreply@povedaautocare.com>',
-              to: appointment.userEmail,
-              subject: emailSubject,
-              html: emailHtml
-            };
-
-            // Send email and mark as sent
-            await transporter.sendMail(mailOptions);
-            await doc.ref.update({ reminder2hSent: true });
-            
-            console.log(`2h reminder sent for appointment ${doc.id}`);
-            return true;
-  } catch (error) {
-            console.error(`Error sending 2h reminder for appointment ${doc.id}:`, error);
-            return false;
-          }
-        });
-
-      await Promise.all(promises);
-      console.log(`Processed ${promises.length} 2-hour reminders`);
-    } catch (error) {
-      console.error('Error sending 2-hour reminders:', error);
-    }
-
-    return null;
-  });
+// Note: 2-hour reminder system removed - only using 24-hour reminder
 
 // Helper function to get the phone number from an appointment object
 function getPhoneNumber(appointment) {
@@ -1299,10 +1216,9 @@ exports.cleanupReminderFlags = functions.pubsub
       
       appointmentsSnapshot.docs.forEach(doc => {
         const appointment = doc.data();
-        if (appointment.reminder24hSent || appointment.reminder2hSent) {
+        if (appointment.reminder24hSent) {
           batch.update(doc.ref, {
-            reminder24hSent: admin.firestore.FieldValue.delete(),
-            reminder2hSent: admin.firestore.FieldValue.delete()
+            reminder24hSent: admin.firestore.FieldValue.delete()
           });
         }
       });
@@ -1333,12 +1249,11 @@ exports.resetReminderFlags = functions.firestore
     if (after.status === 'cancelled' || after.status === 'rejected') {
       try {
         await change.after.ref.update({
-          reminder24hSent: admin.firestore.FieldValue.delete(),
-          reminder2hSent: admin.firestore.FieldValue.delete()
+          reminder24hSent: admin.firestore.FieldValue.delete()
         });
-        console.log(`Reminder flags reset for ${after.status} appointment ${context.params.appointmentId}`);
+        console.log(`Reminder flag reset for ${after.status} appointment ${context.params.appointmentId}`);
       } catch (error) {
-        console.error('Error resetting reminder flags:', error);
+        console.error('Error resetting reminder flag:', error);
       }
     }
     
