@@ -285,130 +285,127 @@ exports.createAppointmentStatusChangeNotification = functions.firestore
   });
 
 /**
- * Create appointment reminder notifications (1 day before)
- * Sends both in-app notifications AND email reminders
+ * NOTE: Day-before reminder system moved to functions/index.js (send24HourReminder)
+ * This function is kept for reference but disabled.
+ * The main system runs every hour and is more accurate for 24h reminders.
  */
-exports.createDayBeforeReminders = functions.pubsub
-  .schedule('0 9 * * *')  // 9am every day
-  .timeZone('America/New_York')
-  .onRun(async (context) => {
-    try {
-      // Calculate tomorrow's date range
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      
-      const tomorrowEnd = new Date(tomorrow);
-      tomorrowEnd.setHours(23, 59, 59, 999);
-      
-      // Query for tomorrow's appointments
-      const snapshot = await admin.firestore()
-        .collection('appointments')
-        .where('date', '>=', tomorrow)
-        .where('date', '<=', tomorrowEnd)
-        .where('status', '==', 'approved')
-        .get();
-      
-      console.log(`Found ${snapshot.size} appointments scheduled for tomorrow`);
-      
-      const reminderPromises = [];
-      let emailsSent = 0;
-      let emailsFailed = 0;
-      
-      snapshot.forEach((doc) => {
-        const appointment = { id: doc.id, ...doc.data() };
-        
-        if (!appointment.userId) return;
-        
-        // Format appointment date
-        const appointmentDate = appointment.date.toDate ? 
-          appointment.date.toDate() : 
-          new Date(appointment.date);
-        
-        const formattedDate = appointmentDate.toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'long',
-          day: 'numeric'
-        });
-        
-        const service = Array.isArray(appointment.services) ? 
-          appointment.services.join(', ') : 
-          appointment.service || 'your service';
-        
-        const timeSlot = appointment.timeSlot || appointment.time || 'the scheduled time';
-        const userPhone = appointment.userPhone || 'Not provided'; // ✅ Extraer teléfono
-        
-        // Create in-app notification (only for registered users, not guests)
-        if (appointment.userId !== 'guest') {
-          const notificationPromise = createNotification(
-            appointment.userId,
-            'Appointment Tomorrow',
-            `Reminder: Your ${service} appointment is tomorrow (${formattedDate}) at ${timeSlot}. Please ensure your vehicle is accessible.`,
-            'warning',
-            {
-              type: 'appointment_reminder',
-              appointmentId: appointment.id,
-              service,
-              date: appointmentDate.toISOString(),
-              timeSlot,
-              userPhone // ✅ Incluir teléfono en metadata
-            }
-          ).catch(error => {
-            console.error(`Error creating reminder notification for appointment ${doc.id}:`, error);
-          });
-          
-          reminderPromises.push(notificationPromise);
-        }
-        
-        // ✅ SEND EMAIL REMINDER (for ALL users - registered AND guests)
-        if (appointment.userEmail) {
-          const emailPromise = sendReminderEmail(appointment, {
-            name: appointment.userName || 'Valued Customer',
-            service: service,
-            date: formattedDate,
-            time: timeSlot,
-            location: appointment.address ? 
-              `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 
-              'Your specified location',
-            phone: userPhone,
-            rescheduleLink: 'https://poveda-portal.vercel.app/appointments'
-          }).then(() => {
-            emailsSent++;
-            console.log(`✅ Reminder email sent to ${appointment.userEmail}`);
-          }).catch(error => {
-            emailsFailed++;
-            console.error(`❌ Error sending reminder email to ${appointment.userEmail}:`, error);
-          });
-          
-          reminderPromises.push(emailPromise);
-        } else {
-          console.warn(`⚠️  No email address for appointment ${doc.id}, skipping email reminder`);
-        }
-        
-        // Mark the appointment as having received a reminder
-        doc.ref.update({
-          reminderSent: true,
-          reminderSentAt: admin.firestore.FieldValue.serverTimestamp()
-        }).catch(error => {
-          console.error(`Error updating appointment ${doc.id} reminder status:`, error);
-        });
-      });
-      
-      await Promise.all(reminderPromises);
-      
-      console.log(`📧 Email reminders summary: ${emailsSent} sent, ${emailsFailed} failed`);
-      
-      return { 
-        success: true, 
-        count: snapshot.size,
-        emailsSent: emailsSent,
-        emailsFailed: emailsFailed
-      };
-    } catch (error) {
-      console.error('Error sending day-before reminders:', error);
-      return { success: false, error: error.message };
-    }
-  });
+// exports.createDayBeforeReminders = functions.pubsub
+//   .schedule('0 9 * * *')  // 9am every day  
+//   .timeZone('America/New_York')
+//   .onRun(async (context) => {
+//     try {
+//       // Calculate tomorrow's date range
+//       const tomorrow = new Date();
+//       tomorrow.setDate(tomorrow.getDate() + 1);
+//       tomorrow.setHours(0, 0, 0, 0);
+//       
+//       const tomorrowEnd = new Date(tomorrow);
+//       tomorrowEnd.setHours(23, 59, 59, 999);
+//       
+//       // Query for tomorrow's appointments
+//       const snapshot = await admin.firestore()
+//         .collection('appointments')
+//         .where('date', '>=', tomorrow)
+//         .where('date', '<=', tomorrowEnd)
+//         .where('status', '==', 'approved')
+//         .get();
+//       
+//       console.log(`Found ${snapshot.size} appointments scheduled for tomorrow`);
+//       
+//       const reminderPromises = [];
+//       let emailsSent = 0;
+//       let emailsFailed = 0;
+//       
+//       snapshot.forEach((doc) => {
+//         const appointment = { id: doc.id, ...doc.data() };
+//         
+//         if (!appointment.userId) return;
+//         
+//         const appointmentDate = appointment.date.toDate ? 
+//           appointment.date.toDate() : 
+//           new Date(appointment.date);
+//         
+//         const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+//           weekday: 'long',
+//           month: 'long',
+//           day: 'numeric'
+//         });
+//         
+//         const service = Array.isArray(appointment.services) ? 
+//           appointment.services.join(', ') : 
+//           appointment.service || 'your service';
+//         
+//         const timeSlot = appointment.timeSlot || appointment.time || 'the scheduled time';
+//         const userPhone = appointment.userPhone || 'Not provided';
+//         
+//         if (appointment.userId !== 'guest') {
+//           const notificationPromise = createNotification(
+//             appointment.userId,
+//             'Appointment Tomorrow',
+//             `Reminder: Your ${service} appointment is tomorrow (${formattedDate}) at ${timeSlot}. Please ensure your vehicle is accessible.`,
+//             'warning',
+//             {
+//               type: 'appointment_reminder',
+//               appointmentId: appointment.id,
+//               service,
+//               date: appointmentDate.toISOString(),
+//               timeSlot,
+//               userPhone
+//             }
+//           ).catch(error => {
+//             console.error(`Error creating reminder notification for appointment ${doc.id}:`, error);
+//           });
+//           
+//           reminderPromises.push(notificationPromise);
+//         }
+//         
+//         if (appointment.userEmail) {
+//           const emailPromise = sendReminderEmail(appointment, {
+//             name: appointment.userName || 'Valued Customer',
+//             service: service,
+//             date: formattedDate,
+//             time: timeSlot,
+//             location: appointment.address ? 
+//               `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 
+//               'Your specified location',
+//             phone: userPhone,
+//             rescheduleLink: 'https://poveda-portal.vercel.app/appointments'
+//           }).then(() => {
+//             emailsSent++;
+//             console.log(`Reminder email sent to ${appointment.userEmail}`);
+//           }).catch(error => {
+//             emailsFailed++;
+//             console.error(`Error sending reminder email to ${appointment.userEmail}:`, error);
+//           });
+//           
+//           reminderPromises.push(emailPromise);
+//         } else {
+//           console.warn(`No email address for appointment ${doc.id}, skipping email reminder`);
+//         }
+//         
+//         doc.ref.update({
+//           reminderSent: true,
+//           reminderSentAt: admin.firestore.FieldValue.serverTimestamp()
+//         }).catch(error => {
+//           console.error(`Error updating appointment ${doc.id} reminder status:`, error);
+//         });
+//       });
+//       
+//       await Promise.all(reminderPromises);
+//       
+//       console.log(`Email reminders summary: ${emailsSent} sent, ${emailsFailed} failed`);
+//       
+//       return { 
+//         success: true, 
+//         count: snapshot.size,
+//         emailsSent: emailsSent,
+//         emailsFailed: emailsFailed
+//       };
+//     } catch (error) {
+//       console.error('Error sending day-before reminders:', error);
+//       return { success: false, error: error.message };
+//     }
+//   });
 
 /**
  * Create service follow-up notification (3 months after service)
