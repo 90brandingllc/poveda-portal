@@ -34,6 +34,12 @@ import {
   Phone,
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+// Configurar dayjs para manejar timezones
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { useAuth } from '../../contexts/AuthContext';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
@@ -245,8 +251,13 @@ const BookAppointment = () => {
     
     const slots = [];
     const date = dayjs(selectedDate);
-    const now = dayjs(); // Hora actual del dispositivo del usuario
+    
+    // ✅ USAR HORA DE OHIO (America/New_York) en lugar de hora del dispositivo
+    const OHIO_TIMEZONE = 'America/New_York';
+    const now = dayjs().tz(OHIO_TIMEZONE); // Hora actual en Ohio
     const minimumAdvanceHours = 3; // Mínimo 3 horas de anticipación
+    
+    console.log('🕐 Current time in Ohio:', now.format('YYYY-MM-DD HH:mm:ss z'));
     
     // ✅ NUEVOS HORARIOS: Todos los días tienen los mismos horarios
     const availableSlots = [
@@ -259,21 +270,23 @@ const BookAppointment = () => {
     
     // Generate slots for available times
     availableSlots.forEach(slot => {
-      const slotTime = date.hour(slot.hour).minute(slot.minute).second(0);
+      // Crear el slot time en el timezone de Ohio
+      const slotTime = date.hour(slot.hour).minute(slot.minute).second(0).tz(OHIO_TIMEZONE, true);
       
-      // ✅ NUEVA LÓGICA: Verificar que el horario esté al menos 3 horas en el futuro
+      // ✅ NUEVA LÓGICA: Verificar que el horario esté al menos 3 horas en el futuro (en hora de Ohio)
       const hoursDifference = slotTime.diff(now, 'hour', true);
       
-      // Si es el día de hoy, verificar que tenga al menos 3 horas de anticipación
+      // Si es el día de hoy (en Ohio), verificar que tenga al menos 3 horas de anticipación
       if (date.isSame(now, 'day')) {
         if (hoursDifference < minimumAdvanceHours) {
-          console.log(`⏰ Slot ${slotTime.format('h:mm A')} skipped - only ${hoursDifference.toFixed(1)} hours away (minimum ${minimumAdvanceHours} hours required)`);
+          console.log(`⏰ Slot ${slotTime.format('h:mm A z')} skipped - only ${hoursDifference.toFixed(1)} hours away (minimum ${minimumAdvanceHours} hours required in Ohio time)`);
           return; // Skip this slot - no cumple con las 3 horas mínimas
         }
       }
       
-      // Para días futuros, solo verificar que no sea en el pasado
+      // Para días futuros, solo verificar que no sea en el pasado (en hora de Ohio)
       if (slotTime.isBefore(now)) {
+        console.log(`⏰ Slot ${slotTime.format('h:mm A z')} skipped - in the past (Ohio time)`);
         return; // Skip past slots
       }
       
@@ -1588,10 +1601,10 @@ const BookAppointment = () => {
                   </Typography>
                   
                   {/* Info sobre restricción de 3 horas */}
-                  {formData.date && dayjs(formData.date).isSame(dayjs(), 'day') && (
+                  {formData.date && dayjs(formData.date).isSame(dayjs().tz('America/New_York'), 'day') && (
                     <Alert severity="info" sx={{ mb: 2 }}>
-                      ⏰ <strong>Note:</strong> Appointments must be scheduled at least 3 hours in advance. 
-                      Only time slots that are 3+ hours away are shown.
+                      ⏰ <strong>Note:</strong> Appointments must be scheduled at least 3 hours in advance (Ohio time). 
+                      Only time slots that are 3+ hours away are shown. Current time in Ohio: {dayjs().tz('America/New_York').format('h:mm A')}
                     </Alert>
                   )}
                   
@@ -1602,8 +1615,8 @@ const BookAppointment = () => {
                     </Box>
                   ) : availableSlots.length === 0 ? (
                     <Alert severity="warning">
-                      {dayjs(formData.date).isSame(dayjs(), 'day') 
-                        ? "⏰ No available slots for today. All time slots must be at least 3 hours in advance. Please select a future date or try again later."
+                      {dayjs(formData.date).isSame(dayjs().tz('America/New_York'), 'day') 
+                        ? "⏰ No available slots for today. All time slots must be at least 3 hours in advance (Ohio time). Please select a future date or try again later."
                         : "No available slots for this date. Please select a different date."}
                     </Alert>
                   ) : (
