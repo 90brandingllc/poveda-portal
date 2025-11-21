@@ -160,12 +160,20 @@ const ManageSlots = () => {
     return days;
   };
 
-  // Get appointments for a specific date and time
-  const getAppointmentForSlot = (date, time) => {
-    return appointments.find(apt => {
+  // Get appointments for a specific date and time (puede haber hasta 2)
+  const getAppointmentsForSlot = (date, time) => {
+    return appointments.filter(apt => {
       const aptDate = dayjs(apt.date.toDate());
-      return aptDate.isSame(date, 'day') && apt.timeSlot === time;
+      // Solo contar appointments que no estén cancelados o rechazados
+      return aptDate.isSame(date, 'day') && apt.timeSlot === time && 
+             apt.status !== 'cancelled' && apt.status !== 'rejected';
     });
+  };
+
+  // Mantener función legacy para compatibilidad
+  const getAppointmentForSlot = (date, time) => {
+    const appointments = getAppointmentsForSlot(date, time);
+    return appointments.length > 0 ? appointments[0] : null;
   };
 
   // Get blocked slot for a specific date and time
@@ -176,18 +184,33 @@ const ManageSlots = () => {
     });
   };
 
-  // Check if a slot is available
+  // Check if a slot is available (máximo 2 citas por horario)
   const isSlotAvailable = (date, time) => {
+    const MAX_BOOKINGS_PER_SLOT = 2;
+    
     // Skip weekends
     if (date.day() === 0 || date.day() === 6) return false;
-    
-    // Check if there's an appointment
-    if (getAppointmentForSlot(date, time)) return false;
     
     // Check if slot is blocked
     if (getBlockedSlotForTime(date, time)) return false;
     
+    // Check how many appointments exist for this slot
+    const appointmentsInSlot = getAppointmentsForSlot(date, time);
+    if (appointmentsInSlot.length >= MAX_BOOKINGS_PER_SLOT) return false;
+    
     return true;
+  };
+
+  // Get slot capacity info
+  const getSlotCapacity = (date, time) => {
+    const MAX_BOOKINGS_PER_SLOT = 2;
+    const appointmentsInSlot = getAppointmentsForSlot(date, time);
+    return {
+      total: MAX_BOOKINGS_PER_SLOT,
+      booked: appointmentsInSlot.length,
+      available: MAX_BOOKINGS_PER_SLOT - appointmentsInSlot.length,
+      appointments: appointmentsInSlot
+    };
   };
 
   // Load weather forecast for the week
@@ -387,36 +410,48 @@ const ManageSlots = () => {
   // Render calendar cell content with mobile optimization
   const renderCalendarCell = (date, timeSlot) => {
     // ✅ Todos los horarios están disponibles todos los días
-    const appointment = getAppointmentForSlot(date, timeSlot.label);
+    const slotCapacity = getSlotCapacity(date, timeSlot.label);
     const blockedSlot = getBlockedSlotForTime(date, timeSlot.label);
     
-    if (appointment) {
+    // Si hay citas en este horario (1 o 2)
+    if (slotCapacity.booked > 0 && !blockedSlot) {
+      const isFull = slotCapacity.available === 0;
       return (
         <Box
           sx={{
             height: '100%',
-            minHeight: isMobile ? 80 : 60,
+            minHeight: isMobile ? 100 : 80,
             p: isMobile ? 1.5 : 1,
-            bgcolor: '#e3f2fd',
-            border: '2px solid #2196f3',
+            bgcolor: isFull ? '#e3f2fd' : '#fff9e6',
+            border: isFull ? '2px solid #2196f3' : '2px solid #ffa726',
             borderRadius: 1,
             cursor: 'pointer',
-            '&:hover': { bgcolor: '#bbdefb' }
+            '&:hover': { bgcolor: isFull ? '#bbdefb' : '#ffe0b2' },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.5
           }}
         >
-          <Typography 
-            variant={isMobile ? "body2" : "caption"} 
-            sx={{ fontWeight: 600, color: '#1565c0', fontSize: isMobile ? '0.875rem' : '0.75rem' }}
-          >
-            {appointment.userName}
-          </Typography>
-          <Typography 
-            variant={isMobile ? "body2" : "caption"} 
-            display="block" 
-            sx={{ color: '#1976d2', fontSize: isMobile ? '0.8rem' : '0.7rem' }}
-          >
-            {appointment.service}
-          </Typography>
+          {/* Mostrar todas las citas */}
+          {slotCapacity.appointments.map((apt, index) => (
+            <Box key={apt.id} sx={{ mb: index < slotCapacity.appointments.length - 1 ? 1 : 0 }}>
+              <Typography 
+                variant={isMobile ? "body2" : "caption"} 
+                sx={{ fontWeight: 600, color: isFull ? '#1565c0' : '#e65100', fontSize: isMobile ? '0.875rem' : '0.75rem' }}
+              >
+                {index + 1}. {apt.userName}
+              </Typography>
+              <Typography 
+                variant={isMobile ? "body2" : "caption"} 
+                display="block" 
+                sx={{ color: isFull ? '#1976d2' : '#f57c00', fontSize: isMobile ? '0.8rem' : '0.7rem' }}
+              >
+                {apt.service || (apt.services && apt.services.length > 0 ? apt.services[0] : 'Service')}
+              </Typography>
+            </Box>
+          ))}
+          
+          {/* Indicador de capacidad */}
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -426,12 +461,12 @@ const ManageSlots = () => {
             gap: isMobile ? 0.5 : 0
           }}>
             <Chip 
-              label="Booked" 
+              label={isFull ? `Full (${slotCapacity.booked}/${slotCapacity.total})` : `${slotCapacity.booked}/${slotCapacity.total} - ${slotCapacity.available} left`}
               size={isMobile ? "medium" : "small"} 
               sx={{ 
                 height: isMobile ? 20 : 16, 
                 fontSize: isMobile ? '0.75rem' : '0.65rem',
-                bgcolor: '#2196f3',
+                bgcolor: isFull ? '#2196f3' : '#ff9800',
                 color: 'white'
               }} 
             />
@@ -445,7 +480,7 @@ const ManageSlots = () => {
                       alt={weather.description}
                       style={{ width: 14, height: 14 }}
                     />
-                    <Typography variant="caption" sx={{ fontSize: '0.6rem', color: '#1976d2' }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.6rem', color: isFull ? '#1976d2' : '#f57c00' }}>
                       {weather.temperature}°
                     </Typography>
                   </Box>
@@ -454,6 +489,26 @@ const ManageSlots = () => {
               return null;
             })()} 
           </Box>
+          
+          {/* Botón para agregar segunda cita si hay espacio */}
+          {!isFull && (
+            <Button
+              size={isMobile ? "small" : "small"}
+              variant="outlined"
+              color="primary"
+              startIcon={<Add />}
+              onClick={() => openAddAppointmentDialog(date, timeSlot.label)}
+              sx={{
+                fontSize: isMobile ? '0.7rem' : '0.65rem',
+                py: 0.25,
+                px: 0.5,
+                mt: 0.5,
+                minHeight: isMobile ? 24 : 20
+              }}
+            >
+              Add 2nd
+            </Button>
+          )}
         </Box>
       );
     }
@@ -799,19 +854,8 @@ const ManageSlots = () => {
                         {expandedTimeSlot !== timeSlot.hour && (
                           <Box>
                             {(() => {
-                              const appointment = getAppointmentForSlot(selectedDate, timeSlot.label);
+                              const slotCapacity = getSlotCapacity(selectedDate, timeSlot.label);
                               const blockedSlot = getBlockedSlotForTime(selectedDate, timeSlot.label);
-                              
-                              if (appointment) {
-                                return (
-                                  <Chip 
-                                    label={`Booked - ${appointment.userName}`} 
-                                    color="primary" 
-                                    variant="filled"
-                                    sx={{ width: '100%' }}
-                                  />
-                                );
-                              }
                               
                               if (blockedSlot) {
                                 return (
@@ -824,9 +868,21 @@ const ManageSlots = () => {
                                 );
                               }
                               
+                              if (slotCapacity.booked > 0) {
+                                const isFull = slotCapacity.available === 0;
+                                return (
+                                  <Chip 
+                                    label={isFull ? `Full (${slotCapacity.booked}/${slotCapacity.total})` : `${slotCapacity.booked}/${slotCapacity.total} Booked - ${slotCapacity.available} left`}
+                                    color={isFull ? "primary" : "warning"}
+                                    variant="filled"
+                                    sx={{ width: '100%' }}
+                                  />
+                                );
+                              }
+                              
                               return (
                                 <Chip 
-                                  label="Available" 
+                                  label="Available (0/2)" 
                                   color="success" 
                                   variant="outlined"
                                   sx={{ width: '100%' }}
