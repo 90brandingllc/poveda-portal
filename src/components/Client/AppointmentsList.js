@@ -877,44 +877,19 @@ const AppointmentsList = () => {
                 lineHeight: 1.7,
                 fontSize: '1.1rem'
               }}>
-                We offer professional detailing services including interior cleaning, exterior wash & wax, 
-                paint correction, ceramic coating, and more. Experience premium automotive care for your vehicle.
+                We offer professional detailing services including interior cleaning, exterior wash & wax, paint correction, ceramic coating, and more. Enjoy premium automotive care designed to protect, restore, and enhance the look of your vehicle.
               </Typography>
 
-              <Box sx={{ 
-                display: 'flex', 
-                flexWrap: 'wrap', 
-                gap: 1.5, 
-                justifyContent: 'center', 
-                mb: 4,
-                maxWidth: '700px',
-                mx: 'auto'
-              }}>
-                {['Interior Detailing', 'Exterior Wash', 'Paint Correction', 'Ceramic Coating', 'Full Detail Packages'].map((service) => (
-                  <Box
-                    key={service}
-                    sx={{
-                      bgcolor: 'rgba(234, 179, 8, 0.1)',
-                      color: '#d97706',
-                      px: 2.5,
-                      py: 1,
-                      borderRadius: '12px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(234, 179, 8, 0.3)'
-                    }}
-                  >
-                    {service}
-                  </Box>
-                ))}
-              </Box>
+         
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Button
-                  component={Link}
-                  to="/book-appointment"
+                  component="a"
+                  href="https://instagram.com/poveda_detailing/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   sx={{
-                    background: 'linear-gradient(135deg, #eab308 0%, #f59e0b 100%)',
+                    background: 'linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%)',
                     color: 'white',
                     fontWeight: 600,
                     fontSize: '1rem',
@@ -922,44 +897,16 @@ const AppointmentsList = () => {
                     py: 1.8,
                     borderRadius: '14px',
                     textTransform: 'none',
-                    boxShadow: '0 10px 20px rgba(245, 158, 11, 0.2)',
+                    boxShadow: '0 10px 20px rgba(225, 48, 108, 0.3)',
                     '&:hover': { 
-                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      background: 'linear-gradient(135deg, #C13584 0%, #833AB4 50%, #5851DB 100%)',
                       transform: 'translateY(-2px)',
-                      boxShadow: '0 15px 30px rgba(245, 158, 11, 0.3)'
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                  startIcon={<Schedule sx={{ fontSize: '1.3rem' }} />}
-                >
-                  Book Your Service Now
-                </Button>
-
-                <Button
-                  component="a"
-                  href="https://povedapremiumautocare.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="outlined"
-                  sx={{
-                    borderColor: '#eab308',
-                    color: '#d97706',
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    px: 5,
-                    py: 1.5,
-                    borderRadius: '14px',
-                    textTransform: 'none',
-                    borderWidth: 2,
-                    '&:hover': { 
-                      borderColor: '#f59e0b',
-                      bgcolor: 'rgba(234, 179, 8, 0.05)',
-                      borderWidth: 2
+                      boxShadow: '0 15px 30px rgba(225, 48, 108, 0.4)'
                     },
                     transition: 'all 0.3s ease'
                   }}
                 >
-                  🌐 Visit Our Website
+                  📱 Follow us on Instagram
                 </Button>
               </Box>
             </Box>

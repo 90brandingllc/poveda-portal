@@ -2029,60 +2029,71 @@ const BookAppointment = () => {
           <Typography variant="h3" gutterBottom sx={{ 
             fontWeight: 700, 
             color: '#1f2937',
-            mb: 2
+            mb: 3
           }}>
-            🎉 Appointment Scheduled!
+            Congratulations!
           </Typography>
           
-          <Typography variant="h6" sx={{ 
-            color: '#6b7280',
-            mb: 3,
-            fontWeight: 500
+          <Typography variant="h5" sx={{ 
+            color: '#22c55e',
+            mb: 2,
+            fontWeight: 600
           }}>
-            Your appointment request has been submitted successfully.
+            Your appointment is confirmed — your car will be spotless!
           </Typography>
           
           <Typography variant="body1" sx={{ 
             color: '#374151',
-            lineHeight: 1.6,
-            mb: formData.preselectedFromUrl ? 2 : 4
+            lineHeight: 1.8,
+            mb: 4,
+            textAlign: 'left'
           }}>
-            Your deposit has been processed and your appointment is pending approval. Our team will review and confirm your booking shortly. You will receive a notification once it is confirmed.
+            We offer professional detailing services including interior cleaning, exterior wash & wax, paint correction, ceramic coating, and more. Enjoy premium automotive care designed to protect, restore, and enhance the look of your vehicle.
           </Typography>
           
-          {formData.preselectedFromUrl && (
-            <Typography variant="body1" sx={{ 
-              mb: 4,
-              color: '#22c55e',
-              fontWeight: 500,
-              border: '1px solid #dcfce7',
-              borderRadius: '8px',
-              bgcolor: '#f0fdf4',
-              p: 2,
-              lineHeight: 1.6
-            }}>
-              Thank you for choosing our services! You may now close this window.
-            </Typography>
-          )}
-          
-          {/* Mostrar botón solo si el usuario no viene desde URL */}
-          {!formData.preselectedFromUrl && (
+          {/* Botones de acción */}
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {/* Botón de Instagram - siempre visible */}
             <Button
               variant="contained"
               size="large"
-              onClick={() => navigate('/appointments')}
+              onClick={() => window.open('https://instagram.com/poveda_detailing/', '_blank')}
               sx={{
-                background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+                background: 'linear-gradient(135deg, #E1306C 0%, #C13584 50%, #833AB4 100%)',
                 borderRadius: '12px',
                 textTransform: 'none',
                 fontWeight: 600,
                 px: 4,
-                py: 1.5
+                py: 1.5,
+                boxShadow: '0 4px 12px rgba(225, 48, 108, 0.3)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #C13584 0%, #833AB4 50%, #5851DB 100%)',
+                  boxShadow: '0 6px 16px rgba(225, 48, 108, 0.4)'
+                }
               }}
             >
-              View My Appointments
+              📱 Follow us on Instagram
             </Button>
-          )}
+            
+            {/* Mostrar botón solo si el usuario no viene desde URL */}
+            {!formData.preselectedFromUrl && (
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate('/appointments')}
+                sx={{
+                  background: 'linear-gradient(135deg, #0891b2 0%, #1e40af 100%)',
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5
+                }}
+              >
+                View My Appointments
+              </Button>
+            )}
+          </Box>
         </Box>
       </ClientLayout>
     );
