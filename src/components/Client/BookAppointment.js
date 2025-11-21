@@ -245,6 +245,8 @@ const BookAppointment = () => {
     
     const slots = [];
     const date = dayjs(selectedDate);
+    const now = dayjs(); // Hora actual del dispositivo del usuario
+    const minimumAdvanceHours = 3; // Mínimo 3 horas de anticipación
     
     // ✅ NUEVOS HORARIOS: Todos los días tienen los mismos horarios
     const availableSlots = [
@@ -259,9 +261,20 @@ const BookAppointment = () => {
     availableSlots.forEach(slot => {
       const slotTime = date.hour(slot.hour).minute(slot.minute).second(0);
       
-      // Don't show past time slots for today
-      if (date.isSame(dayjs(), 'day') && slotTime.isBefore(dayjs())) {
-        return; // Skip this slot
+      // ✅ NUEVA LÓGICA: Verificar que el horario esté al menos 3 horas en el futuro
+      const hoursDifference = slotTime.diff(now, 'hour', true);
+      
+      // Si es el día de hoy, verificar que tenga al menos 3 horas de anticipación
+      if (date.isSame(now, 'day')) {
+        if (hoursDifference < minimumAdvanceHours) {
+          console.log(`⏰ Slot ${slotTime.format('h:mm A')} skipped - only ${hoursDifference.toFixed(1)} hours away (minimum ${minimumAdvanceHours} hours required)`);
+          return; // Skip this slot - no cumple con las 3 horas mínimas
+        }
+      }
+      
+      // Para días futuros, solo verificar que no sea en el pasado
+      if (slotTime.isBefore(now)) {
+        return; // Skip past slots
       }
       
       slots.push({
@@ -1566,6 +1579,14 @@ const BookAppointment = () => {
                     Available Time Slots for {dayjs(formData.date).format('dddd, MMMM D, YYYY')}
                   </Typography>
                   
+                  {/* Info sobre restricción de 3 horas */}
+                  {formData.date && dayjs(formData.date).isSame(dayjs(), 'day') && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      ⏰ <strong>Note:</strong> Appointments must be scheduled at least 3 hours in advance. 
+                      Only time slots that are 3+ hours away are shown.
+                    </Alert>
+                  )}
+                  
                   {loadingSlots ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                       <CircularProgress />
@@ -1573,7 +1594,9 @@ const BookAppointment = () => {
                     </Box>
                   ) : availableSlots.length === 0 ? (
                     <Alert severity="warning">
-                      No available slots for this date. Please select a different date.
+                      {dayjs(formData.date).isSame(dayjs(), 'day') 
+                        ? "⏰ No available slots for today. All time slots must be at least 3 hours in advance. Please select a future date or try again later."
+                        : "No available slots for this date. Please select a different date."}
                     </Alert>
                   ) : (
                     <Grid container spacing={{ xs: 1, sm: 2 }}>
