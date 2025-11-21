@@ -39,6 +39,27 @@ const GOOGLE_CALENDAR_CREDENTIALS = {
 
 const ADMIN_CALENDAR_ID = 'your-admin-calendar@gmail.com'; // Replace with admin's calendar ID
 
+// Helper function to get the phone number from an appointment object
+function getPhoneNumber(appointment) {
+  return appointment.userPhone || appointment.phoneNumber || 'Not provided';
+}
+
+// Helper function to get services from an appointment object
+// Handles both old format (service: string) and new format (services: array)
+function getServices(appointment) {
+  if (appointment.services && Array.isArray(appointment.services)) {
+    // New format: array of service names
+    return appointment.services.join(', ');
+  } else if (appointment.service) {
+    // Old format: single service string
+    return appointment.service;
+  } else if (appointment.servicePackage) {
+    // Alternative field name
+    return appointment.servicePackage;
+  }
+  return 'Service details not available';
+}
+
 // Helper function to load email template from Firestore
 async function getEmailTemplate(templateId) {
   try {
@@ -107,12 +128,12 @@ async function createCalendarEvent(appointment) {
 
     // Create event object
     const event = {
-      summary: `Car Detailing - ${appointment.service}`,
+      summary: `Car Detailing - ${getServices(appointment)}`,
       description: `
 Client: ${appointment.userName}
 Email: ${appointment.userEmail}
 Phone: ${getPhoneNumber(appointment)}
-Service: ${appointment.service}
+Service: ${getServices(appointment)}
 Category: ${appointment.category}
 Location: ${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}
 Price: $${appointment.finalPrice || appointment.estimatedPrice}
@@ -168,6 +189,19 @@ exports.sendAppointmentConfirmation = functions.firestore
     const appointment = snap.data();
     const appointmentId = context.params.appointmentId;
     
+    // 🔍 DEBUG: Log appointment data
+    console.log('========================================');
+    console.log('📧 SENDING CONFIRMATION EMAIL');
+    console.log('========================================');
+    console.log('Appointment ID:', appointmentId);
+    console.log('services (array):', appointment.services);
+    console.log('service (string):', appointment.service);
+    console.log('category:', appointment.category);
+    console.log('time:', appointment.time);
+    console.log('timeSlot:', appointment.timeSlot);
+    console.log('getServices() result:', getServices(appointment));
+    console.log('========================================');
+    
     // Send email if email reminders are enabled
     if (appointment.emailReminders) {
       try {
@@ -180,9 +214,10 @@ exports.sendAppointmentConfirmation = functions.firestore
           // Use dynamic template
           const templateVariables = {
             userName: appointment.userName,
-            service: appointment.service,
+            service: getServices(appointment),
+            category: appointment.category || 'N/A',
             date: appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString() : 'TBD',
-            time: appointment.time || 'TBD',
+            time: appointment.timeSlot || appointment.time || 'TBD',
             address: `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state}`,
             phone: getPhoneNumber(appointment), // ✅ Incluir teléfono
             finalPrice: appointment.finalPrice || appointment.estimatedPrice,
@@ -210,7 +245,7 @@ exports.sendAppointmentConfirmation = functions.firestore
                   <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                       <td style="padding: 8px 0; font-weight: bold;">Service:</td>
-                      <td style="padding: 8px 0;">${appointment.service}</td>
+                      <td style="padding: 8px 0;">${getServices(appointment)}</td>
                     </tr>
                     <tr>
                       <td style="padding: 8px 0; font-weight: bold;">Date:</td>
@@ -349,7 +384,7 @@ exports.sendAppointmentConfirmation = functions.firestore
                   
                   <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50;">
                     <h3 style="color: #4caf50; margin-top: 0;">Appointment Details</h3>
-                    <p><strong>Service:</strong> ${appointment.service}</p>
+                    <p><strong>Service:</strong> ${getServices(appointment)}</p>
                     <p><strong>Category:</strong> ${appointment.category || 'N/A'}</p>
                     <p><strong>Date:</strong> ${appointment.date ? new Date(appointment.date.toDate()).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD'}</p>
                     <p><strong>Time:</strong> ${appointment.time || 'TBD'}</p>
@@ -762,7 +797,7 @@ exports.send24HourReminder = functions.pubsub
               // Use dynamic template
               const templateVariables = {
                 userName: appointment.userName,
-                service: appointment.service,
+                service: getServices(appointment),
                 date: new Date(appointment.date.toDate()).toLocaleDateString('en-US', { 
                   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                 }),
@@ -810,11 +845,6 @@ exports.send24HourReminder = functions.pubsub
 
 // Note: 2-hour reminder system removed - only using 24-hour reminder
 
-// Helper function to get the phone number from an appointment object
-function getPhoneNumber(appointment) {
-  return appointment.userPhone || appointment.phoneNumber || 'Not provided';
-}
-
 // Helper function to combine date and time into a proper DateTime
 function getAppointmentDateTime(appointment) {
   const appointmentDate = appointment.date.toDate();
@@ -854,7 +884,7 @@ function getReminderEmailTemplate(appointment, timeFrame, timeDescription) {
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0; font-weight: bold; color: #555;">🚗 Service:</td>
-              <td style="padding: 8px 0;">${appointment.service}</td>
+              <td style="padding: 8px 0;">${getServices(appointment)}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; font-weight: bold; color: #555;">📅 Date:</td>
@@ -988,14 +1018,14 @@ exports.syncToAdminCalendar = functions.firestore
       
       // Create event object with custom color
       const event = {
-        summary: `🚗 ${appointment.service || 'Car Detailing'}`,
+        summary: `🚗 ${getServices(appointment)}`,
         description: `
 POVEDA Premium Auto Care - Client Appointment
 
 👤 Customer: ${appointment.userName}
 📧 Email: ${appointment.userEmail}
 📞 Phone: ${getPhoneNumber(appointment)}
-🚗 Service: ${appointment.service || appointment.servicePackage}
+🚗 Service: ${getServices(appointment)}
 📦 Package: ${appointment.category || 'Standard'}
 📍 Location: ${appointment.address ? `${appointment.address.street}, ${appointment.address.city}, ${appointment.address.state} ${appointment.address.zipCode}` : 'Mobile Service'}
 💰 Price: $${appointment.finalPrice || appointment.estimatedPrice || appointment.totalAmount}

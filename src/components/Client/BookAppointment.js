@@ -886,6 +886,10 @@ const BookAppointment = () => {
       console.log('📞 Phone:', phoneNumber);
       console.log('========================================');
       
+      // Determinar categorías de los servicios seleccionados
+      const serviceCategories_list = formData.selectedServices.map(s => serviceCategories[s.category]?.name).filter(Boolean);
+      const primaryCategory = serviceCategories_list.length > 0 ? serviceCategories_list.join(', ') : 'Multiple Services';
+      
       const appointmentData = {
         // User info - all users are guests now
         userId: 'guest',
@@ -896,6 +900,7 @@ const BookAppointment = () => {
         bookingSource: formData.preselectedFromUrl ? 'web_url' : 'portal', // Identificar si viene desde URL
         services: formData.selectedServices.map(service => `${service.name} (${serviceCategories[service.category].name})`), // Array of service names with categories
         servicesDetails: formData.selectedServices, // Full service objects for reference
+        category: primaryCategory, // ✅ Agregar categoría principal
         vehicleType: formData.vehicleType,
         vehicleId: formData.vehicleId || 'guest-vehicle',
         ...(formData.vehiclePhone ? { vehiclePhone: formData.vehiclePhone } : {}), // Solo incluir si tiene valor
@@ -928,6 +933,9 @@ const BookAppointment = () => {
       console.log('   - userPhone:', appointmentData.userPhone); // ✅ LOG DEL TELÉFONO
       console.log('   - isGuestBooking:', appointmentData.isGuestBooking);
       console.log('   - services:', appointmentData.services);
+      console.log('   - category:', appointmentData.category); // ✅ LOG DE CATEGORÍA
+      console.log('   - timeSlot:', appointmentData.timeSlot);
+      console.log('   - time:', appointmentData.time);
       console.log('   - date:', appointmentData.date);
       console.log('========================================');
 
