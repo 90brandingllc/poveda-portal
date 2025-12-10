@@ -125,50 +125,50 @@ const BookAppointment = () => {
       services: [
         { name: 'Headlight Restoration', price: 70, description: 'Restore clarity and visibility' },
         { name: 'Plastic Restoration', price: 30, description: 'Restore faded plastic trim' },
-        { name: 'Engine Cleaning', price: 40, description: 'Thorough cleaning of engine compartment' },
-        { name: 'Clay Bar Treatment', price: 45, description: 'Removes contaminants, reduces oxidation risk, and helps wax or ceramic coating last longer' },
-        { name: 'Ceramic Protection (3 months) + Clay Bar', price: 75, description: 'Short-term ceramic coating with clay bar treatment' }
+        { name: 'Engine Bay Cleaning', price: 40, description: 'Thorough cleaning of engine compartment' },
+        { name: 'Clay Bar Treatment', price: 45, description: 'Removes particles & contaminants' },
+        { name: 'Wax Application', price: 40, description: 'Protective wax coating for shine and protection' }
       ]
     },
     
-    // 3️⃣ TERCERO: PREMIUM PACKAGES (4 paquetes distintos)
+    // 3️⃣ TERCERO: PREMIUM PACKAGES (Int + Ext)
     packages: {
       name: 'PREMIUM PACKAGES',
       services: [
         { 
           name: 'MAINTENANCE PACKAGE', 
-          price: 110, 
+          price: 140, 
           description: 'Basic interior and exterior maintenance',
           details: 'Basic cleaning and maintenance for both interior and exterior',
-          vehicleTypes: { small: 110, suv: 130, threeRow: 150 }
+          vehicleTypes: { small: 140, suv: 150, threeRow: 160 }
         },
         { 
           name: 'GOLD FULL DETAIL', 
-          price: 185, 
+          price: 200, 
           description: 'Complete interior and exterior detail',
           details: 'Deep cleaning for both interior and exterior surfaces',
-          vehicleTypes: { small: 185, suv: 210, threeRow: 240 }
+          vehicleTypes: { small: 200, suv: 220, threeRow: 240 }
         },
         { 
           name: 'DIAMOND REVIVING YOUR CAR', 
           price: 280, 
           description: 'Premium diamond reviving service to bring your car back to life',
           details: 'Professional diamond reviving treatment with deep restoration and shine enhancement',
-          vehicleTypes: { small: 280, suv: 310, threeRow: 340 }
+          vehicleTypes: { small: 280, suv: 300, threeRow: 320 }
         },
         { 
-          name: 'XTREME FULL RENOVATION - 3-Month Ceramic Protection', 
-          price: 475, 
-          description: 'Complete renovation with 3-month ceramic protection',
-          details: 'Intensive cleaning, restoration and 3-month ceramic protection',
-          vehicleTypes: { small: 475, suv: 515, threeRow: 565 }
+          name: 'XTREME FULL RENOVATION', 
+          price: 450, 
+          description: 'Complete renovation package',
+          details: 'Intensive cleaning, restoration and full renovation',
+          vehicleTypes: { small: 450, suv: 550, threeRow: 650 }
         },
         { 
-          name: 'XTREME FULL RENOVATION - 5-Year Ceramic Coating', 
-          price: 799, 
-          description: 'Complete renovation with premium 5-year ceramic coating',
-          details: 'Full renovation package plus premium 5-year ceramic coating protection',
-          vehicleTypes: { small: 799, suv: 899, threeRow: 999 }
+          name: 'GRAPHENE CERAMIC COATING', 
+          price: 1150, 
+          description: 'Premium graphene ceramic coating protection',
+          details: 'Full renovation package plus premium graphene ceramic coating protection',
+          vehicleTypes: { small: 1150, suv: 1250, threeRow: 1350 }
         }
       ]
     },
@@ -206,11 +206,25 @@ const BookAppointment = () => {
       name: 'EXTERIOR PACKAGES',
       services: [
         { 
+          name: 'SILVER', 
+          price: 65, 
+          description: 'Basic exterior wash to keep your vehicle clean',
+          details: 'Exterior wash, wheel cleaning, tire shine, hand-dry',
+          vehicleTypes: { small: 65, suv: 75, threeRow: 80 }
+        },
+        { 
           name: 'GOLD', 
-          price: 55, 
-          description: 'Ideal for keeping your vehicle exterior clean, protected, and presentable',
+          price: 135, 
+          description: 'Complete exterior detail for a showroom finish',
           details: 'Two-bucket wash, wheel cleaning, tire shine, wheel well cleaning, exterior glass, gas cap, hand-dry',
-          vehicleTypes: { small: 55, suv: 65, threeRow: 75 }
+          vehicleTypes: { small: 135, suv: 150, threeRow: 160 }
+        },
+        { 
+          name: 'DIAMOND', 
+          price: 220, 
+          description: 'Premium exterior restoration for maximum shine',
+          details: 'Full exterior detail with paint correction and restoration',
+          vehicleTypes: { small: 220, suv: 240, threeRow: 270 }
         }
       ]
     },
@@ -220,25 +234,25 @@ const BookAppointment = () => {
       name: 'POLISHING & CERAMIC COATING',
       services: [
         { 
-          name: 'EXTERIOR POLISH', 
-          price: 220, 
+          name: '1-STEP POLISH', 
+          price: 270, 
           description: 'Light cleaning and correction to remove small imperfections and enhance shine',
           details: '1 step polishing, shine enhancement, light scratch removal',
-          vehicleTypes: { small: 220, suv: 240, threeRow: 270 }
+          vehicleTypes: { small: 270, suv: 320, threeRow: 370 }
         },
         { 
-          name: 'GOLD', 
-          price: 300, 
+          name: '2-STEP GOLD POLISH', 
+          price: 320, 
           description: 'Deeper treatment to correct noticeable defects and restore uniform, glossy finish',
           details: '2 polishing steps, moderate scratch/oxidation removal, preparation for ceramic/sealant',
-          vehicleTypes: { small: 300, suv: 320, threeRow: 350 }
+          vehicleTypes: { small: 320, suv: 340, threeRow: 370 }
         },
         { 
-          name: 'DIAMOND', 
-          price: 699, 
+          name: '2-STEP POLISH + CERAMIC COATING', 
+          price: 999, 
           description: 'Maximum protection and long-lasting shine with ceramic coating',
-          details: '2 polishing steps + high-durability ceramic coating (3-year protection)',
-          vehicleTypes: { small: 699, suv: 799, threeRow: 899 }
+          details: '2 polishing steps + high-durability ceramic coating',
+          vehicleTypes: { small: 999, suv: 1100, threeRow: 1200 }
         }
       ]
     }
