@@ -238,7 +238,7 @@ const BookAppointment = () => {
           price: 270, 
           description: 'Light cleaning and correction to remove small imperfections and enhance shine',
           details: '1 step polishing, shine enhancement, light scratch removal',
-          vehicleTypes: { small: 270, suv: 320, threeRow: 370 }
+          vehicleTypes: { small: 270, suv: 240, threeRow: 370 }
         },
         { 
           name: '2-STEP GOLD POLISH', 
