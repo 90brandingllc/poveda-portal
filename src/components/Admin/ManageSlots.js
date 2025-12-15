@@ -188,8 +188,8 @@ const ManageSlots = () => {
   const isSlotAvailable = (date, time) => {
     const MAX_BOOKINGS_PER_SLOT = 2;
     
-    // Skip weekends
-    if (date.day() === 0 || date.day() === 6) return false;
+    // Skip Sundays
+    if (date.day() === 0) return false;
     
     // Check if slot is blocked
     if (getBlockedSlotForTime(date, time)) return false;

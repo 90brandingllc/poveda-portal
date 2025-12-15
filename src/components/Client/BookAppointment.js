@@ -1574,7 +1574,12 @@ const BookAppointment = () => {
           </Grid>
         );
 
-      case 3:
+      case 3: {
+        const isSunday = formData.date ? dayjs(formData.date).day() === 0 : false;
+        const isOhioToday = formData.date 
+          ? dayjs(formData.date).isSame(dayjs().tz('America/New_York'), 'day')
+          : false;
+
         return (
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Grid container spacing={{ xs: 2, sm: 3 }}>
@@ -1586,10 +1591,7 @@ const BookAppointment = () => {
                   onChange={(newValue) => setFormData({ ...formData, date: newValue })}
                   minDate={dayjs()}
                   maxDate={dayjs().add(30, 'day')}
-                  shouldDisableDate={(date) => {
-                    // No longer disabling weekends - all days available
-                    return false;
-                  }}
+                  shouldDisableDate={(date) => date.day() === 0}
                   renderInput={(params) => (
                     <TextField 
                       {...params} 
@@ -1605,222 +1607,229 @@ const BookAppointment = () => {
                 />
               </Grid>
 
-
-
               {/* Time Slot Selection */}
               {formData.date && (
                 <Grid item xs={12}>
                   <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                     Available Time Slots for {dayjs(formData.date).format('dddd, MMMM D, YYYY')}
                   </Typography>
-                  
-                  {/* Info sobre restricción de 3 horas */}
-                  {formData.date && dayjs(formData.date).isSame(dayjs().tz('America/New_York'), 'day') && (
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      ⏰ <strong>Note:</strong> Appointments must be scheduled at least 3 hours in advance (Ohio time). 
-                      Only time slots that are 3+ hours away are shown. Current time in Ohio: {dayjs().tz('America/New_York').format('h:mm A')}
-                    </Alert>
-                  )}
-                  
-                  {loadingSlots ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                      <CircularProgress />
-                      <Typography sx={{ ml: 2 }}>Loading available slots...</Typography>
-                    </Box>
-                  ) : availableSlots.length === 0 ? (
-                    <Alert severity="warning">
-                      {dayjs(formData.date).isSame(dayjs().tz('America/New_York'), 'day') 
-                        ? "⏰ No available slots for today. All time slots must be at least 3 hours in advance (Ohio time). Please select a future date or try again later."
-                        : "No available slots for this date. Please select a different date."}
+
+                  {isSunday ? (
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                      🚫 We're closed on Sundays. Please choose a time between Monday and Saturday.
                     </Alert>
                   ) : (
-                    <Grid container spacing={{ xs: 1, sm: 2 }}>
-                      {availableSlots.map((slot, index) => (
-                        <Grid item xs={6} sm={4} md={3} key={index}>
-                          <Box sx={{ position: 'relative' }}>
-                            <Chip
-                              id={`timeslot_${slot.label.replace(/[: ]/g, '_')}`}
-                              data-selected={selectedSlot?.label === slot.label ? 'true' : 'false'}
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>{slot.label}</span>
-                                  {slot.available && slot.spotsRemaining === 1 && (
-                                    <Box 
-                                      component="span" 
-                                      sx={{ 
-                                        fontSize: '0.65rem', 
-                                        color: '#f59e0b',
-                                        fontWeight: 600,
-                                        ml: 0.5
-                                      }}
-                                    >
-                                      (1 left)
+                    <>
+                      {isOhioToday && (
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          ⏰ <strong>Note:</strong> Appointments must be scheduled at least 3 hours in advance (Ohio time). 
+                          Only time slots that are 3+ hours away are shown. Current time in Ohio: {dayjs().tz('America/New_York').format('h:mm A')}
+                        </Alert>
+                      )}
+
+                      {loadingSlots ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                          <CircularProgress />
+                          <Typography sx={{ ml: 2 }}>Loading available slots...</Typography>
+                        </Box>
+                      ) : availableSlots.length === 0 ? (
+                        <Alert severity="warning">
+                          {isOhioToday 
+                            ? "⏰ No available slots for today. All time slots must be at least 3 hours in advance (Ohio time). Please select a future date or try again later."
+                            : "No available slots for this date. Please select a different date."}
+                        </Alert>
+                      ) : (
+                        <Grid container spacing={{ xs: 1, sm: 2 }}>
+                          {availableSlots.map((slot, index) => (
+                            <Grid item xs={6} sm={4} md={3} key={index}>
+                              <Box sx={{ position: 'relative' }}>
+                                <Chip
+                                  id={`timeslot_${slot.label.replace(/[: ]/g, '_')}`}
+                                  data-selected={selectedSlot?.label === slot.label ? 'true' : 'false'}
+                                  label={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      <span>{slot.label}</span>
+                                      {slot.available && slot.spotsRemaining === 1 && (
+                                        <Box 
+                                          component="span" 
+                                          sx={{ 
+                                            fontSize: '0.65rem', 
+                                            color: '#f59e0b',
+                                            fontWeight: 600,
+                                            ml: 0.5
+                                          }}
+                                        >
+                                          (1 left)
+                                        </Box>
+                                      )}
                                     </Box>
-                                  )}
-                                </Box>
-                              }
-                              onClick={() => handleSlotSelect(slot)}
-                              color={selectedSlot?.label === slot.label ? 'primary' : 'default'}
-                              variant={selectedSlot?.label === slot.label ? 'filled' : 'outlined'}
-                              disabled={!slot.available}
-                              icon={slot.available ? <Schedule /> : <Block />}
-                              sx={{
-                                width: '100%',
-                                height: { xs: 40, sm: 48 },
-                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                cursor: slot.available ? 'pointer' : 'not-allowed',
-                                opacity: slot.available ? 1 : 0.5,
-                                borderRadius: { xs: '8px', sm: '16px' },
-                                borderColor: slot.available && slot.spotsRemaining === 1 ? '#f59e0b' : undefined,
-                                borderWidth: slot.available && slot.spotsRemaining === 1 ? 2 : undefined,
-                                '& .MuiChip-icon': {
-                                  fontSize: { xs: '1rem', sm: '1.25rem' }
-                                },
-                                '&:hover': {
-                                  backgroundColor: slot.available ? 'primary.light' : 'inherit'
-                                },
-                                transition: 'all 0.2s ease-in-out',
-                                transform: selectedSlot?.label === slot.label ? 'scale(1.05)' : 'scale(1)',
-                                border: selectedSlot?.label === slot.label ? '2px solid #1976d2' : '1px solid rgba(0, 0, 0, 0.23)',
-                                boxShadow: selectedSlot?.label === slot.label ? '0 2px 10px rgba(25, 118, 210, 0.4)' : 'none',
-                                fontWeight: selectedSlot?.label === slot.label ? 700 : 400
-                              }}
-                            />
-                          </Box>
+                                  }
+                                  onClick={() => handleSlotSelect(slot)}
+                                  color={selectedSlot?.label === slot.label ? 'primary' : 'default'}
+                                  variant={selectedSlot?.label === slot.label ? 'filled' : 'outlined'}
+                                  disabled={!slot.available}
+                                  icon={slot.available ? <Schedule /> : <Block />}
+                                  sx={{
+                                    width: '100%',
+                                    height: { xs: 40, sm: 48 },
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                    cursor: slot.available ? 'pointer' : 'not-allowed',
+                                    opacity: slot.available ? 1 : 0.5,
+                                    borderRadius: { xs: '8px', sm: '16px' },
+                                    borderColor: slot.available && slot.spotsRemaining === 1 ? '#f59e0b' : undefined,
+                                    borderWidth: slot.available && slot.spotsRemaining === 1 ? 2 : undefined,
+                                    '& .MuiChip-icon': {
+                                      fontSize: { xs: '1rem', sm: '1.25rem' }
+                                    },
+                                    '&:hover': {
+                                      backgroundColor: slot.available ? 'primary.light' : 'inherit'
+                                    },
+                                    transition: 'all 0.2s ease-in-out',
+                                    transform: selectedSlot?.label === slot.label ? 'scale(1.05)' : 'scale(1)',
+                                    border: selectedSlot?.label === slot.label ? '2px solid #1976d2' : '1px solid rgba(0, 0, 0, 0.23)',
+                                    boxShadow: selectedSlot?.label === slot.label ? '0 2px 10px rgba(25, 118, 210, 0.4)' : 'none',
+                                    fontWeight: selectedSlot?.label === slot.label ? 700 : 400
+                                  }}
+                                />
+                              </Box>
+                            </Grid>
+                          ))}
                         </Grid>
-                      ))}
-                    </Grid>
+                      )}
+                    </>
                   )}
                 </Grid>
               )}
 
-              {/* Service Info */}
-              <Grid item xs={12}>
-                <Alert severity="info" sx={{ mt: 3 }}>
-                  📍 We provide mobile service! Our team will come to your specified location at the scheduled time.
-                </Alert>
-              </Grid>
-            </Grid>
-          </LocalizationProvider>
-        );
+{/* Service Info */}
+<Grid item xs={12}>
+<Alert severity="info" sx={{ mt: 3 }}>
+We provide mobile service! Our team will come to your specified location at the scheduled time.
+</Alert>
+</Grid>
+</Grid>
+</LocalizationProvider>
+);
 
-      case 4:
-        return (
-          <Grid container spacing={{ xs: 2, sm: 3 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Street Address"
-                value={formData.address.street}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  address: { ...formData.address, street: e.target.value }
-                })}
-                required
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="City"
-                value={formData.address.city}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  address: { ...formData.address, city: e.target.value }
-                })}
-                required
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <TextField
-                fullWidth
-                label="State"
-                value={formData.address.state}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  address: { ...formData.address, state: e.target.value }
-                })}
-                required
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={12} md={4}>
-              <TextField
-                fullWidth
-                label="Zip Code"
-                value={formData.address.zipCode}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  address: { ...formData.address, zipCode: e.target.value }
-                })}
-                required
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={{ xs: 4, sm: 5 }}
-                label="🐾👶 Special Requests & Notes"
-                placeholder="Please let us know about any special requests:
-• Pet hair cleaning 🐾
-• Baby car seat cleaning 👶
+}
+
+case 4:
+return (
+<Grid container spacing={{ xs: 2, sm: 3 }}>
+<Grid item xs={12}>
+<TextField
+fullWidth
+label="Street Address"
+value={formData.address.street}
+onChange={(e) => setFormData({
+...formData,
+address: { ...formData.address, street: e.target.value }
+})}
+required
+sx={{
+'& .MuiInputBase-root': {
+fontSize: { xs: '0.875rem', sm: '1rem' }
+}
+}}
+/>
+</Grid>
+<Grid item xs={12} sm={6} md={4}>
+<TextField
+fullWidth
+label="City"
+value={formData.address.city}
+onChange={(e) => setFormData({
+...formData,
+address: { ...formData.address, city: e.target.value }
+})}
+required
+sx={{
+'& .MuiInputBase-root': {
+fontSize: { xs: '0.875rem', sm: '1rem' }
+}
+}}
+/>
+</Grid>
+<Grid item xs={12} sm={6} md={4}>
+<TextField
+fullWidth
+label="State"
+value={formData.address.state}
+onChange={(e) => setFormData({
+...formData,
+address: { ...formData.address, state: e.target.value }
+})}
+required
+sx={{
+'& .MuiInputBase-root': {
+fontSize: { xs: '0.875rem', sm: '1rem' }
+}
+}}
+/>
+</Grid>
+<Grid item xs={12} sm={12} md={4}>
+<TextField
+fullWidth
+label="Zip Code"
+value={formData.address.zipCode}
+onChange={(e) => setFormData({
+...formData,
+address: { ...formData.address, zipCode: e.target.value }
+})}
+required
+sx={{
+'& .MuiInputBase-root': {
+fontSize: { xs: '0.875rem', sm: '1rem' }
+}
+}}
+/>
+</Grid>
+<Grid item xs={12}>
+<TextField
+fullWidth
+multiline
+rows={{ xs: 4, sm: 5 }}
+label=" Special Requests & Notes"
+placeholder="Please let us know about any special requests:
+• Pet hair cleaning
+• Baby car seat cleaning
 • Specific stains or odors
 • Access instructions
 • Any other special requirements..."
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.emailReminders}
-                    onChange={(e) => setFormData({ ...formData, emailReminders: e.target.checked })}
-                    sx={{
-                      '& .MuiSvgIcon-root': {
-                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
-                      }
-                    }}
-                  />
-                }
-                label={
-                  <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                    Send me email reminders about this appointment
-                  </Typography>
-                }
-              />
-            </Grid>
-          </Grid>
-        );
+value={formData.notes}
+onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+sx={{
+'& .MuiInputBase-root': {
+fontSize: { xs: '0.875rem', sm: '1rem' }
+},
+'& .MuiInputLabel-root': {
+fontSize: { xs: '0.875rem', sm: '1rem' }
+}
+}}
+/>
+</Grid>
+<Grid item xs={12}>
+<FormControlLabel
+control={
+<Checkbox
+checked={formData.emailReminders}
+onChange={(e) => setFormData({ ...formData, emailReminders: e.target.checked })}
+sx={{
+'& .MuiSvgIcon-root': {
+fontSize: { xs: '1.25rem', sm: '1.5rem' }
+}
+}}
+/>
+}
+label={
+<Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+Send me email reminders about this appointment
+</Typography>
+}
+/>
+</Grid>
+</Grid>
+);
 
       case 5:
         return (
