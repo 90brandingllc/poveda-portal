@@ -25,7 +25,7 @@ import { storage } from '../../firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../../contexts/AuthContext';
 
-const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError, customerName, customerEmail }) => {
+const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError, customerName, customerEmail, customerPhone }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { currentUser } = useAuth();
@@ -158,7 +158,8 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
           servicePrice: servicePrice,
           depositAmount: depositDisplay,
           customerEmail: customerEmail || 'customer@example.com',
-          customerName: customerName || 'Customer'
+          customerName: customerName || 'Customer',
+          userPhone: customerPhone || '' // ✅ AGREGADO: número de teléfono
         }
       });
 
@@ -432,7 +433,8 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
           depositAmount: depositDisplay,
           customerEmail: customerEmail || 'customer@example.com',
           customerName: customerName || 'Customer',
-          paymentMethod: 'apple_pay'
+          paymentMethod: 'apple_pay',
+          userPhone: customerPhone || '' // ✅ AGREGADO: número de teléfono
         }
       });
 
@@ -1561,7 +1563,7 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
   );
 };
 
-const DepositPayment = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError, customerName, customerEmail }) => {
+const DepositPayment = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymentError, customerName, customerEmail, customerPhone }) => {
   const stripePromise = getStripe();
 
   return (
@@ -1573,6 +1575,7 @@ const DepositPayment = ({ servicePrice, servicePackage, onPaymentSuccess, onPaym
         onPaymentError={onPaymentError}
         customerName={customerName}
         customerEmail={customerEmail}
+        customerPhone={customerPhone}
       />
     </Elements>
   );

@@ -2043,8 +2043,9 @@ Send me email reminders about this appointment
                   servicePackage={formData.selectedServices.map(s => `${s.name} (${serviceCategories[s.category].name})`).join(', ')}
                   onPaymentSuccess={handlePaymentSuccess}
                   onPaymentError={handlePaymentError}
-                  customerName={currentUser?.displayName || currentUser?.email || 'Customer'}
-                  customerEmail={currentUser?.email || ''}
+                  customerName={currentUser?.displayName || formData.customerName || 'Customer'}
+                  customerEmail={currentUser?.email || formData.customerEmail || ''}
+                  customerPhone={formData.customerPhone || ''}
                 />
               ) : (
               <Card>

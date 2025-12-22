@@ -5,11 +5,37 @@ const { google } = require('googleapis');
 
 // Initialize Stripe with environment-based key selection
 // Default to LIVE keys for production. Set NODE_ENV=development to use test keys.
-const stripe = require('stripe')(
-  process.env.NODE_ENV === 'development'
-    ? functions.config().stripe?.test_secret_key || process.env.STRIPE_TEST_SECRET_KEY || functions.config().stripe?.live_secret_key
-    : functions.config().stripe?.live_secret_key || process.env.STRIPE_LIVE_SECRET_KEY
-);
+const getStripeKey = () => {
+  const nodeEnv = process.env.NODE_ENV;
+  const isDevelopment = nodeEnv === 'development';
+  
+  let key;
+  if (isDevelopment) {
+    key = functions.config().stripe?.test_secret_key || 
+          process.env.STRIPE_TEST_SECRET_KEY || 
+          functions.config().stripe?.live_secret_key;
+  } else {
+    key = functions.config().stripe?.live_secret_key || 
+          process.env.STRIPE_LIVE_SECRET_KEY;
+  }
+  
+  // Log configuration status (without exposing the full key)
+  console.log('🔧 Stripe Configuration:');
+  console.log(`   Environment: ${nodeEnv || 'not set (defaulting to production)'}`);
+  console.log(`   Using ${isDevelopment ? 'TEST' : 'LIVE'} keys`);
+  console.log(`   Key found: ${key ? `Yes (${key.substring(0, 12)}...)` : 'NO - CRITICAL ERROR'}`);
+  
+  if (!key) {
+    console.error('❌ CRITICAL: No Stripe key configured!');
+    console.error('   Please set either:');
+    console.error('   - Firebase: firebase functions:config:set stripe.live_secret_key="sk_live_..."');
+    console.error('   - Or ENV: export STRIPE_LIVE_SECRET_KEY="sk_live_..."');
+  }
+  
+  return key;
+};
+
+const stripe = require('stripe')(getStripeKey());
 
 admin.initializeApp();
 
@@ -1313,9 +1339,18 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    // Imprimir el cuerpo completo para depuración
-    console.log('Request body:', JSON.stringify(req.body));
-    console.log('Request metadata:', JSON.stringify(req.body.metadata || req.body.data?.metadata || {}));
+    // 🔍 DEBUGGING LOGS - START
+    console.log('='.repeat(60));
+    console.log('🔍 CREATE PAYMENT INTENT - DEBUG INFO');
+    console.log('='.repeat(60));
+    console.log('Environment:', process.env.NODE_ENV || 'not set');
+    console.log('Stripe API Key configured:', !!stripe.apiKey);
+    console.log('Request method:', req.method);
+    console.log('Request origin:', req.headers.origin);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Request metadata:', JSON.stringify(req.body.metadata || req.body.data?.metadata || {}, null, 2));
+    console.log('='.repeat(60));
+    // 🔍 DEBUGGING LOGS - END
     
     let amount, currency, metadata;
     
@@ -1329,7 +1364,7 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
       currency = req.body.currency || 'usd';
       metadata = req.body.metadata || {};
     } else {
-      console.error('No se pudo encontrar los datos de cantidad en la solicitud');
+      console.error('❌ No se pudo encontrar los datos de cantidad en la solicitud');
       res.status(400).json({ error: 'Missing payment amount data' });
       return;
     }
@@ -1338,7 +1373,7 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
     
     // Validate amount (should be in cents)
     if (!amount || amount < 50) {
-      console.error(`Invalid amount: ${amount}`);
+      console.error(`❌ Invalid amount: ${amount}`);
       res.status(400).json({ error: 'Invalid amount' });
       return;
     }
@@ -1346,9 +1381,9 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
     // Ensure phone number is properly captured in metadata
     const phoneNumber = metadata.userPhone || metadata.phoneNumber || metadata.phone || null;
     if (phoneNumber) {
-      console.log(`Phone number found in metadata: ${phoneNumber}`);
+      console.log(`✅ Phone number found in metadata: ${phoneNumber}`);
     } else {
-      console.log('No phone number found in metadata');
+      console.log('⚠️  No phone number found in metadata');
     }
     
     // Create payment intent with automatic capture
@@ -1368,7 +1403,7 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
       },
     });
 
-    console.log(`Payment Intent created: ${paymentIntent.id} for $${amount/100}`);
+    console.log(`✅ Payment Intent created: ${paymentIntent.id} for $${amount/100}`);
 
     res.status(200).json({
       result: {
@@ -1378,7 +1413,7 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
     });
   } catch (error) {
     // Log detallado del error
-    console.error('Error creating payment intent:', error);
+    console.error('❌ Error creating payment intent:', error);
     console.error('Error details:', JSON.stringify({
       name: error.name,
       message: error.message,
