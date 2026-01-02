@@ -1318,64 +1318,28 @@ exports.resetReminderFlags = functions.firestore
 
 // ========== STRIPE PAYMENT FUNCTIONS ==========
 
-// Create payment intent for deposit - PUBLIC HTTP endpoint
-exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
-  // Enable CORS - using origin from request header or allowing all origins as fallback
-  const origin = req.headers.origin || '*';
-  res.set('Access-Control-Allow-Origin', origin);
-  res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.set('Access-Control-Allow-Credentials', 'true');
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    res.status(405).send('Method Not Allowed');
-    return;
-  }
-
+// Create payment intent for deposit - CALLABLE function (compatible with httpsCallable)
+exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
   try {
     // 🔍 DEBUGGING LOGS - START
     console.log('='.repeat(60));
-    console.log('🔍 CREATE PAYMENT INTENT - DEBUG INFO');
+    console.log('🔍 CREATE PAYMENT INTENT - DEBUG INFO (onCall)');
     console.log('='.repeat(60));
     console.log('Environment:', process.env.NODE_ENV || 'not set');
     console.log('Stripe API Key configured:', !!stripe.apiKey);
-    console.log('Request method:', req.method);
-    console.log('Request origin:', req.headers.origin);
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    console.log('Request metadata:', JSON.stringify(req.body.metadata || req.body.data?.metadata || {}, null, 2));
+    console.log('Received data:', JSON.stringify(data, null, 2));
+    console.log('Auth context:', context.auth ? `UID: ${context.auth.uid}` : 'Not authenticated');
     console.log('='.repeat(60));
     // 🔍 DEBUGGING LOGS - END
-    
-    let amount, currency, metadata;
-    
-    // Intentar extraer datos de diferentes estructuras posibles
-    if (req.body.data) {
-      // Si los datos vienen en req.body.data
-      ({ amount, currency = 'usd', metadata = {} } = req.body.data);
-    } else if (req.body.amount !== undefined) {
-      // Si los datos están directamente en req.body
-      amount = req.body.amount;
-      currency = req.body.currency || 'usd';
-      metadata = req.body.metadata || {};
-    } else {
-      console.error('❌ No se pudo encontrar los datos de cantidad en la solicitud');
-      res.status(400).json({ error: 'Missing payment amount data' });
-      return;
-    }
-    
+
+    const { amount, currency = 'usd', metadata = {} } = data;
+
     console.log(`Processing payment intent: amount=${amount}, currency=${currency}`);
-    
+
     // Validate amount (should be in cents)
     if (!amount || amount < 50) {
       console.error(`❌ Invalid amount: ${amount}`);
-      res.status(400).json({ error: 'Invalid amount' });
-      return;
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid amount. Minimum is 50 cents.');
     }
 
     // Ensure phone number is properly captured in metadata
@@ -1385,7 +1349,7 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
     } else {
       console.log('⚠️  No phone number found in metadata');
     }
-    
+
     // Create payment intent with automatic capture
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount),
@@ -1396,7 +1360,7 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
         ...metadata,
         userPhone: phoneNumber, // Ensure consistent field name
         source: 'POVEDA_AUTO_CARE',
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'production'
       },
       automatic_payment_methods: {
         enabled: true,
@@ -1405,12 +1369,10 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
 
     console.log(`✅ Payment Intent created: ${paymentIntent.id} for $${amount/100}`);
 
-    res.status(200).json({
-      result: {
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id
-      }
-    });
+    return {
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id
+    };
   } catch (error) {
     // Log detallado del error
     console.error('❌ Error creating payment intent:', error);
@@ -1420,76 +1382,61 @@ exports.createPaymentIntent = functions.https.onRequest(async (req, res) => {
       code: error.code,
       type: error.type,
       decline_code: error.decline_code,
-      param: error.param,
-      stack: error.stack
+      param: error.param
     }));
-    
-    // Respuesta más descriptiva
-    res.status(500).json({
-      error: 'Unable to create payment intent',
-      details: error.message,
-      code: error.code || 'unknown_error',
-      type: error.type || 'server_error',
-      // Enviar detalles adicionales sólo en modo de desarrollo
-      ...(process.env.NODE_ENV === 'development' ? { stack: error.stack } : {})
-    });
+
+    // Re-throw as HttpsError for proper client handling
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    throw new functions.https.HttpsError(
+      'internal',
+      `Unable to create payment intent: ${error.message}`,
+      { code: error.code || 'unknown_error', type: error.type || 'server_error' }
+    );
   }
 });
 
-// Confirm payment and update appointment - PUBLIC HTTP endpoint
-exports.confirmPayment = functions.https.onRequest(async (req, res) => {
-  // Enable CORS - using origin from request header or allowing all origins as fallback
-  const origin = req.headers.origin || '*';
-  res.set('Access-Control-Allow-Origin', origin);
-  res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.set('Access-Control-Allow-Credentials', 'true');
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    res.status(405).send('Method Not Allowed');
-    return;
-  }
-
+// Confirm payment and update appointment - CALLABLE function (compatible with httpsCallable)
+exports.confirmPayment = functions.https.onCall(async (data, context) => {
   try {
-    const { paymentIntentId, appointmentId } = req.body.data || req.body;
-    
+    const { paymentIntentId, appointmentId } = data;
+
+    console.log(`Confirming payment: ${paymentIntentId} for appointment ${appointmentId}`);
+
     if (!paymentIntentId || !appointmentId) {
-      res.status(400).json({ error: 'Missing required parameters' });
-      return;
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters: paymentIntentId and appointmentId');
     }
 
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    
+
     if (paymentIntent.status !== 'succeeded') {
-      res.status(400).json({ error: 'Payment not completed' });
-      return;
+      throw new functions.https.HttpsError('failed-precondition', `Payment not completed. Status: ${paymentIntent.status}`);
     }
 
     // Update appointment with payment info
     const appointmentRef = admin.firestore().collection('appointments').doc(appointmentId);
-    
+
     // First get the current appointment data to ensure we have the phone number
     const appointmentDoc = await appointmentRef.get();
+
+    if (!appointmentDoc.exists) {
+      throw new functions.https.HttpsError('not-found', `Appointment ${appointmentId} not found`);
+    }
+
     const appointmentData = appointmentDoc.data();
-    
+
     // Make sure we have the phone number from the metadata or existing data
     const userPhone = paymentIntent.metadata.userPhone || appointmentData.userPhone || paymentIntent.metadata.phoneNumber || appointmentData.phoneNumber || null;
-    
+
     // Log phone number information for debugging
     console.log(`Phone number information for appointment ${appointmentId}:`);
     console.log(`- From metadata.userPhone: ${paymentIntent.metadata.userPhone || 'Not found'}`);
     console.log(`- From appointmentData.userPhone: ${appointmentData.userPhone || 'Not found'}`);
-    console.log(`- From metadata.phoneNumber: ${paymentIntent.metadata.phoneNumber || 'Not found'}`);
-    console.log(`- From appointmentData.phoneNumber: ${appointmentData.phoneNumber || 'Not found'}`);
     console.log(`- Final userPhone value: ${userPhone || 'Not found'}`);
-    
+
     await appointmentRef.update({
       paymentStatus: 'deposit_paid',
       paymentId: paymentIntentId,
@@ -1500,17 +1447,24 @@ exports.confirmPayment = functions.https.onRequest(async (req, res) => {
       userPhone: userPhone // Ensure the phone number is properly stored
     });
 
-    console.log(`Payment confirmed for appointment ${appointmentId}: ${paymentIntentId}`);
-    
-    res.status(200).json({
-      result: {
-        success: true,
-        paymentId: paymentIntentId,
-        amount: paymentIntent.amount / 100
-      }
-    });
+    console.log(`✅ Payment confirmed for appointment ${appointmentId}: ${paymentIntentId}`);
+
+    return {
+      success: true,
+      paymentId: paymentIntentId,
+      amount: paymentIntent.amount / 100
+    };
   } catch (error) {
-    console.error('Error confirming payment:', error);
-    res.status(500).json({ error: 'Unable to confirm payment', details: error.message });
+    console.error('❌ Error confirming payment:', error);
+
+    // Re-throw as HttpsError for proper client handling
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    throw new functions.https.HttpsError(
+      'internal',
+      `Unable to confirm payment: ${error.message}`
+    );
   }
 });
