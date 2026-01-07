@@ -50,55 +50,58 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
         console.log('🍎 Stripe no inicializado, reintentando...');
         return;
       }
-      
+
       try {
-        console.log('🍎 Verificando compatibilidad de Apple Pay...');
-        
+        console.log('🍎 ============================================');
+        console.log('🍎 VERIFICANDO APPLE PAY');
+        console.log('🍎 ============================================');
+        console.log('🍎 URL:', window.location.href);
+        console.log('🍎 Protocol:', window.location.protocol);
+        console.log('🍎 User Agent:', navigator.userAgent);
+
         // 1. Verificar contexto seguro (HTTPS)
         if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-          console.log('🍎 ❌ Apple Pay requiere HTTPS o localhost');
+          console.log('🍎 ❌ FALLO: Apple Pay requiere HTTPS');
           setApplePayAvailable(false);
           return;
         }
-        
-        // 2. Verificar si estamos en un dispositivo/navegador compatible
-        const isAppleDevice = /iPad|iPhone|iPod|Mac/.test(navigator.userAgent);
-        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-        const isChrome = /chrome/i.test(navigator.userAgent) && /google inc/i.test(navigator.vendor);
-        
-        console.log('🍎 Dispositivo Apple:', isAppleDevice);
-        console.log('🍎 Safari:', isSafari);
-        console.log('🍎 Chrome:', isChrome);
-        console.log('🍎 User Agent:', navigator.userAgent);
-        
-        // 3. Verificar si Apple Pay está disponible en el navegador
+        console.log('🍎 ✅ HTTPS verificado');
+
+        // 2. Verificar si Apple Pay está disponible en el navegador
         if (!window.ApplePaySession) {
-          console.log('🍎 ❌ ApplePaySession no disponible en este navegador');
+          console.log('🍎 ❌ FALLO: ApplePaySession no disponible');
+          console.log('🍎 Usa Safari en iPhone, iPad o Mac');
           setApplePayAvailable(false);
           return;
         }
-        
-        // 4. Verificar versión de Apple Pay
-        const applePayVersion = window.ApplePaySession.supportsVersion(3) ? 3 : 
-                               window.ApplePaySession.supportsVersion(2) ? 2 : 
+        console.log('🍎 ✅ ApplePaySession disponible');
+
+        // 3. Verificar versión de Apple Pay
+        const applePayVersion = window.ApplePaySession.supportsVersion(3) ? 3 :
+                               window.ApplePaySession.supportsVersion(2) ? 2 :
                                window.ApplePaySession.supportsVersion(1) ? 1 : 0;
-        
+
         if (applePayVersion === 0) {
-          console.log('🍎 ❌ Versión de Apple Pay no soportada');
+          console.log('🍎 ❌ FALLO: Versión de Apple Pay no soportada');
           setApplePayAvailable(false);
           return;
         }
-        
-        console.log('🍎 Versión de Apple Pay soportada:', applePayVersion);
-        
-        // 5. Verificar si el dispositivo puede hacer pagos
-        if (!window.ApplePaySession.canMakePayments()) {
-          console.log('🍎 ❌ El dispositivo no puede hacer pagos con Apple Pay');
+        console.log('🍎 ✅ Apple Pay versión:', applePayVersion);
+
+        // 4. Verificar si el dispositivo puede hacer pagos
+        const canMakePayments = window.ApplePaySession.canMakePayments();
+        console.log('🍎 canMakePayments():', canMakePayments);
+
+        if (!canMakePayments) {
+          console.log('🍎 ❌ FALLO: Dispositivo no puede hacer pagos');
+          console.log('🍎 Configura Apple Pay: Configuración > Wallet y Apple Pay');
           setApplePayAvailable(false);
           return;
         }
-        
-        // 6. Crear Payment Request para verificar disponibilidad con Stripe
+        console.log('🍎 ✅ Dispositivo puede hacer pagos');
+
+        // 5. Crear Payment Request para verificar disponibilidad con Stripe
+        console.log('🍎 Creando Payment Request con Stripe...');
         const paymentRequest = stripe.paymentRequest({
           country: 'US',
           currency: 'usd',
@@ -110,24 +113,37 @@ const CheckoutForm = ({ servicePrice, servicePackage, onPaymentSuccess, onPaymen
           requestPayerEmail: true,
         });
 
-        // 7. Verificar si se puede hacer el pago específico
+        // 6. Verificar si se puede hacer el pago específico
+        console.log('🍎 Verificando disponibilidad específica con Stripe...');
         const canMakePayment = await paymentRequest.canMakePayment();
-        console.log('🍎 Can Make Payment result:', canMakePayment);
-        
+        console.log('🍎 Resultado completo de canMakePayment:', JSON.stringify(canMakePayment, null, 2));
+
         const isAvailable = !!(canMakePayment && canMakePayment.applePay);
-        console.log('🍎 Apple Pay disponible:', isAvailable);
-        
+
+        if (isAvailable) {
+          console.log('🍎 ✅ ¡APPLE PAY DISPONIBLE!');
+        } else {
+          console.log('🍎 ❌ FALLO FINAL: Stripe no detectó Apple Pay');
+          console.log('🍎 Posibles causas:');
+          console.log('🍎   - No hay tarjetas en Apple Wallet');
+          console.log('🍎   - Las tarjetas no son compatibles');
+          console.log('🍎   - Restricciones regionales');
+        }
+
+        console.log('🍎 ============================================');
+
         setApplePayAvailable(isAvailable);
-        
+
       } catch (error) {
-        console.error('🍎 ❌ Error verificando Apple Pay:', error);
+        console.error('🍎 ❌ ERROR CRÍTICO verificando Apple Pay:', error);
+        console.error('🍎 Stack:', error.stack);
         setApplePayAvailable(false);
       }
     };
 
     // Retrasar la verificación para asegurar que Stripe esté completamente cargado
     const timeoutId = setTimeout(checkApplePay, 1000);
-    
+
     return () => clearTimeout(timeoutId);
   }, [stripe, depositAmount]);
 
